@@ -50,3 +50,5 @@ app.*.map.json
 # ai
 .codex
 
+#firebase
+firebase_key.json

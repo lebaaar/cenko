@@ -141,7 +141,7 @@ func runAfterDownloadScript() error {
 		}
 	}
 
-	cmd := exec.Command(python, "scripts/plumber.py")
+	cmd := exec.Command(python, "scripts/plumber.py", "katalogi")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
