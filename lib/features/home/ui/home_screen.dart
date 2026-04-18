@@ -43,8 +43,8 @@ class HomeScreen extends ConsumerWidget {
               final spendingHabitsDealsAsync = user == null
                   ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
                   : ref.watch(spendingHabitsOnSaleProvider(user.userId));
-              final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length.toString() ?? '...';
-              final spendingHabitsSaleCount = spendingHabitsDealsAsync.asData?.value.length.toString() ?? '...';
+              final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length ?? 0;
+              final spendingHabitsSaleCount = spendingHabitsDealsAsync.asData?.value.length ?? 0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,19 +57,11 @@ class HomeScreen extends ConsumerWidget {
                       style: GoogleFonts.manrope(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4),
                       children: [
                         TextSpan(
-                          text: '$shoppingListSaleCount items',
+                          text: '${shoppingListSaleCount + spendingHabitsSaleCount} items',
                           style: GoogleFonts.manrope(fontSize: 15, color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
                         ),
                         const TextSpan(
-                          text: ' from your shopping list and ',
-                          style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
-                        ),
-                        TextSpan(
-                          text: '$spendingHabitsSaleCount items',
-                          style: GoogleFonts.manrope(fontSize: 15, color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
-                        ),
-                        const TextSpan(
-                          text: ' from your spending habits are on sale right now!',
+                          text: ' you might be interested in are on sale right now!',
                           style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
                         ),
                       ],
