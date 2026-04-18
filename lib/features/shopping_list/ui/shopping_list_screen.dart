@@ -335,6 +335,12 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
           _saving = false;
         });
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
     }
   }
 
