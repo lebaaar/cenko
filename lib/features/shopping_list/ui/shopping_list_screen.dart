@@ -62,7 +62,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: uid == null
                     ? const Center(child: Text('Please sign in to manage your shopping list.'))
                     : ref
