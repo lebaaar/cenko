@@ -211,7 +211,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 ),
                                 child: _isProcessingReceipt || _isCapturingReceipt
                                     ? const Padding(padding: EdgeInsets.all(15), child: CircularProgressIndicator(strokeWidth: 2))
-                                    : const Icon(Icons.camera_alt_rounded, color: Colors.black87, size: 24),
+                                    : const SizedBox.shrink(),
                               ),
                             ),
                           ),
@@ -284,7 +284,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const SizedBox(width: 72, height: 72, child: CircularProgressIndicator(strokeWidth: 3)),
                   const SizedBox(height: 20),
                   Text(
-                    _processingHint,
+                    _processingHint.replaceAll(RegExp(r'\.+$'), ''),
                     style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
