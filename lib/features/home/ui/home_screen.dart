@@ -1,7 +1,6 @@
 import 'package:cenko/core/constants/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cenko/features/home/data/home_deal_card_item.dart';
@@ -37,6 +36,11 @@ class HomeScreen extends ConsumerWidget {
             error: (error, _) => Center(child: Text(error.toString())),
             data: (user) {
               final name = user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'there';
+              final secondaryBodyStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              );
               final shoppingListDealsAsync = user == null
                   ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
                   : ref.watch(shoppingListOnSaleProvider(user.userId));
@@ -54,15 +58,15 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   RichText(
                     text: TextSpan(
-                      style: GoogleFonts.manrope(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4),
+                      style: secondaryBodyStyle,
                       children: [
                         TextSpan(
                           text: '${shoppingListSaleCount + spendingHabitsSaleCount} items',
-                          style: GoogleFonts.manrope(fontSize: 15, color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
                         ),
-                        const TextSpan(
+                        TextSpan(
                           text: ' you might be interested in are on sale right now!',
-                          style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                          style: secondaryBodyStyle,
                         ),
                       ],
                     ),
@@ -70,18 +74,18 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _SectionHeader(title: 'From your shopping list'),
                   SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Based on the items you have in your shopping list, these are on sale right now.',
-                    style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                    style: secondaryBodyStyle,
                   ),
                   const SizedBox(height: 14),
                   _DealsList(asyncDeals: shoppingListDealsAsync, emptyMessage: 'No personal deals found this week yet.'),
                   const SizedBox(height: 22),
                   _SectionHeader(title: 'From your spending habits'),
                   SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Based on the items you usually buy, these are on sale right now.',
-                    style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                    style: secondaryBodyStyle,
                   ),
                   const SizedBox(height: 14),
                   _DealsList(asyncDeals: spendingHabitsDealsAsync, emptyMessage: 'No receipt-based recommendations yet.'),
