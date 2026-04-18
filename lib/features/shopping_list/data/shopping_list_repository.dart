@@ -15,16 +15,41 @@ class ShoppingListRepository {
     });
   }
 
-  Future<void> addItem({required String uid, required String name, String? brand}) async {
+  Future<void> addItem({required String uid, required String name, String? brand, String? barcode}) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
     final trimmedBrand = brand?.trim();
+    final trimmedBarcode = barcode?.trim();
 
     await _shoppingListItems(uid).add({
       'name': trimmedName,
       'brand': (trimmedBrand == null || trimmedBrand.isEmpty) ? null : trimmedBrand,
+      'barcode': (trimmedBarcode == null || trimmedBarcode.isEmpty) ? null : trimmedBarcode,
+      'bought': false,
       'added_at': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> updateItem({required String uid, required String itemId, required String name, String? brand, String? barcode}) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+
+    final trimmedBrand = brand?.trim();
+    final trimmedBarcode = barcode?.trim();
+
+    await _shoppingListItems(uid).doc(itemId).update({
+      'name': trimmedName,
+      'brand': (trimmedBrand == null || trimmedBrand.isEmpty) ? null : trimmedBrand,
+      'barcode': (trimmedBarcode == null || trimmedBarcode.isEmpty) ? null : trimmedBarcode,
+    });
+  }
+
+  Future<void> setBought({required String uid, required String itemId, required bool bought}) async {
+    await _shoppingListItems(uid).doc(itemId).update({'bought': bought});
+  }
+
+  Future<void> deleteItem({required String uid, required String itemId}) async {
+    await _shoppingListItems(uid).doc(itemId).delete();
   }
 }

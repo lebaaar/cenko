@@ -4,7 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  const ScanScreen({super.key, this.initialMode, this.fromList = false});
+
+  final String? initialMode;
+  final bool fromList;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -14,8 +17,14 @@ class _ScanScreenState extends State<ScanScreen> {
   final MobileScannerController _controller = MobileScannerController();
   final ImagePicker _imagePicker = ImagePicker();
 
-  _ScanMode _mode = _ScanMode.receipt;
+  late _ScanMode _mode;
   bool _isHandlingDetection = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.initialMode == 'barcode' ? _ScanMode.barcode : _ScanMode.receipt;
+  }
 
   @override
   void dispose() {

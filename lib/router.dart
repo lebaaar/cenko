@@ -44,7 +44,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
           GoRoute(path: '/deals', builder: (context, state) => const DealsScreen()),
-          GoRoute(path: '/scan', builder: (context, state) => const ScanScreen()),
+          GoRoute(
+            path: '/scan',
+            builder: (context, state) => ScanScreen(initialMode: state.uri.queryParameters['mode']),
+          ),
           GoRoute(path: '/list', builder: (context, state) => const ShoppingListScreen()),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
           GoRoute(path: '/notifications', builder: (context, state) => const NotificationScreen()),
