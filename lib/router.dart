@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
 
@@ -177,7 +178,7 @@ class _BottomNavBar extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: const Center(child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32)),
+                  child: Center(child: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: 32, height: 32)),
                 ),
               ),
             ),
