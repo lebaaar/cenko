@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"scraper/internal/scraper"
 	"sync"
 )
@@ -15,6 +16,12 @@ func main() {
 		tusPageURL      = "https://www.tus.si/aktualno/katalogi-in-revije/"
 		outputRoot      = "katalogi"
 	)
+	indexPath := filepath.Join(outputRoot, "catalog-names.json")
+	index, err := scraper.LoadCatalogNameIndex(indexPath)
+	if err != nil {
+		fmt.Printf("index error: %v\n", err)
+		return
+	}
 
 	if len(os.Args) == 1 || os.Args[1] == "all" {
 		var (
@@ -26,7 +33,7 @@ func main() {
 			key        string
 			name       string
 			pageURL    string
-			downloader func(pageURL, outputRoot, storeName string) ([]string, error)
+			downloader func(pageURL, outputRoot, storeName string, index *scraper.CatalogNameIndex) (scraper.DownloadResult, error)
 		}
 
 		jobs := []storeJob{
@@ -40,11 +47,14 @@ func main() {
 			wg.Add(1)
 			go func(j storeJob) {
 				defer wg.Done()
-				runStore(j.key, j.name, j.pageURL, outputRoot, j.downloader, &outputMu)
+				runStore(j.key, j.name, j.pageURL, outputRoot, j.downloader, index, &outputMu)
 			}(job)
 		}
 
 		wg.Wait()
+		if err := index.Save(); err != nil {
+			fmt.Printf("index save error: %v\n", err)
+		}
 		return
 	}
 
@@ -56,15 +66,19 @@ func main() {
 
 	switch storeKey {
 	case "spar":
-		runStore("spar", storeName, sparPageURL, outputRoot, scraper.DownloadCatalogPDFs, nil)
+		runStore("spar", storeName, sparPageURL, outputRoot, scraper.DownloadCatalogPDFs, index, nil)
 	case "mercator":
-		runStore("mercator", storeName, mercatorPageURL, outputRoot, scraper.DownloadMercatorCatalogPDFs, nil)
+		runStore("mercator", storeName, mercatorPageURL, outputRoot, scraper.DownloadMercatorCatalogPDFs, index, nil)
 	case "lidl":
-		runStore("lidl", storeName, lidlPageURL, outputRoot, scraper.DownloadLidlCatalogPDFs, nil)
+		runStore("lidl", storeName, lidlPageURL, outputRoot, scraper.DownloadLidlCatalogPDFs, index, nil)
 	case "tus":
-		runStore("tus", storeName, tusPageURL, outputRoot, scraper.DownloadTusCatalogPDFs, nil)
+		runStore("tus", storeName, tusPageURL, outputRoot, scraper.DownloadTusCatalogPDFs, index, nil)
 	default:
 		fmt.Println("usage: go run ./cmd/scr [all|spar|mercator|lidl|tus] [storeName]")
+	}
+
+	if err := index.Save(); err != nil {
+		fmt.Printf("index save error: %v\n", err)
 	}
 }
 
@@ -73,10 +87,11 @@ func runStore(
 	storeName string,
 	pageURL string,
 	outputRoot string,
-	downloader func(pageURL, outputRoot, storeName string) ([]string, error),
+	downloader func(pageURL, outputRoot, storeName string, index *scraper.CatalogNameIndex) (scraper.DownloadResult, error),
+	index *scraper.CatalogNameIndex,
 	outputMu *sync.Mutex,
 ) {
-	savedPaths, err := downloader(pageURL, outputRoot, storeName)
+	result, err := downloader(pageURL, outputRoot, storeName, index)
 
 	if outputMu != nil {
 		outputMu.Lock()
@@ -88,8 +103,18 @@ func runStore(
 		return
 	}
 
-	fmt.Printf("Downloaded %d PDF files to katalogi/%s (%s)\n", len(savedPaths), storeName, storeKey)
-	for _, p := range savedPaths {
+	fmt.Printf(
+		"Downloaded %d PDF files, skipped %d unchanged in katalogi/%s (%s)\n",
+		len(result.Downloaded),
+		len(result.Skipped),
+		storeName,
+		storeKey,
+	)
+
+	for _, p := range result.Downloaded {
 		fmt.Println(p)
+	}
+	for _, p := range result.Skipped {
+		fmt.Printf("%s (skipped)\n", p)
 	}
 }
