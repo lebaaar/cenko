@@ -63,6 +63,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '488111643065',
     projectId: 'cenkoapp',
     storageBucket: 'cenkoapp.firebasestorage.app',
+    androidClientId: '488111643065-4clks2lv6kqd9r069ntu01ucaaidhjil.apps.googleusercontent.com',
+    iosClientId: '488111643065-pct09kignuneha47gf0gatuf16lt44m8.apps.googleusercontent.com',
     iosBundleId: 'com.lebaaar.cenko',
   );
+
 }
