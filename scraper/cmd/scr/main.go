@@ -141,7 +141,7 @@ func runAfterDownloadScript() error {
 		}
 	}
 
-	cmd := exec.Command(python, "scripts/klic_haiku.py")
+	cmd := exec.Command(python, "scripts/plumber.py")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
