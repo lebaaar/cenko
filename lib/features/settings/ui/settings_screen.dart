@@ -100,9 +100,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Preferences', style: Theme.of(context).textTheme.headlineMedium),
+                  Text('Account', style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 8),
-                  Text('Only app preferences live here.', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('Manage your account settings and preferences', style: Theme.of(context).textTheme.bodyMedium),
                   const SizedBox(height: 24),
                   if (_error != null) ...[
                     Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: Theme.of(context).colorScheme.error)),
@@ -146,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Notifications'),
-                          subtitle: const Text('Enable app notifications.'),
+                          subtitle: const Text('Enable app notifications'),
                           value: _notificationsEnabled,
                           onChanged: (value) {
                             setState(() => _notificationsEnabled = value);
