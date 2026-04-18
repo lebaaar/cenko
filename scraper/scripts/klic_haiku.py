@@ -8,7 +8,48 @@ load_dotenv()
 
 client = anthropic.Anthropic()
 
-prompt = "ojla"
+prompt = """You are extracting product and price data from a retail promotional catalog. The text was extracted from a PDF and may be heavily scrambled — product names, prices, and details may appear on separate lines, characters may be split across lines, and multiple products may be mixed together on the same line.
+
+PRICE DECODING RULES:
+- Standalone integers may represent prices in cents: 499 = 4.99, 1399 = 13.99
+- Comma or period decimal notation is direct currency: "5,99" or "5.99" = 5.99
+- Discount patterns like "47%   439" mean 47% off, sale price = 4.39
+- Words like "redna cena", "regular price", "was", "RRP", "UVP", "PC" preceding a number = original/regular price
+- Words like "CENEJE", "SALE", "AKCIJA", "ZNIŽANO", "NOW", "OFFER" indicate a discounted price
+- A number followed by "%" on the same or next line is a discount percentage, NOT a price
+- If a number appears immediately after a product name with no context, treat it as the sale price in cents
+
+OUTPUT FORMAT — return only valid JSON, no markdown, no explanation:
+{
+  "items": [
+    {
+      "product_id": "generate a unique UUIDv4 for each product",
+      "store_name": "infer from catalog text (e.g. SPAR, Lidl, Hofer); null if unknown",
+      "product_name": "full product name",
+      "brand": "brand name if identifiable, otherwise null",
+      "original_price": 8.39,
+      "sale_price": 4.39,
+      "discount_pct": 47,
+      "valid_from": "ISO 8601 — infer from catalog text (e.g. 'od srede 15. 4. 2026'); null if unknown",
+      "valid_until": "ISO 8601 — infer from catalog text (e.g. 'do torka 21. 4. 2026'); null if unknown",
+      "scraped_at": "ISO 8601 UTC timestamp — use current time"
+    }
+  ]
+}
+
+RULES:
+- Extract every identifiable product that has at least one associated price
+- Product names are usually in ALL CAPS or Title Case
+- If there is no discount, set sale_price equal to original_price and discount_pct to 0
+- original_price and sale_price must always be present and must be decimal numbers — never omit them
+- brand should be extracted from the product name or nearby text (e.g. "Nestlé", "Kotanyi", "Pivovarna Union"); null if unclear
+- store_name, valid_from, valid_until repeat on every item — infer once from the catalog text and copy to all rows
+- Do not invent or guess prices — only extract what is explicitly in the text
+- Ignore: legal disclaimers, coupon terms, slogans, URLs, page numbers, opening hours
+
+CATALOG TEXT:
+"""
+
 model = "claude-haiku-4-5-20251001"
 max_attempts = int(os.getenv("ANTHROPIC_MAX_RETRIES", "3"))
 base_delay_seconds = float(os.getenv("ANTHROPIC_RETRY_BASE_DELAY", "1.0"))
@@ -20,7 +61,7 @@ def llm_call(text):
             message = client.messages.create(
                 model=model,
                 max_tokens=1024,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": prompt+text}],
             )
             print(message.content[0].text)
             break

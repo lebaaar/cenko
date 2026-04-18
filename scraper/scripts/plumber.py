@@ -25,8 +25,9 @@ async def main():
             katalog_txt[f.parent.name] += page.extract_text(layout=True)
     
         if len(katalog_txt[f.parent.name]) > 50: 
-            print(katalog_txt)
+            #print(katalog_txt)
             llm_response = await asyncio.to_thread(llm_call, katalog_txt)
+            print(llm_response)
             continue
         #print(f)
     
