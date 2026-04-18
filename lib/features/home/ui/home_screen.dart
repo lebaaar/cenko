@@ -44,11 +44,11 @@ class HomeScreen extends ConsumerWidget {
               final shoppingListDealsAsync = user == null
                   ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
                   : ref.watch(shoppingListOnSaleProvider(user.userId));
-              final spendingHabitsDealsAsync = user == null
+              final commonBoughtProductsDealsAsync = user == null
                   ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                  : ref.watch(spendingHabitsOnSaleProvider(user.userId));
+                  : ref.watch(commonBoughtProductsOnSaleProvider(user.userId));
               final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length ?? 0;
-              final spendingHabitsSaleCount = spendingHabitsDealsAsync.asData?.value.length ?? 0;
+              final commonBoughtProductsSaleCount = commonBoughtProductsDealsAsync.asData?.value.length ?? 0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,34 +61,25 @@ class HomeScreen extends ConsumerWidget {
                       style: secondaryBodyStyle,
                       children: [
                         TextSpan(
-                          text: '${shoppingListSaleCount + spendingHabitsSaleCount} items',
+                          text: '${shoppingListSaleCount + commonBoughtProductsSaleCount} items',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
                         ),
-                        TextSpan(
-                          text: ' you might be interested in are on sale right now!',
-                          style: secondaryBodyStyle,
-                        ),
+                        TextSpan(text: ' you might be interested in are on sale right now!', style: secondaryBodyStyle),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   _SectionHeader(title: 'From your shopping list'),
                   SizedBox(height: 10),
-                  Text(
-                    'Based on the items you have in your shopping list, these are on sale right now',
-                    style: secondaryBodyStyle,
-                  ),
+                  Text('Based on the items you have in your shopping list, these are on sale right now', style: secondaryBodyStyle),
                   const SizedBox(height: 14),
                   _DealsList(asyncDeals: shoppingListDealsAsync, emptyMessage: 'No personal deals found this week yet'),
                   const SizedBox(height: 22),
-                  _SectionHeader(title: 'From your spending habits'),
+                  _SectionHeader(title: 'From items you buy often'),
                   SizedBox(height: 10),
-                  Text(
-                    'Based on the items you usually buy, these are on sale right now',
-                    style: secondaryBodyStyle,
-                  ),
+                  Text('Based on the products that show up often in your receipts, these are on sale right now', style: secondaryBodyStyle),
                   const SizedBox(height: 14),
-                  _DealsList(asyncDeals: spendingHabitsDealsAsync, emptyMessage: 'No receipt-based recommendations yet'),
+                  _DealsList(asyncDeals: commonBoughtProductsDealsAsync, emptyMessage: 'No common-product recommendations yet'),
                   const SizedBox(height: 14),
                   Center(
                     child: TextButton.icon(

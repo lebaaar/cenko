@@ -37,6 +37,9 @@ const _processingHints = <String>[
   "Taxcrunching",
 ];
 
+const _commonBoughtProductWindowDays = 90;
+const _commonBoughtProductInactivityDays = 45;
+
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, this.initialMode, this.fromList = false});
 
@@ -1603,6 +1606,82 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         },
       }, SetOptions(merge: true));
     });
+
+    try {
+      await _syncCommonBoughtProducts(uid: uid);
+    } catch (error) {
+      debugPrint('Could not update common bought products: $error');
+    }
+  }
+
+  Future<void> _syncCommonBoughtProducts({required String uid}) async {
+    final firestore = FirebaseFirestore.instance;
+    final userRef = firestore.collection('users').doc(uid);
+    final receiptsRef = userRef.collection('receipts');
+    final commonProductsRef = userRef.collection('common_products');
+
+    final now = DateTime.now().toUtc();
+    final recentReceiptCutoff = now.subtract(const Duration(days: _commonBoughtProductWindowDays));
+    final inactiveCutoff = now.subtract(const Duration(days: _commonBoughtProductInactivityDays));
+
+    final recentReceiptsSnapshot = await receiptsRef
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(recentReceiptCutoff))
+        .orderBy('date', descending: true)
+        .get();
+    final productStatsByKey = <String, _CommonBoughtProductStats>{};
+
+    for (final receiptDoc in recentReceiptsSnapshot.docs) {
+      final receiptData = receiptDoc.data();
+      final receiptDate = _dateFromReceipt(receiptData);
+      final receiptItemsSnapshot = await receiptDoc.reference.collection('items').get();
+      final keysSeenInReceipt = <String>{};
+
+      for (final itemDoc in receiptItemsSnapshot.docs) {
+        final rawName = _asString(itemDoc.data()['raw_name']);
+        final productKey = _normalizeCommonProductKey(rawName);
+        if (productKey.isEmpty || !keysSeenInReceipt.add(productKey)) {
+          continue;
+        }
+
+        final stats = productStatsByKey.putIfAbsent(productKey, () => _CommonBoughtProductStats(name: rawName, lastPurchasedAt: receiptDate));
+        stats.recordPurchase(candidateName: rawName, purchasedAt: receiptDate);
+      }
+    }
+
+    final existingCommonProductsSnapshot = await commonProductsRef.get();
+    final activeKeys = <String>{};
+    final batch = firestore.batch();
+
+    for (final entry in productStatsByKey.entries) {
+      final productKey = entry.key;
+      final stats = entry.value;
+      final qualifies = stats.purchaseCount >= 3 && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
+      final docRef = commonProductsRef.doc(productKey);
+
+      if (!qualifies) {
+        continue;
+      }
+
+      activeKeys.add(productKey);
+      batch.set(docRef, {
+        'item_id': productKey,
+        'name': stats.name,
+        'brand': null,
+        'image_url': null,
+        'purchase_count': stats.purchaseCount,
+        'last_purchased_at': Timestamp.fromDate(stats.lastPurchasedAt),
+        'added_at': Timestamp.fromDate(stats.lastPurchasedAt),
+      }, SetOptions(merge: true));
+    }
+
+    for (final doc in existingCommonProductsSnapshot.docs) {
+      if (activeKeys.contains(doc.id)) {
+        continue;
+      }
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
   }
 
   DateTime _parseDate(dynamic value) {
@@ -1612,6 +1691,22 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   String _normalizedStoreKey(dynamic value) {
     return _asString(value).toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  DateTime _dateFromReceipt(Map<String, dynamic> receiptData) {
+    final value = receiptData['date'];
+    if (value is Timestamp) {
+      return value.toDate().toUtc();
+    }
+    return _parseDate(value);
+  }
+
+  String _normalizeCommonProductKey(String value) {
+    final normalized = value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) {
+      return '';
+    }
+    return normalized.replaceAll(' ', '_');
   }
 
   Map<String, dynamic> _normalizeDbPayload(Map<String, dynamic> decoded, String fallbackRawOcr) {
@@ -1756,5 +1851,22 @@ class _ControlButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CommonBoughtProductStats {
+  _CommonBoughtProductStats({required this.name, required this.lastPurchasedAt}) : purchaseCount = 0;
+
+  String name;
+  DateTime lastPurchasedAt;
+  int purchaseCount;
+
+  void recordPurchase({required String candidateName, required DateTime purchasedAt}) {
+    purchaseCount += 1;
+
+    if (purchasedAt.isAfter(lastPurchasedAt)) {
+      lastPurchasedAt = purchasedAt;
+      name = candidateName;
+    }
   }
 }

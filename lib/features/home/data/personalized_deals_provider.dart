@@ -16,6 +16,10 @@ final shoppingListOnSaleProvider = StreamProvider.family<List<PersonalizedDealCa
   return ref.watch(personalizedDealsRepositoryProvider).watchShoppingListOnSale(uid);
 });
 
+final commonBoughtProductsOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
+  return ref.watch(personalizedDealsRepositoryProvider).watchCommonBoughtProductsOnSale(uid);
+});
+
 final spendingHabitsOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
   return ref.watch(personalizedDealsRepositoryProvider).watchFromSpendingHabitsOnSale(uid);
 });

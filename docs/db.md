@@ -83,7 +83,9 @@ Items that the user frequently buys, inferred from scanned receipts. Used for pe
   "name": "string", // eg. Milka Oreo 100g
   "brand": "string | null", // eg. Milka
   "image_url": "string | null",
-  "added_at": "timestamp" // delete after 30 days of inactivity (no matching receipt items). Checked each time a receipt is scanned
+  "purchase_count": 0, // distinct receipts in the last 90 days
+  "last_purchased_at": "timestamp",
+  "added_at": "timestamp" // refreshed to the latest matching receipt date; delete after 45 days of inactivity. Checked each time a receipt is scanned
 }
 ```
 
