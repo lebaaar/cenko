@@ -10,12 +10,10 @@ from klic_haiku import *
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("katalogi", help="lokacija do katalogov",
-                        type=str)
+    parser.add_argument("katalogi", help="lokacija do katalogov", type=str)
     args = parser.parse_args()
 
     path = Path(args.katalogi)
-
     for f in path.rglob("*.pdf"): 
         
         katalog_txt = { f.parent.name: "" }
@@ -26,7 +24,7 @@ async def main():
     
         if len(katalog_txt[f.parent.name]) > 50: 
             #print(katalog_txt)
-            llm_response = await asyncio.to_thread(llm_call, katalog_txt)
+            llm_response = await asyncio.to_thread(llm_call, katalog_txt[f.parent.name])
             print(llm_response)
             continue
         #print(f)
