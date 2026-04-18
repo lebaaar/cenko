@@ -75,20 +75,20 @@ class HomeScreen extends ConsumerWidget {
                   _SectionHeader(title: 'From your shopping list'),
                   SizedBox(height: 10),
                   Text(
-                    'Based on the items you have in your shopping list, these are on sale right now.',
+                    'Based on the items you have in your shopping list, these are on sale right now',
                     style: secondaryBodyStyle,
                   ),
                   const SizedBox(height: 14),
-                  _DealsList(asyncDeals: shoppingListDealsAsync, emptyMessage: 'No personal deals found this week yet.'),
+                  _DealsList(asyncDeals: shoppingListDealsAsync, emptyMessage: 'No personal deals found this week yet'),
                   const SizedBox(height: 22),
                   _SectionHeader(title: 'From your spending habits'),
                   SizedBox(height: 10),
                   Text(
-                    'Based on the items you usually buy, these are on sale right now.',
+                    'Based on the items you usually buy, these are on sale right now',
                     style: secondaryBodyStyle,
                   ),
                   const SizedBox(height: 14),
-                  _DealsList(asyncDeals: spendingHabitsDealsAsync, emptyMessage: 'No receipt-based recommendations yet.'),
+                  _DealsList(asyncDeals: spendingHabitsDealsAsync, emptyMessage: 'No receipt-based recommendations yet'),
                   const SizedBox(height: 14),
                   Center(
                     child: TextButton.icon(
