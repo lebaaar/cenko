@@ -193,8 +193,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         _SettingsRow(label: 'Account', onTap: () => context.push('/settings')),
                         Divider(color: colorScheme.surfaceContainerHighest, height: 1),
-                        _SettingsRow(label: 'Notifications', onTap: () => context.push('/notifications')),
-                        Divider(color: colorScheme.surfaceContainerHighest, height: 1),
                         _SettingsRow(label: 'Privacy & security', onTap: () => context.push('/legal')),
                       ],
                     ),
