@@ -39,7 +39,7 @@ class CenkoApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
-      debugShowCheckedModeBanner: kDebugMode,
+      debugShowCheckedModeBanner: false,
       builder: (context, child) {
         _updateSystemUIOverlay(themeMode, context);
         return child!;

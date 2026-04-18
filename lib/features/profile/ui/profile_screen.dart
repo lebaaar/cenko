@@ -351,10 +351,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         const SizedBox(height: 12),
                                         Divider(color: colorScheme.surfaceContainerHighest),
                                         const SizedBox(height: 10),
-                                        Text(
-                                          '${_monthLabel(_selectedMonth).split(' ').first} by store',
-                                          style: Theme.of(context).textTheme.titleMedium,
-                                        ),
+                                        Text('Spendings by store', style: Theme.of(context).textTheme.titleMedium),
                                         const SizedBox(height: 8),
                                         if (stores.isEmpty)
                                           Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium)
