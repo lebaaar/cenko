@@ -33,7 +33,7 @@ class LargeButton extends StatelessWidget {
             height: 52,
             child: Center(
               child: loading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onSurface))
                   : Text(label, style: textStyle?.copyWith(color: disabled ? colors.onSurface.withValues(alpha: 0.38) : Colors.white)),
             ),
           ),

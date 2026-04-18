@@ -97,8 +97,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 56),
 
                 // Hero
-                const Icon(Icons.receipt_long_rounded, size: 36, color: AppColors.primary),
-                const SizedBox(height: 16),
                 Text(appName, style: Theme.of(context).textTheme.displayMedium),
                 const SizedBox(height: 6),
                 Text(catchPhrase, style: Theme.of(context).textTheme.bodyMedium),

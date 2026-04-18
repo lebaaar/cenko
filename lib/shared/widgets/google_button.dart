@@ -11,28 +11,21 @@ class GoogleButton extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final labelStyle = Theme.of(context).textTheme.labelLarge;
     return SizedBox(
+      width: double.infinity,
       height: 52,
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.surfaceContainerHigh,
+          disabledBackgroundColor: colors.surfaceContainerHigh,
           foregroundColor: colors.onSurface,
+          disabledForegroundColor: colors.onSurface.withValues(alpha: 0.38),
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
         child: loading
-            ? Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(child: CircularProgressIndicator(strokeWidth: 2)),
-                    const SizedBox(width: 12),
-                    Text('Signing in...', style: labelStyle?.copyWith(color: colors.onSurface)),
-                  ],
-                ),
-              )
+            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onSurface))
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
