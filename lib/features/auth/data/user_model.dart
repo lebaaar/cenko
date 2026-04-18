@@ -95,19 +95,17 @@ class UserModel {
 }
 
 class Statistics {
-  final String storeId;
   final String storeName;
   final String logoUrl;
   final int visitCount;
 
-  const Statistics({required this.storeId, required this.storeName, required this.logoUrl, required this.visitCount});
+  const Statistics({required this.storeName, required this.logoUrl, required this.visitCount});
 
   factory Statistics.fromMap(Map<String, dynamic> m) => Statistics(
-    storeId: m['store_id'] as String,
-    storeName: m['store_name'] as String,
-    logoUrl: m['logo_url'] as String,
-    visitCount: m['visit_count'] as int,
+    storeName: m['store_name'] as String? ?? 'Unknown store',
+    logoUrl: m['logo_url'] as String? ?? '',
+    visitCount: m['visit_count'] as int? ?? 0,
   );
 
-  Map<String, dynamic> toMap() => {'store_id': storeId, 'store_name': storeName, 'logo_url': logoUrl, 'visit_count': visitCount};
+  Map<String, dynamic> toMap() => {'store_name': storeName, 'logo_url': logoUrl, 'visit_count': visitCount};
 }

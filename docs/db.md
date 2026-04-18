@@ -33,7 +33,6 @@ Collections:
 ```json
 {
     "receipt_id": "string", // auto-generated
-    "store_id": "string | null", // null if store is not supported
     "store_name": "string", // eg. Mercator, Lidl, Spar
     "total_price": 0, // in cents
     "item_count": 0,
