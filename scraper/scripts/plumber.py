@@ -1,5 +1,6 @@
 import pdfplumber
 import argparse
+import asyncio
 from pathlib import Path
 #import pdfplumber
 #from pdf2image import convert_from_path
@@ -7,7 +8,7 @@ from pathlib import Path
 from klic_haiku import *
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("katalogi", help="lokacija do katalogov",
                         type=str)
@@ -25,7 +26,7 @@ def main():
     
         if len(katalog_txt[f.parent.name]) > 50: 
             print(katalog_txt)
-            llm_call(katalog_txt)
+            llm_response = await asyncio.to_thread(llm_call, katalog_txt)
             continue
         #print(f)
     
@@ -36,4 +37,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
