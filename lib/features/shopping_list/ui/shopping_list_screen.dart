@@ -365,13 +365,6 @@ class _ShoppingItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitleParts = <String>[];
-    if (item.brand != null) {
-      subtitleParts.add('Brand: ${item.brand}');
-    }
-    if (item.barcode != null) {
-      subtitleParts.add('Barcode: ${item.barcode}');
-    }
-
     return Container(
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
       child: Row(

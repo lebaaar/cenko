@@ -100,6 +100,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   bool _isProcessingReceipt = false;
   bool _isCapturingReceipt = false;
   bool _isSwitchingScannerMode = false;
+  bool _isShowingManualAddSheet = false;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
   final Random _random = Random();
@@ -401,7 +402,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Back to scan')),
+                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Try again')),
                   ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.success) ...[
@@ -866,6 +867,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _showBarcodeManualAddSheet() async {
+    if (_isShowingManualAddSheet) {
+      return;
+    }
+
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       setState(() {
@@ -875,23 +880,26 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    final nameCtrl = TextEditingController(text: _barcodeProduct == null ? '' : _formatBarcodeProductName(_barcodeProduct!));
-    final formKey = GlobalKey<FormState>();
+    _isShowingManualAddSheet = true;
+
+    final nameCtrl = TextEditingController();
     String? formError;
     var saving = false;
+    var itemSaved = false;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-              child: Form(
-                key: formKey,
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        builder: (sheetContext) {
+          final nameCtrl = TextEditingController(); // ✅ moved here
+
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,12 +912,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       Text(formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                       const SizedBox(height: 12),
                     ],
-                    TextFormField(
+                    TextField(
                       controller: nameCtrl,
                       autofocus: true,
                       textInputAction: TextInputAction.done,
                       decoration: const InputDecoration(labelText: 'Item name'),
-                      validator: (value) => value == null || value.trim().isEmpty ? 'Item name is required' : null,
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -918,7 +925,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                         onPressed: saving
                             ? null
                             : () async {
-                                if (!formKey.currentState!.validate()) {
+                                final name = nameCtrl.text.trim();
+                                if (name.isEmpty) {
+                                  setSheetState(() {
+                                    formError = 'Item name is required';
+                                  });
                                   return;
                                 }
 
@@ -928,13 +939,15 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 });
 
                                 try {
-                                  await _shoppingListRepository.addItem(uid: uid, name: nameCtrl.text, brand: null, barcode: null);
+                                  await _shoppingListRepository.addItem(uid: uid, name: name);
+                                  itemSaved = true;
                                   if (sheetContext.mounted) {
                                     Navigator.of(sheetContext).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
-                                    _resetBarcodeFlow();
                                   }
                                 } catch (error) {
+                                  if (!sheetContext.mounted) {
+                                    return;
+                                  }
                                   setSheetState(() {
                                     formError = 'Could not save item. Please try again.';
                                     saving = false;
@@ -947,14 +960,22 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     ),
                   ],
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nameCtrl.dispose();
+      _isShowingManualAddSheet = false;
+    }
 
-    nameCtrl.dispose();
+    if (!mounted || !itemSaved) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
+    _resetBarcodeFlow();
   }
 
   ButtonStyle _primaryActionStyle(BuildContext context) {
