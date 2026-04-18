@@ -11,12 +11,9 @@ class CatalogDealsRepository {
 
   Stream<List<CatalogDealItem>> watchActiveCatalogDeals({int fetchLimit = 400}) {
     final now = Timestamp.fromDate(DateTime.now());
-    return _catalogProducts
-        .where('valid_until', isGreaterThanOrEqualTo: now)
-        .orderBy('valid_until')
-        .limit(fetchLimit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map(CatalogDealItem.fromFirestore).toList(growable: false));
+    return _catalogProducts.where('valid_until', isGreaterThanOrEqualTo: now).orderBy('valid_until').limit(fetchLimit).snapshots().map((snapshot) {
+      return snapshot.docs.map(CatalogDealItem.fromFirestore).where((deal) => deal.isActive).toList(growable: false);
+    });
   }
 
   Stream<List<CatalogDealItem>> watchBestDealsThisWeek({int limit = 10}) {
