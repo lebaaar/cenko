@@ -624,8 +624,17 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           child: Padding(padding: EdgeInsets.all(24), child: Text('Camera is not ready.')),
         );
       }
+      final previewSize = camera.value.previewSize;
+      if (previewSize == null) {
+        return CameraPreview(camera);
+      }
 
-      return CameraPreview(camera);
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(width: previewSize.height, height: previewSize.width, child: CameraPreview(camera)),
+        ),
+      );
     }
 
     return ValueListenableBuilder<MobileScannerState>(
