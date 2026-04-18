@@ -1,9 +1,9 @@
 import pdfplumber
 import argparse
 from pathlib import Path
-import pdfplumber
-from pdf2image import convert_from_path
-import pytesseract
+#import pdfplumber
+#from pdf2image import convert_from_path
+#import pytesseract
 
 
 def main():
@@ -21,15 +21,17 @@ def main():
         pdf = pdfplumber.open(f)
         for page in pdf.pages:
             katalog_txt[f.parent.name] += page.extract_text(layout=True)
-        
-        if len(katalog_txt[f.parent.name]) > 50: continue
-        print(f)
     
-        for i in range(1, len(pdf.pages) + 1):
-            images = convert_from_path(f, dpi=300, first_page=i, last_page=i)
-            katalog_txt[f.parent.name] = pytesseract.image_to_string(images[0], lang="slv")
+        if len(katalog_txt[f.parent.name]) > 50: 
+            print(katalog_txt)
+            continue
+        #print(f)
+    
+        #for i in range(1, len(pdf.pages) + 1):
+        #    images = convert_from_path(f, first_page=i, last_page=i)
+        #    katalog_txt[f.parent.name] += pytesseract.image_to_string(images[0], lang="slv")
+        #    print("koncou stran:", i)
         
-            
 
 
 
