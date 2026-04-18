@@ -8,7 +8,6 @@ import 'features/auth/ui/forgot_password_screen.dart';
 import 'features/auth/ui/login_screen.dart';
 import 'features/auth/ui/register_screen.dart';
 import 'features/home/ui/home_screen.dart';
-import 'features/legal/ui/legal_screen.dart';
 import 'features/notifications/ui/notification_screen.dart';
 import 'features/product_detail/ui/product_detail_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
@@ -56,7 +55,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ProductDetailScreen(productId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-      GoRoute(path: '/legal', builder: (context, state) => const LegalScreen()),
     ],
   );
 });

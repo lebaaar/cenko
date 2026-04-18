@@ -27,7 +27,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmCtrl = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
-  bool _agreedToTerms = false;
   bool _loading = false;
   String? _error;
 
@@ -41,11 +40,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _googleSignIn() async {
-    if (!_agreedToTerms) {
-      setState(() => _error = 'To continue, please agree to the Terms and Privacy Policy.');
-      return;
-    }
-
     setState(() {
       _loading = true;
       _error = null;
@@ -67,10 +61,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      setState(() => _error = 'To continue, please agree to the Terms and Privacy Policy.');
-      return;
-    }
 
     setState(() {
       _loading = true;
@@ -102,7 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               // Hero
               Text('Create account', style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 6),
-              Text('Start tracking your spending.', style: Theme.of(context).textTheme.bodyMedium),
+              Text('Start tracking your spending', style: Theme.of(context).textTheme.bodyMedium),
 
               const SizedBox(height: 25),
 
@@ -172,47 +162,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
 
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Transform.translate(
-                    offset: const Offset(-8, 0),
-                    child: Checkbox.adaptive(
-                      value: _agreedToTerms,
-                      onChanged: _loading
-                          ? null
-                          : (value) {
-                              setState(() {
-                                _agreedToTerms = value ?? false;
-                                if (_agreedToTerms && _error == 'Please agree to the Terms and Privacy Policy.') {
-                                  _error = null;
-                                }
-                              });
-                            },
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 15),
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text('I agree to the ', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
-                          GestureDetector(
-                            onTap: () => context.push('/legal'),
-                            child: Text(
-                              'Terms and Privacy Policy',
-                              style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: colors.primary),
-                            ),
-                          ),
-                          Text('.', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
               // Error
               if (_error != null) ...[const SizedBox(height: 16), Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: colors.error))],
 

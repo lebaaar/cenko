@@ -77,7 +77,6 @@ Features:
     - Recently scanned receipts with  _Show all scanned receipts_ button - goes to Logged Receipts pages
 - Account settings (goes to Settings page)
 - Notifications settings (goes to Notifications page)
-- Privacy & Security  (goes to Legal page)
 - Log out button
 
 ### Product details page
