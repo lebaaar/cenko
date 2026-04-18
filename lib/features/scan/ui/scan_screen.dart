@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -46,7 +47,7 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> {
+class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
   final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
   final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
@@ -109,6 +110,8 @@ class _ScanScreenState extends State<ScanScreen> {
   String? _barcodeFlowMessage;
   Map<String, dynamic>? _barcodeProduct;
   String? _barcodeValue;
+  late final AnimationController _scanBarController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))
+    ..repeat(reverse: true);
 
   @override
   void initState() {
@@ -122,6 +125,7 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   void dispose() {
     _processingHintTimer?.cancel();
+    _scanBarController.dispose();
     _controller.dispose();
     _receiptCamera?.dispose();
     super.dispose();
@@ -149,35 +153,19 @@ class _ScanScreenState extends State<ScanScreen> {
             body: Stack(
               children: [
                 _buildPreview(),
+                if (_mode == _ScanMode.barcode) Positioned.fill(child: IgnorePointer(child: _buildViewfinder(context))),
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: Column(children: [_buildModeHeader(context)]),
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 26,
-                  child: SafeArea(
-                    top: false,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildFlashButton(),
-                        const SizedBox(width: 18),
-                        _ControlButton(icon: Icons.photo_library_rounded, onTap: _pickFromGallery),
-                        const SizedBox(width: 18),
-                        _ControlButton(icon: Icons.cameraswitch_rounded, onTap: _switchActiveCamera),
-                      ],
-                    ),
-                  ),
-                ),
+                Positioned(left: 0, right: 0, bottom: 18, child: SafeArea(top: false, child: _buildBottomControls(context))),
                 if (_mode == _ScanMode.receipt)
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 84,
+                    bottom: 108,
                     child: SafeArea(
                       top: false,
                       child: Center(
@@ -214,30 +202,6 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                     ),
                   ),
-                if (_mode == _ScanMode.barcode)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Center(
-                        child: Container(
-                          width: 250,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 2.2),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 18, offset: const Offset(0, 8))],
-                          ),
-                          child: Stack(
-                            children: [
-                              Positioned(top: -1, left: -1, child: _reticleCorner(top: true, left: true)),
-                              Positioned(top: -1, right: -1, child: _reticleCorner(top: true, left: false)),
-                              Positioned(bottom: -1, left: -1, child: _reticleCorner(top: false, left: true)),
-                              Positioned(bottom: -1, right: -1, child: _reticleCorner(top: false, left: false)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 if (_mode == _ScanMode.receipt && _receiptFlowState != _ReceiptFlowState.idle) _buildReceiptFlowOverlay(context),
                 if (_mode == _ScanMode.barcode && _barcodeFlowState != _BarcodeFlowState.idle) _buildBarcodeFlowOverlay(context),
               ],
@@ -261,8 +225,6 @@ class _ScanScreenState extends State<ScanScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (_receiptFlowState == _ReceiptFlowState.readyToSubmit) ...[
-                  const Icon(Icons.receipt_long_rounded, size: 56, color: Colors.white),
-                  const SizedBox(height: 18),
                   Text(
                     'Receipt extracted',
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
@@ -409,12 +371,6 @@ class _ScanScreenState extends State<ScanScreen> {
               children: [
                 if (_barcodeFlowState == _BarcodeFlowState.processing) ...[
                   const SizedBox(width: 72, height: 72, child: CircularProgressIndicator(strokeWidth: 3)),
-                  const SizedBox(height: 20),
-                  Text(
-                    _processingHint,
-                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.failure) ...[
                   Text(
@@ -428,26 +384,24 @@ class _ScanScreenState extends State<ScanScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _barcodeFlowMessage ?? 'Please try again.',
+                    _barcodeFlowMessage ?? 'Could not get product details. Please try again.',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(onPressed: _retryBarcodeLookup, icon: const Icon(Icons.refresh_rounded), label: const Text('Try again')),
+                    child: FilledButton.icon(
+                      onPressed: _showBarcodeManualAddSheet,
+                      icon: const Icon(Icons.edit_note_rounded),
+                      label: const Text('Add manually'),
+                      style: _primaryActionStyle(context),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _resetBarcodeFlow,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                      ),
-                      child: const Text('Back to scan'),
-                    ),
+                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Back to scan')),
                   ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.success) ...[
@@ -471,19 +425,13 @@ class _ScanScreenState extends State<ScanScreen> {
                       onPressed: _addBarcodeProductToShoppingList,
                       icon: const Icon(Icons.playlist_add_rounded),
                       label: const Text('Add to shopping list'),
+                      style: _primaryActionStyle(context),
                     ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _resetBarcodeFlow,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                      ),
-                      child: const Text('Scan another'),
-                    ),
+                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Scan another')),
                   ),
                 ],
               ],
@@ -497,11 +445,16 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget _buildModeHeader(BuildContext context) {
     final isBarcode = _mode == _ScanMode.barcode;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        gradient: LinearGradient(
+          colors: [Colors.black.withValues(alpha: 0.58), Colors.black.withValues(alpha: 0.32)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 18, offset: const Offset(0, 8))],
       ),
       child: Stack(
         children: [
@@ -512,7 +465,7 @@ class _ScanScreenState extends State<ScanScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(20)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -528,17 +481,11 @@ class _ScanScreenState extends State<ScanScreen> {
                     key: ValueKey(_mode),
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        isBarcode ? Icons.qr_code_scanner_rounded : Icons.receipt_long_rounded,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                      const SizedBox(width: 8),
                       Text(
                         _modeInstruction(),
                         style: Theme.of(
                           context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.88), fontWeight: FontWeight.w500),
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -555,25 +502,98 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _reticleCorner({required bool top, required bool left}) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        border: Border(
-          top: top ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
-          bottom: top ? BorderSide.none : const BorderSide(color: Colors.white, width: 3),
-          left: left ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
-          right: left ? BorderSide.none : const BorderSide(color: Colors.white, width: 3),
+  Widget _buildViewfinder(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 300,
+        height: 300,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(36),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.88), width: 1.8),
+          color: Colors.white.withValues(alpha: 0.03),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 24, offset: const Offset(0, 10))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(36),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.black.withValues(alpha: 0.16), Colors.transparent, Colors.black.withValues(alpha: 0.2)],
+                      stops: const [0.0, 0.52, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _scanBarController,
+                builder: (context, _) {
+                  final top = 26.0 + (_scanBarController.value * 248.0);
+                  return Positioned(
+                    left: 24,
+                    right: 24,
+                    top: top,
+                    child: IgnorePointer(
+                      child: Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              Colors.white.withValues(alpha: 0.98),
+                              Colors.white.withValues(alpha: 0.72),
+                              Colors.transparent,
+                            ],
+                          ),
+                          boxShadow: [BoxShadow(color: Colors.white.withValues(alpha: 0.34), blurRadius: 14, spreadRadius: 1)],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.black.withValues(alpha: 0.56), Colors.black.withValues(alpha: 0.34)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFlashButton(),
+            const SizedBox(width: 16),
+            _ControlButton(icon: Icons.photo_library_rounded, onTap: _pickFromGallery),
+            const SizedBox(width: 16),
+            _ControlButton(icon: Icons.cameraswitch_rounded, onTap: _switchActiveCamera),
+          ],
         ),
       ),
     );
   }
 
   String _modeInstruction() {
-    return _mode == _ScanMode.barcode
-        ? 'Scan a barcode to add the product to your shopping list.'
-        : 'Scan a receipt to extract store, items, and total.';
+    return _mode == _ScanMode.barcode ? 'Scan a barcode to add item to your shopping list.' : 'Scan a receipt to track your spendings.';
   }
 
   String _readySummaryText() {
@@ -798,46 +818,6 @@ class _ScanScreenState extends State<ScanScreen> {
     });
   }
 
-  void _retryBarcodeLookup() {
-    final barcode = _barcodeValue;
-    if (barcode == null || barcode.isEmpty) {
-      _resetBarcodeFlow();
-      return;
-    }
-
-    setState(() {
-      _barcodeFlowState = _BarcodeFlowState.processing;
-      _barcodeFlowMessage = null;
-      _barcodeProduct = null;
-    });
-    _startProcessingHints();
-
-    _lookupBarcodeProduct(barcode)
-        .then((lookup) {
-          if (!mounted) {
-            return;
-          }
-
-          final isFound = lookup['status'] == 1;
-          final product = lookup['product'] is Map<String, dynamic> ? lookup['product'] as Map<String, dynamic> : <String, dynamic>{};
-          setState(() {
-            _barcodeProduct = isFound ? product : null;
-            _barcodeFlowState = isFound ? _BarcodeFlowState.success : _BarcodeFlowState.failure;
-            _barcodeFlowMessage = isFound ? null : 'No product was found for this barcode.';
-          });
-        })
-        .catchError((e) {
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _barcodeFlowState = _BarcodeFlowState.failure;
-            _barcodeFlowMessage = e.toString();
-          });
-        })
-        .whenComplete(_stopProcessingHints);
-  }
-
   Future<void> _addBarcodeProductToShoppingList() async {
     final product = _barcodeProduct;
     if (product == null) {
@@ -871,9 +851,117 @@ class _ScanScreenState extends State<ScanScreen> {
       }
       setState(() {
         _barcodeFlowState = _BarcodeFlowState.failure;
-        _barcodeFlowMessage = 'Could not add item to shopping list: $e';
+        _barcodeFlowMessage = 'Could not get product details. Please try again.';
       });
     }
+  }
+
+  Future<void> _showBarcodeManualAddSheet() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() {
+        _barcodeFlowState = _BarcodeFlowState.failure;
+        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list.';
+      });
+      return;
+    }
+
+    final nameCtrl = TextEditingController(text: _barcodeProduct == null ? '' : _formatBarcodeProductName(_barcodeProduct!));
+    final formKey = GlobalKey<FormState>();
+    String? formError;
+    var saving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Add item manually', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text('Enter the item name and save it to your shopping list.', style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 16),
+                    if (formError != null) ...[
+                      Text(formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      const SizedBox(height: 12),
+                    ],
+                    TextFormField(
+                      controller: nameCtrl,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(labelText: 'Item name'),
+                      validator: (value) => value == null || value.trim().isEmpty ? 'Item name is required' : null,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                if (!formKey.currentState!.validate()) {
+                                  return;
+                                }
+
+                                setSheetState(() {
+                                  saving = true;
+                                  formError = null;
+                                });
+
+                                try {
+                                  await _shoppingListRepository.addItem(uid: uid, name: nameCtrl.text, brand: null, barcode: null);
+                                  if (sheetContext.mounted) {
+                                    Navigator.of(sheetContext).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
+                                    _resetBarcodeFlow();
+                                  }
+                                } catch (error) {
+                                  setSheetState(() {
+                                    formError = 'Could not save item. Please try again.';
+                                    saving = false;
+                                  });
+                                }
+                              },
+                        style: _primaryActionStyle(context),
+                        child: Text(saving ? 'Saving...' : 'Add item'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    nameCtrl.dispose();
+  }
+
+  ButtonStyle _primaryActionStyle(BuildContext context) {
+    return FilledButton.styleFrom(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
+
+  ButtonStyle _secondaryActionStyle(BuildContext context) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: Colors.white,
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
   }
 
   String _formatBarcodeProductName(Map<String, dynamic> product) {
@@ -976,7 +1064,6 @@ class _ScanScreenState extends State<ScanScreen> {
         _barcodeProduct = null;
         _barcodeFlowState = _BarcodeFlowState.processing;
       });
-      _startProcessingHints();
       HapticFeedback.lightImpact();
       final lookup = await _lookupBarcodeProduct(detectedCode);
       if (!mounted) {
@@ -996,11 +1083,10 @@ class _ScanScreenState extends State<ScanScreen> {
         setState(() {
           _barcodeProduct = null;
           _barcodeFlowState = _BarcodeFlowState.failure;
-          _barcodeFlowMessage = e.toString();
+          _barcodeFlowMessage = 'Could not get product details. Please try again or add the item manually.';
         });
       }
     } finally {
-      _stopProcessingHints();
       if (mounted) {
         setState(() {
           _isHandlingDetection = false;
