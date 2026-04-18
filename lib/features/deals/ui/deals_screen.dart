@@ -16,7 +16,7 @@ class DealsScreen extends ConsumerStatefulWidget {
 enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPrice }
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
-  static const List<String> _storeFilters = ['All', 'Mercator', 'Lidl', 'Hofer', 'Spar', 'Kaufland'];
+  static const List<String> _storeFilters = ['All', 'Mercator', 'Lidl', 'Hofer', 'Spar', 'Tuš'];
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';

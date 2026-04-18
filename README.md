@@ -37,7 +37,7 @@ Cenko tracks your grocery habits and hunts down the best deals across Slovenian 
 ## Deals page
 - Full with search up top. Searches only products currently present in scraped catalogs. 404 displays message "This product isn't on sale in any supported stores this week."
 - Fliter row:
-    - Store filter: horizontal scrollable pill row — All, Mercator, Lidl, Hofer, Spar, Kaufland. Multi-select.
+    - Store filter: horizontal scrollable pill row — All, Mercator, Lidl, Hofer, Spar, Multi-select.
     - Price filter: range slider, min 0 € to max 50 €
     - Sort: dropdown — Best discount, Lowest price, Highest discount, Recently added to catalog
 - Delas 2 column grid:
