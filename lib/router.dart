@@ -9,7 +9,6 @@ import 'features/auth/ui/forgot_password_screen.dart';
 import 'features/auth/ui/login_screen.dart';
 import 'features/auth/ui/register_screen.dart';
 import 'features/home/ui/home_screen.dart';
-import 'features/notifications/ui/notification_screen.dart';
 import 'features/product_detail/ui/product_detail_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
 import 'features/deals/ui/deals_screen.dart';
@@ -51,7 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/list', builder: (context, state) => const ShoppingListScreen()),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
-          GoRoute(path: '/notifications', builder: (context, state) => const NotificationScreen()),
         ],
       ),
       GoRoute(

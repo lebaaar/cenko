@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class MainTopBar extends StatelessWidget {
   const MainTopBar({super.key, this.onProfileTap, required this.title});
@@ -21,13 +20,9 @@ class MainTopBar extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               width: 48,
-              child: IconButton(
-                onPressed: onProfileTap ?? () => context.push('/notifications'),
-                icon: const Icon(Icons.notifications_outlined),
-                tooltip: 'Notifications',
-              ),
+              height: 48, // 👈 preserves original height
             ),
           ],
         ),
