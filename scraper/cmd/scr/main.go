@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"scraper/internal/scraper"
 	"sync"
@@ -55,6 +56,9 @@ func main() {
 		if err := index.Save(); err != nil {
 			fmt.Printf("index save error: %v\n", err)
 		}
+		if err := runAfterDownloadScript(); err != nil {
+			fmt.Printf("after-download script error: %v\n", err)
+		}
 		return
 	}
 
@@ -75,10 +79,14 @@ func main() {
 		runStore("tus", storeName, tusPageURL, outputRoot, scraper.DownloadTusCatalogPDFs, index, nil)
 	default:
 		fmt.Println("usage: go run ./cmd/scr [all|spar|mercator|lidl|tus] [storeName]")
+		return
 	}
 
 	if err := index.Save(); err != nil {
 		fmt.Printf("index save error: %v\n", err)
+	}
+	if err := runAfterDownloadScript(); err != nil {
+		fmt.Printf("after-download script error: %v\n", err)
 	}
 }
 
@@ -90,7 +98,7 @@ func runStore(
 	downloader func(pageURL, outputRoot, storeName string, index *scraper.CatalogNameIndex) (scraper.DownloadResult, error),
 	index *scraper.CatalogNameIndex,
 	outputMu *sync.Mutex,
-) {
+) bool {
 	result, err := downloader(pageURL, outputRoot, storeName, index)
 
 	if outputMu != nil {
@@ -100,7 +108,7 @@ func runStore(
 
 	if err != nil {
 		fmt.Printf("%s error: %v\n", storeKey, err)
-		return
+		return false
 	}
 
 	fmt.Printf(
@@ -117,4 +125,25 @@ func runStore(
 	for _, p := range result.Skipped {
 		fmt.Printf("%s (skipped)\n", p)
 	}
+	return true
+}
+
+func runAfterDownloadScript() error {
+	python := "python3"
+	venvCandidates := []string{
+		filepath.Join("scripts", ".venv", "bin", "python"),
+		filepath.Join(".venv", "bin", "python"),
+	}
+	for _, venvPython := range venvCandidates {
+		if _, err := os.Stat(venvPython); err == nil {
+			python = venvPython
+			break
+		}
+	}
+
+	cmd := exec.Command(python, "scripts/klic_haiku.py")
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
