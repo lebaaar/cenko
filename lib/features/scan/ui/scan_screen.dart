@@ -51,6 +51,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
   final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
+  ScaffoldMessengerState? _scaffoldMessenger;
 
   CameraController? _receiptCamera;
   List<CameraDescription> _cameras = <CameraDescription>[];
@@ -111,16 +112,23 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   String? _barcodeFlowMessage;
   Map<String, dynamic>? _barcodeProduct;
   String? _barcodeValue;
-  late final AnimationController _scanBarController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))
-    ..repeat(reverse: true);
+  late final AnimationController _scanBarController;
 
   @override
   void initState() {
     super.initState();
     _mode = widget.initialMode == 'barcode' ? _ScanMode.barcode : _ScanMode.receipt;
+    _scanBarController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
+    _setScanBarAnimationActive(_mode == _ScanMode.barcode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeMode();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
   }
 
   @override
@@ -129,7 +137,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _scanBarController.dispose();
     _controller.dispose();
     _receiptCamera?.dispose();
+    _scaffoldMessenger = null;
     super.dispose();
+  }
+
+  void _showSnackBar(SnackBar snackBar) {
+    _scaffoldMessenger?.showSnackBar(snackBar);
   }
 
   @override
@@ -696,6 +709,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     setState(() {
       _mode = mode;
     });
+    _setScanBarAnimationActive(mode == _ScanMode.barcode);
     _resetBarcodeFlow();
     _resetReceiptFlow();
 
@@ -723,6 +737,20 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     await _controller.start();
+  }
+
+  void _setScanBarAnimationActive(bool active) {
+    if (active) {
+      if (!_scanBarController.isAnimating) {
+        _scanBarController.repeat(reverse: true);
+      }
+      return;
+    }
+
+    if (_scanBarController.isAnimating) {
+      _scanBarController.stop();
+    }
+    _scanBarController.value = 0;
   }
 
   Future<void> _initializeReceiptCamera({int? cameraIndex}) async {
@@ -853,7 +881,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name added to shopping list')));
+      _showSnackBar(SnackBar(content: Text('$name added to shopping list')));
       _resetBarcodeFlow();
     } catch (e) {
       if (!mounted) {
@@ -974,7 +1002,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
+    _showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
     _resetBarcodeFlow();
   }
 
@@ -1069,7 +1097,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (_mode == _ScanMode.barcode) {
       _handleBarcodeDetection(capture);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt captured. OCR parsing is next.')));
+      _showSnackBar(const SnackBar(content: Text('Receipt captured. OCR parsing is next.')));
       Future<void>.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) {
           return;
@@ -1171,7 +1199,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     if (capture == null || capture.barcodes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No barcode detected in selected image.')));
+      _showSnackBar(const SnackBar(content: Text('No barcode detected in selected image.')));
       return;
     }
 
@@ -1664,6 +1692,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   void _closeScanner() {
+    _setScanBarAnimationActive(false);
+
     if (context.canPop()) {
       context.pop();
       return;

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,80 @@ import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:go_router/go_router.dart';
 
+class _MonthReceiptQuery {
+  const _MonthReceiptQuery({required this.uid, required this.month});
+
+  final String uid;
+  final DateTime month;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _MonthReceiptQuery && other.uid == uid && other.month.year == month.year && other.month.month == month.month;
+  }
+
+  @override
+  int get hashCode => Object.hash(uid, month.year, month.month);
+}
+
+class _StoreMonthSpend {
+  const _StoreMonthSpend({required this.storeName, required this.spentCents, required this.receiptCount});
+
+  final String storeName;
+  final int spentCents;
+  final int receiptCount;
+}
+
+class _MonthSpendingStats {
+  const _MonthSpendingStats({required this.spentCents, required this.receiptsScanned, required this.stores});
+
+  final int spentCents;
+  final int receiptsScanned;
+  final List<_StoreMonthSpend> stores;
+}
+
+final _monthSpendingStatsProvider = StreamProvider.family<_MonthSpendingStats, _MonthReceiptQuery>((ref, query) {
+  final monthStartLocal = DateTime(query.month.year, query.month.month);
+  final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
+
+  final monthStart = Timestamp.fromDate(monthStartLocal.toUtc());
+  final nextMonthStart = Timestamp.fromDate(nextMonthStartLocal.toUtc());
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(query.uid)
+      .collection('receipts')
+      .where('date', isGreaterThanOrEqualTo: monthStart)
+      .where('date', isLessThan: nextMonthStart)
+      .snapshots()
+      .map((snapshot) {
+        var spentCents = 0;
+        final byStore = <String, _StoreMonthSpend>{};
+
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          final storeName = (data['store_name'] as String?)?.trim().isNotEmpty == true ? (data['store_name'] as String).trim() : 'Unknown store';
+          final totalPrice = data['total_price'] is int ? data['total_price'] as int : 0;
+
+          spentCents += totalPrice;
+
+          final existing = byStore[storeName];
+          if (existing == null) {
+            byStore[storeName] = _StoreMonthSpend(storeName: storeName, spentCents: totalPrice, receiptCount: 1);
+          } else {
+            byStore[storeName] = _StoreMonthSpend(
+              storeName: existing.storeName,
+              spentCents: existing.spentCents + totalPrice,
+              receiptCount: existing.receiptCount + 1,
+            );
+          }
+        }
+
+        final stores = byStore.values.toList()..sort((a, b) => b.spentCents.compareTo(a.spentCents));
+
+        return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: snapshot.size, stores: stores);
+      });
+});
+
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -15,8 +90,12 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  static const double _monthSwipeDistanceThreshold = 44;
+  static const double _monthSwipeVelocityThreshold = 340;
+
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   int _monthAnimationDirection = 1;
+  double _spendingCardDragDx = 0;
   late final List<DateTime> _monthOptions;
 
   @override
@@ -30,6 +109,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _shiftMonth(int delta) {
     _selectMonth(DateTime(_selectedMonth.year, _selectedMonth.month + delta));
+  }
+
+  void _onSpendingsCardHorizontalDragUpdate(DragUpdateDetails details) {
+    _spendingCardDragDx += details.delta.dx;
+  }
+
+  void _onSpendingsCardHorizontalDragEnd(DragEndDetails details) {
+    final horizontalVelocity = details.primaryVelocity ?? 0;
+    final shouldGoPreviousMonth = _spendingCardDragDx > _monthSwipeDistanceThreshold || horizontalVelocity > _monthSwipeVelocityThreshold;
+    final shouldGoNextMonth = _spendingCardDragDx < -_monthSwipeDistanceThreshold || horizontalVelocity < -_monthSwipeVelocityThreshold;
+
+    _spendingCardDragDx = 0;
+
+    if (shouldGoPreviousMonth) {
+      _shiftMonth(-1);
+      return;
+    }
+
+    if (shouldGoNextMonth) {
+      _shiftMonth(1);
+    }
   }
 
   void _selectMonth(DateTime month) {
@@ -91,16 +191,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
       data: (user) {
+        if (user == null) {
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                child: Column(
+                  children: const [
+                    MainTopBar(title: 'Profile'),
+                    Expanded(child: Center(child: Text('Sign in to see your profile.'))),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        final monthStatsAsync = ref.watch(_monthSpendingStatsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth)));
+
         final colorScheme = Theme.of(context).colorScheme;
-        final initials = user == null || user.name.trim().isEmpty
+        final initials = user.name.trim().isEmpty
             ? 'U'
             : user.name.trim().split(RegExp(r'\s+')).take(2).map((part) => part.isNotEmpty ? part[0] : '').join().toUpperCase();
-        final stores = user?.stats.mostVisitedStores ?? const [];
-        final selectedMonthIsCurrent = _selectedMonth.year == DateTime.now().year && _selectedMonth.month == DateTime.now().month;
         final selectedMonthIndex = _monthOptions.indexWhere((m) => _isSameMonth(m, _selectedMonth));
-        final spentCents = selectedMonthIsCurrent ? (user?.stats.totalSpent ?? 0) : ((user?.stats.totalSpent ?? 0) * 0.82).round();
-        final totalVisits = stores.fold<int>(0, (sum, s) => sum + s.visitCount);
-        final maxVisits = stores.fold<int>(0, (max, s) => s.visitCount > max ? s.visitCount : max);
 
         return Scaffold(
           body: SafeArea(
@@ -128,10 +241,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user?.name ?? 'Profile', style: Theme.of(context).textTheme.titleLarge),
+                              Text(user.name, style: Theme.of(context).textTheme.titleLarge),
                               const SizedBox(height: 2),
                               Text(
-                                'Member since ${displayDate(user?.createdAt)}',
+                                'Member since ${displayDate(user.createdAt)}',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                               ),
                             ],
@@ -163,83 +276,111 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SPENDINGS',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 14),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 280),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder: (child, animation) {
-                            final slide = Tween<Offset>(
-                              begin: Offset(0.2 * _monthAnimationDirection, 0),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-                            return FadeTransition(
-                              opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                              child: SlideTransition(position: slide, child: child),
-                            );
-                          },
-                          child: Column(
-                            key: ValueKey(_monthKey(_selectedMonth)),
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Column(
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragUpdate: _onSpendingsCardHorizontalDragUpdate,
+                    onHorizontalDragEnd: _onSpendingsCardHorizontalDragEnd,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SPENDINGS',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 14),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 280),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) {
+                              final slide = Tween<Offset>(
+                                begin: Offset(0.2 * _monthAnimationDirection, 0),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+                              return FadeTransition(
+                                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                                child: SlideTransition(position: slide, child: child),
+                              );
+                            },
+                            child: Column(
+                              key: ValueKey(_monthKey(_selectedMonth)),
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                monthStatsAsync.when(
+                                  loading: () => const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 18),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  ),
+                                  error: (error, _) => Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Text('Could not load spendings: $error', style: Theme.of(context).textTheme.bodyMedium),
+                                  ),
+                                  data: (monthStats) {
+                                    final stores = monthStats.stores;
+                                    final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
+
+                                    return Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('This month', style: Theme.of(context).textTheme.titleLarge),
-                                        const SizedBox(height: 2),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleLarge),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'Receipts scanned: ${monthStats.receiptsScanned}',
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              formatCents(monthStats.spentCents),
+                                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Divider(color: colorScheme.surfaceContainerHighest),
+                                        const SizedBox(height: 10),
                                         Text(
-                                          selectedMonthIsCurrent ? 'Receipts scanned: ${user?.stats.receiptsScanned ?? 0}' : 'Past month estimate',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                          '${_monthLabel(_selectedMonth).split(' ').first} by store',
+                                          style: Theme.of(context).textTheme.titleMedium,
                                         ),
+                                        const SizedBox(height: 8),
+                                        if (stores.isEmpty)
+                                          Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium)
+                                        else
+                                          Column(
+                                            children: [
+                                              for (final store in stores.take(4))
+                                                Padding(
+                                                  padding: const EdgeInsets.only(bottom: 8),
+                                                  child: _StoreSpendRow(
+                                                    storeName: store.storeName,
+                                                    progress: maxSpend == 0 ? 0 : store.spentCents / maxSpend,
+                                                    amountLabel: formatCents(store.spentCents),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                       ],
-                                    ),
-                                  ),
-                                  Text(
-                                    formatCents(spentCents),
-                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Divider(color: colorScheme.surfaceContainerHighest),
-                              const SizedBox(height: 10),
-                              Text('${_monthLabel(_selectedMonth).split(' ').first} by store', style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 8),
-                              if (stores.isEmpty)
-                                Text('No store data yet. Scan receipts to see your spending habits.', style: Theme.of(context).textTheme.bodyMedium)
-                              else
-                                Column(
-                                  children: [
-                                    for (final store in stores.take(4))
-                                      Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: _StoreSpendRow(
-                                          storeName: store.storeName,
-                                          progress: maxVisits == 0 ? 0 : store.visitCount / maxVisits,
-                                          amountLabel: formatCents(totalVisits == 0 ? 0 : (spentCents * store.visitCount ~/ totalVisits)),
-                                        ),
-                                      ),
-                                  ],
+                                    );
+                                  },
                                 ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 30),
