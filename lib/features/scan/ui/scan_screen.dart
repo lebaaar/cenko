@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,7 +13,25 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-const _processingHints = <String>['Cooking...', 'Thinking...', 'Analyzing...', 'Cross-checking...', 'Almost there...'];
+const _processingHints = <String>[
+  "Scanning",
+  "Receiptling",
+  "Pixelwizzing",
+  "Inkspecting",
+  "Paperwizzing",
+  "Totallying",
+  "Numbersniffing",
+  "Receiptomancing",
+  "Inkdecoding",
+  "Pricehunting",
+  "Tickergazing",
+  "Papyrusreading",
+  "Digitwrangling",
+  "Itemsifting",
+  "Receiptwhispering",
+  "Ledgerdiving",
+  "Taxcrunching",
+];
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, this.initialMode, this.fromList = false});
@@ -37,7 +57,7 @@ class _ScanScreenState extends State<ScanScreen> {
     model: 'gemini-2.5-flash-lite',
     generationConfig: GenerationConfig(
       temperature: 0,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4096,
       responseMimeType: 'application/json',
       responseSchema: Schema.object(
         properties: {
@@ -76,6 +96,7 @@ class _ScanScreenState extends State<ScanScreen> {
   bool _isCapturingReceipt = false;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
+  final Random _random = Random();
   String _processingHint = _processingHints.first;
   Timer? _processingHintTimer;
   String? _receiptFlowMessage;
@@ -676,10 +697,7 @@ class _ScanScreenState extends State<ScanScreen> {
         throw StateError('Gemini returned no JSON text.');
       }
 
-      final decoded = jsonDecode(rawText);
-      if (decoded is! Map<String, dynamic>) {
-        throw StateError('Unexpected JSON format returned by Gemini.');
-      }
+      final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
 
       final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
 
@@ -721,6 +739,149 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  Future<Map<String, dynamic>> _decodeReceiptPayload({required String rawText, required Uint8List imageBytes, required String mimeType}) async {
+    final direct = _tryParseJsonObject(rawText);
+    if (direct != null) {
+      return direct;
+    }
+
+    final repairedResponse = await _receiptModel.generateContent([
+      Content.text(
+        'You previously returned malformed or truncated JSON for a receipt extraction task. '
+        'Return ONLY one valid JSON object and no markdown, no prose. '
+        'Required shape: '
+        '{"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
+        '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
+        'All prices must be integer cents. ISO-8601 date. '
+        'Previous malformed output:\n$rawText',
+      ),
+      Content.inlineData(mimeType, imageBytes),
+    ]);
+
+    final repairedText = repairedResponse.text?.trim();
+    if (repairedText == null || repairedText.isEmpty) {
+      throw const FormatException('AI returned empty text when repairing receipt JSON.');
+    }
+
+    final repaired = _tryParseJsonObject(repairedText);
+    if (repaired != null) {
+      return repaired;
+    }
+
+    throw const FormatException('Unexpected end of input in AI JSON response.');
+  }
+
+  Map<String, dynamic>? _tryParseJsonObject(String input) {
+    Map<String, dynamic>? decode(String candidate) {
+      try {
+        final decoded = jsonDecode(candidate);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    final direct = decode(input);
+    if (direct != null) {
+      return direct;
+    }
+
+    final withoutFence = _stripMarkdownCodeFence(input);
+    final fencedDecoded = decode(withoutFence);
+    if (fencedDecoded != null) {
+      return fencedDecoded;
+    }
+
+    final objectSlice = _extractFirstJsonObject(withoutFence);
+    if (objectSlice.isNotEmpty) {
+      final sliceDecoded = decode(objectSlice);
+      if (sliceDecoded != null) {
+        return sliceDecoded;
+      }
+
+      final balancedSlice = _balanceObjectBraces(objectSlice);
+      final balancedDecoded = decode(balancedSlice);
+      if (balancedDecoded != null) {
+        return balancedDecoded;
+      }
+    }
+
+    return null;
+  }
+
+  String _stripMarkdownCodeFence(String text) {
+    var cleaned = text.trim();
+    if (cleaned.startsWith('```')) {
+      final firstNewline = cleaned.indexOf('\n');
+      if (firstNewline != -1) {
+        cleaned = cleaned.substring(firstNewline + 1);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+      }
+    }
+    return cleaned.trim();
+  }
+
+  String _extractFirstJsonObject(String text) {
+    final start = text.indexOf('{');
+    if (start == -1) {
+      return '';
+    }
+
+    var depth = 0;
+    var inString = false;
+    var escaped = false;
+
+    for (var i = start; i < text.length; i++) {
+      final ch = text[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch == '\\') {
+          escaped = true;
+        } else if (ch == '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch == '"') {
+        inString = true;
+        continue;
+      }
+      if (ch == '{') {
+        depth++;
+        continue;
+      }
+      if (ch == '}') {
+        depth--;
+        if (depth == 0) {
+          return text.substring(start, i + 1).trim();
+        }
+      }
+    }
+
+    return text.substring(start).trim();
+  }
+
+  String _balanceObjectBraces(String text) {
+    var open = 0;
+    var close = 0;
+    for (final rune in text.runes) {
+      if (rune == 123) {
+        open++;
+      } else if (rune == 125) {
+        close++;
+      }
+    }
+    if (open <= close) {
+      return text;
+    }
+    return text + ('}' * (open - close));
+  }
+
   void _onEnterPressed() {
     if (_mode != _ScanMode.receipt) {
       return;
@@ -733,14 +894,12 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _startProcessingHints() {
     _processingHintTimer?.cancel();
-    var index = 0;
-    setState(() => _processingHint = _processingHints.first);
-    _processingHintTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
+    _processingHintTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted || _receiptFlowState != _ReceiptFlowState.processing) {
         return;
       }
-      index = (index + 1) % _processingHints.length;
-      setState(() => _processingHint = _processingHints[index]);
+      setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
     });
   }
 
