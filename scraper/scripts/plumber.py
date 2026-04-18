@@ -4,6 +4,7 @@ from pathlib import Path
 #import pdfplumber
 #from pdf2image import convert_from_path
 #import pytesseract
+from klic_haiku import *
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
     
         if len(katalog_txt[f.parent.name]) > 50: 
             print(katalog_txt)
+            llm_call(katalog_txt)
             continue
         #print(f)
     
@@ -31,8 +33,6 @@ def main():
         #    images = convert_from_path(f, first_page=i, last_page=i)
         #    katalog_txt[f.parent.name] += pytesseract.image_to_string(images[0], lang="slv")
         #    print("koncou stran:", i)
-        
-
 
 
 if __name__ == "__main__":

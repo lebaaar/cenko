@@ -1,5 +1,0 @@
-pdfplumber
-anthropic
-pytesseract
-pdf2image 
-pillow
