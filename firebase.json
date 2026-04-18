@@ -1,0 +1,22 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "cenkoapp",
+          "appId": "1:488111643065:android:f9c62091cf5691735f3e68",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "cenkoapp",
+          "configurations": {
+            "android": "1:488111643065:android:f9c62091cf5691735f3e68",
+            "ios": "1:488111643065:ios:25e8c6faa1daa5045f3e68"
+          }
+        }
+      }
+    }
+  }
+}

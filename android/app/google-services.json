@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "488111643065",
+    "project_id": "cenkoapp",
+    "storage_bucket": "cenkoapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488111643065:android:f9c62091cf5691735f3e68",
+        "android_client_info": {
+          "package_name": "com.lebaaar.cenko"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488111643065-4clks2lv6kqd9r069ntu01ucaaidhjil.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lebaaar.cenko",
+            "certificate_hash": "5fde54bcba91ed218de638eeadb13224767d9eb1"
+          }
+        },
+        {
+          "client_id": "488111643065-kc3cf3fqt5s8gb8pdqr0sig6ooqnklnu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJ3Tcdr4ASaerO7h4o4_dVLF7VCA16Sdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488111643065-kc3cf3fqt5s8gb8pdqr0sig6ooqnklnu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "488111643065-pct09kignuneha47gf0gatuf16lt44m8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.lebaaar.cenko"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

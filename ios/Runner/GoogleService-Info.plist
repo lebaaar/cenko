@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>488111643065-pct09kignuneha47gf0gatuf16lt44m8.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.488111643065-pct09kignuneha47gf0gatuf16lt44m8</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>488111643065-4clks2lv6kqd9r069ntu01ucaaidhjil.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBCjIxZ0e7f6O6ypkyPjdUU0QpFfSuY7RE</string>
+	<key>GCM_SENDER_ID</key>
+	<string>488111643065</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.lebaaar.cenko</string>
+	<key>PROJECT_ID</key>
+	<string>cenkoapp</string>
+	<key>STORAGE_BUCKET</key>
+	<string>cenkoapp.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:488111643065:ios:25e8c6faa1daa5045f3e68</string>
+</dict>
+</plist>
