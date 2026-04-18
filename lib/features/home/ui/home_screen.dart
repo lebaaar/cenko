@@ -1,10 +1,163 @@
+import 'package:cenko/core/constants/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
-class HomeScreen extends StatelessWidget {
+import 'package:cenko/features/home/data/home_deal_card_item.dart';
+import 'package:cenko/features/home/data/personalized_deals_provider.dart';
+import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/widgets/deal_card.dart';
+import 'package:cenko/shared/widgets/top_bar.dart';
+import '../../../app_theme.dart';
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
+
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+          child: userAsync.when(
+            loading: () => SizedBox(
+              height: MediaQuery.of(context).size.height - 100,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, _) => Center(child: Text(error.toString())),
+            data: (user) {
+              final name = user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'there';
+              final shoppingListDealsAsync = user == null
+                  ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
+                  : ref.watch(shoppingListOnSaleProvider(user.userId));
+              final spendingHabitsDealsAsync = user == null
+                  ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
+                  : ref.watch(spendingHabitsOnSaleProvider(user.userId));
+              final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length.toString() ?? '...';
+              final spendingHabitsSaleCount = spendingHabitsDealsAsync.asData?.value.length.toString() ?? '...';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const MainTopBar(title: appName),
+                  Text('${_greeting()}, $name', style: Theme.of(context).textTheme.displaySmall),
+                  const SizedBox(height: 12),
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.manrope(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4),
+                      children: [
+                        TextSpan(
+                          text: '$shoppingListSaleCount items',
+                          style: GoogleFonts.manrope(fontSize: 15, color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                        ),
+                        const TextSpan(
+                          text: ' from your shopping list and ',
+                          style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                        ),
+                        TextSpan(
+                          text: '$spendingHabitsSaleCount items',
+                          style: GoogleFonts.manrope(fontSize: 15, color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                        ),
+                        const TextSpan(
+                          text: ' from your spending habits are on sale right now!',
+                          style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionHeader(title: 'From your shopping list'),
+                  SizedBox(height: 10),
+                  const Text(
+                    'Based on the items you have in your shopping list, these are on sale right now.',
+                    style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 14),
+                  _DealsList(asyncDeals: shoppingListDealsAsync, emptyMessage: 'No personal deals found this week yet.'),
+                  const SizedBox(height: 22),
+                  _SectionHeader(title: 'From your spending habits'),
+                  SizedBox(height: 10),
+                  const Text(
+                    'Based on the items you usually buy, these are on sale right now.',
+                    style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant, height: 1.4, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 14),
+                  _DealsList(asyncDeals: spendingHabitsDealsAsync, emptyMessage: 'No receipt-based recommendations yet.'),
+                  const SizedBox(height: 14),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => context.go('/deals'),
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: Text(
+                        'Show all deals',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700));
+  }
+}
+
+class _DealsList extends StatelessWidget {
+  const _DealsList({required this.asyncDeals, required this.emptyMessage});
+
+  final AsyncValue<List<PersonalizedDealCardItem>> asyncDeals;
+  final String emptyMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return asyncDeals.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text('Could not load deals: $error', style: Theme.of(context).textTheme.bodySmall),
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(emptyMessage, style: Theme.of(context).textTheme.bodyMedium),
+          );
+        }
+
+        return Column(
+          children: [
+            for (final item in items) ...[DealCard(item: item), const SizedBox(height: 10)],
+          ],
+        );
+      },
+    );
   }
 }

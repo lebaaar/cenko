@@ -176,13 +176,7 @@ class _BottomNavBar extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
+                  child: const Center(child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32)),
                 ),
               ),
             ),
