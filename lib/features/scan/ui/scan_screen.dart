@@ -10,8 +10,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
+import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart';
 
 const _processingHints = <String>[
   "Scanning",
@@ -44,8 +47,9 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
-  final MobileScannerController _controller = MobileScannerController();
+  final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
+  final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
 
   CameraController? _receiptCamera;
   List<CameraDescription> _cameras = <CameraDescription>[];
@@ -94,12 +98,17 @@ class _ScanScreenState extends State<ScanScreen> {
   bool _isHandlingDetection = false;
   bool _isProcessingReceipt = false;
   bool _isCapturingReceipt = false;
+  bool _isSwitchingScannerMode = false;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
   final Random _random = Random();
   String _processingHint = _processingHints.first;
   Timer? _processingHintTimer;
   String? _receiptFlowMessage;
+  _BarcodeFlowState _barcodeFlowState = _BarcodeFlowState.idle;
+  String? _barcodeFlowMessage;
+  Map<String, dynamic>? _barcodeProduct;
+  String? _barcodeValue;
 
   @override
   void initState() {
@@ -143,43 +152,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 56,
-                          child: Stack(
-                            children: [
-                              Align(
-                                alignment: Alignment.center,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                                  decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(20)),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _ModeTab(
-                                        label: 'Barcode',
-                                        selected: _mode == _ScanMode.barcode,
-                                        onTap: () => _onModeSelected(_ScanMode.barcode),
-                                      ),
-                                      _ModeTab(
-                                        label: 'Receipt',
-                                        selected: _mode == _ScanMode.receipt,
-                                        onTap: () => _onModeSelected(_ScanMode.receipt),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: _ControlButton(icon: Icons.close_rounded, onTap: _closeScanner),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Column(children: [_buildModeHeader(context)]),
                   ),
                 ),
                 Positioned(
@@ -241,7 +214,32 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                     ),
                   ),
+                if (_mode == _ScanMode.barcode)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Center(
+                        child: Container(
+                          width: 250,
+                          height: 250,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 2.2),
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 18, offset: const Offset(0, 8))],
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(top: -1, left: -1, child: _reticleCorner(top: true, left: true)),
+                              Positioned(top: -1, right: -1, child: _reticleCorner(top: true, left: false)),
+                              Positioned(bottom: -1, left: -1, child: _reticleCorner(top: false, left: true)),
+                              Positioned(bottom: -1, right: -1, child: _reticleCorner(top: false, left: false)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (_mode == _ScanMode.receipt && _receiptFlowState != _ReceiptFlowState.idle) _buildReceiptFlowOverlay(context),
+                if (_mode == _ScanMode.barcode && _barcodeFlowState != _BarcodeFlowState.idle) _buildBarcodeFlowOverlay(context),
               ],
             ),
           ),
@@ -393,6 +391,191 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
+  Widget _buildBarcodeFlowOverlay(BuildContext context) {
+    final theme = Theme.of(context);
+    final product = _barcodeProduct;
+    final productName = product == null ? null : _formatBarcodeProductName(product);
+    final productLabel = product == null ? null : _formatBarcodeSuccessLabel(product);
+
+    return Positioned.fill(
+      child: AbsorbPointer(
+        absorbing: _barcodeFlowState == _BarcodeFlowState.processing,
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.72),
+          padding: const EdgeInsets.fromLTRB(20, 96, 20, 40),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_barcodeFlowState == _BarcodeFlowState.processing) ...[
+                  const SizedBox(width: 72, height: 72, child: CircularProgressIndicator(strokeWidth: 3)),
+                  const SizedBox(height: 20),
+                  Text(
+                    _processingHint,
+                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (_barcodeFlowState == _BarcodeFlowState.failure) ...[
+                  Text(
+                    ':(',
+                    style: theme.textTheme.displayLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Could not load product',
+                    style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _barcodeFlowMessage ?? 'Please try again.',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(onPressed: _retryBarcodeLookup, icon: const Icon(Icons.refresh_rounded), label: const Text('Try again')),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _resetBarcodeFlow,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
+                      ),
+                      child: const Text('Back to scan'),
+                    ),
+                  ),
+                ],
+                if (_barcodeFlowState == _BarcodeFlowState.success) ...[
+                  const Icon(Icons.inventory_2_rounded, size: 64, color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    productName ?? 'Product found',
+                    style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    productLabel ?? 'Ready to add to shopping list.',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _addBarcodeProductToShoppingList,
+                      icon: const Icon(Icons.playlist_add_rounded),
+                      label: const Text('Add to shopping list'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _resetBarcodeFlow,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
+                      ),
+                      child: const Text('Scan another'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeHeader(BuildContext context) {
+    final isBarcode = _mode == _ScanMode.barcode;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ModeTab(label: 'Barcode', selected: isBarcode, onTap: () => _onModeSelected(_ScanMode.barcode)),
+                      _ModeTab(label: 'Receipt', selected: !isBarcode, onTap: () => _onModeSelected(_ScanMode.receipt)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: Row(
+                    key: ValueKey(_mode),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isBarcode ? Icons.qr_code_scanner_rounded : Icons.receipt_long_rounded,
+                        size: 16,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _modeInstruction(),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.88), fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _ControlButton(icon: Icons.close_rounded, onTap: _closeScanner),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _reticleCorner({required bool top, required bool left}) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        border: Border(
+          top: top ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+          bottom: top ? BorderSide.none : const BorderSide(color: Colors.white, width: 3),
+          left: left ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+          right: left ? BorderSide.none : const BorderSide(color: Colors.white, width: 3),
+        ),
+      ),
+    );
+  }
+
+  String _modeInstruction() {
+    return _mode == _ScanMode.barcode
+        ? 'Scan a barcode to add the product to your shopping list.'
+        : 'Scan a receipt to extract store, items, and total.';
+  }
+
   String _readySummaryText() {
     final receipt = _pendingReceiptPayload?['receipt'];
     if (receipt is! Map<String, dynamic>) {
@@ -467,28 +650,48 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_mode == _ScanMode.receipt) {
       await _controller.stop();
       await _initializeReceiptCamera();
-    }
-  }
-
-  Future<void> _onModeSelected(_ScanMode mode) async {
-    if (_mode == mode) {
       return;
     }
 
+    _resetBarcodeFlow();
+    await _startBarcodeScanner(force: true);
+  }
+
+  Future<void> _onModeSelected(_ScanMode mode) async {
+    if (_mode == mode || _isSwitchingScannerMode) {
+      return;
+    }
+
+    _isSwitchingScannerMode = true;
     setState(() {
       _mode = mode;
     });
+    _resetBarcodeFlow();
     _resetReceiptFlow();
 
     if (mode == _ScanMode.receipt) {
       await _controller.stop();
       await _initializeReceiptCamera();
+      _isSwitchingScannerMode = false;
       return;
     }
 
     await _receiptCamera?.dispose();
     _receiptCamera = null;
     _receiptTorchOn = false;
+    _isSwitchingScannerMode = false;
+    await _startBarcodeScanner(force: true);
+  }
+
+  Future<void> _startBarcodeScanner({bool force = false}) async {
+    if (_isSwitchingScannerMode && !force) {
+      return;
+    }
+
+    if (_controller.value.isStarting || _controller.value.isRunning) {
+      return;
+    }
+
     await _controller.start();
   }
 
@@ -581,36 +784,254 @@ class _ScanScreenState extends State<ScanScreen> {
     await _initializeReceiptCamera(cameraIndex: nextIndex);
   }
 
+  void _resetBarcodeFlow() {
+    _stopProcessingHints();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _barcodeFlowState = _BarcodeFlowState.idle;
+      _barcodeFlowMessage = null;
+      _barcodeProduct = null;
+      _barcodeValue = null;
+      _isHandlingDetection = false;
+    });
+  }
+
+  void _retryBarcodeLookup() {
+    final barcode = _barcodeValue;
+    if (barcode == null || barcode.isEmpty) {
+      _resetBarcodeFlow();
+      return;
+    }
+
+    setState(() {
+      _barcodeFlowState = _BarcodeFlowState.processing;
+      _barcodeFlowMessage = null;
+      _barcodeProduct = null;
+    });
+    _startProcessingHints();
+
+    _lookupBarcodeProduct(barcode)
+        .then((lookup) {
+          if (!mounted) {
+            return;
+          }
+
+          final isFound = lookup['status'] == 1;
+          final product = lookup['product'] is Map<String, dynamic> ? lookup['product'] as Map<String, dynamic> : <String, dynamic>{};
+          setState(() {
+            _barcodeProduct = isFound ? product : null;
+            _barcodeFlowState = isFound ? _BarcodeFlowState.success : _BarcodeFlowState.failure;
+            _barcodeFlowMessage = isFound ? null : 'No product was found for this barcode.';
+          });
+        })
+        .catchError((e) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _barcodeFlowState = _BarcodeFlowState.failure;
+            _barcodeFlowMessage = e.toString();
+          });
+        })
+        .whenComplete(_stopProcessingHints);
+  }
+
+  Future<void> _addBarcodeProductToShoppingList() async {
+    final product = _barcodeProduct;
+    if (product == null) {
+      return;
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() {
+        _barcodeFlowState = _BarcodeFlowState.failure;
+        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list.';
+      });
+      return;
+    }
+
+    final name = _formatBarcodeProductName(product);
+    final brand = _asString(product['brands'], fallback: '').trim();
+    final barcode = _barcodeValue ?? _asString(product['code']);
+
+    try {
+      await _shoppingListRepository.addItem(uid: uid, name: name, brand: brand.isEmpty ? null : brand, barcode: barcode.isEmpty ? null : barcode);
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name added to shopping list')));
+      _resetBarcodeFlow();
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _barcodeFlowState = _BarcodeFlowState.failure;
+        _barcodeFlowMessage = 'Could not add item to shopping list: $e';
+      });
+    }
+  }
+
+  String _formatBarcodeProductName(Map<String, dynamic> product) {
+    final name = _asString(product['product_name'], fallback: _asString(product['product_name_en'], fallback: 'Unknown product'));
+    final amount = _barcodeAmountLabel(product);
+    return '$name${amount.isEmpty ? '' : ' ($amount)'}';
+  }
+
+  String _formatBarcodeSuccessLabel(Map<String, dynamic> product) {
+    return _formatBarcodeProductName(product);
+  }
+
+  String _barcodeAmountLabel(Map<String, dynamic> product) {
+    final quantity = _asString(product['quantity']).trim();
+    if (quantity.isNotEmpty) {
+      final parsed = _normalizeAmountLabel(quantity);
+      if (parsed.isNotEmpty) {
+        return parsed;
+      }
+    }
+
+    final quantityValue = _asString(product['quantity_value']).trim();
+    final quantityUnit = _asString(product['quantity_unit']).trim();
+    if (quantityValue.isNotEmpty && quantityUnit.isNotEmpty) {
+      return _normalizeAmountLabel('$quantityValue $quantityUnit');
+    }
+
+    return '';
+  }
+
+  String _normalizeAmountLabel(String raw) {
+    final normalized = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final match = RegExp(r'^([0-9]+(?:[\.,][0-9]+)?)\s*(kg|g|mg|l|ml|cl|dl)$', caseSensitive: false).firstMatch(normalized);
+    if (match == null) {
+      return normalized;
+    }
+
+    final value = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+    final unit = match.group(2)!.toLowerCase();
+    if (value == null) {
+      return normalized;
+    }
+
+    switch (unit) {
+      case 'kg':
+        return '${(value * 1000).round()} g';
+      case 'g':
+        return '${value % 1 == 0 ? value.round() : value} g';
+      case 'mg':
+        return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)} g';
+      case 'l':
+        return '${(value * 1000).round()} ml';
+      case 'cl':
+        return '${(value * 10).round()} ml';
+      case 'dl':
+        return '${(value * 100).round()} ml';
+      case 'ml':
+        return '${value % 1 == 0 ? value.round() : value} ml';
+      default:
+        return normalized;
+    }
+  }
+
   void _onDetect(BarcodeCapture capture) {
     if (_isHandlingDetection) {
+      return;
+    }
+
+    if (_mode == _ScanMode.barcode && _barcodeFlowState != _BarcodeFlowState.idle) {
       return;
     }
 
     _isHandlingDetection = true;
 
     if (_mode == _ScanMode.barcode) {
-      String? detectedCode;
-
-      for (final barcode in capture.barcodes) {
-        final value = barcode.displayValue ?? barcode.rawValue;
-        if (value != null && value.trim().isNotEmpty) {
-          detectedCode = value.trim();
-          break;
-        }
-      }
-
-      final message = detectedCode == null ? 'No valid barcode detected yet.' : 'Barcode: $detectedCode';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      _handleBarcodeDetection(capture);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt captured. OCR parsing is next.')));
+      Future<void>.delayed(const Duration(milliseconds: 1200), () {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _isHandlingDetection = false;
+        });
+      });
     }
+  }
 
-    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+  Future<void> _handleBarcodeDetection(BarcodeCapture capture) async {
+    try {
+      final detectedCode = _firstBarcodeValue(capture);
+      if (detectedCode == null) {
+        return;
+      }
+
+      setState(() {
+        _barcodeValue = detectedCode;
+        _barcodeFlowMessage = null;
+        _barcodeProduct = null;
+        _barcodeFlowState = _BarcodeFlowState.processing;
+      });
+      _startProcessingHints();
+      HapticFeedback.lightImpact();
+      final lookup = await _lookupBarcodeProduct(detectedCode);
       if (!mounted) {
         return;
       }
-      _isHandlingDetection = false;
-    });
+
+      final isFound = lookup['status'] == 1;
+      final product = lookup['product'] is Map<String, dynamic> ? lookup['product'] as Map<String, dynamic> : <String, dynamic>{};
+
+      setState(() {
+        _barcodeProduct = isFound ? product : null;
+        _barcodeFlowState = isFound ? _BarcodeFlowState.success : _BarcodeFlowState.failure;
+        _barcodeFlowMessage = isFound ? null : 'No product was found for this barcode.';
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _barcodeProduct = null;
+          _barcodeFlowState = _BarcodeFlowState.failure;
+          _barcodeFlowMessage = e.toString();
+        });
+      }
+    } finally {
+      _stopProcessingHints();
+      if (mounted) {
+        setState(() {
+          _isHandlingDetection = false;
+        });
+      }
+    }
+  }
+
+  String? _firstBarcodeValue(BarcodeCapture capture) {
+    for (final barcode in capture.barcodes) {
+      final value = barcode.displayValue ?? barcode.rawValue;
+      if (value != null && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>> _lookupBarcodeProduct(String barcode) async {
+    final uri = Uri.parse('https://world.openfoodfacts.net/api/v2/product/$barcode.json');
+    final response = await http.get(uri);
+    if (response.statusCode != 200) {
+      throw StateError('Open Food Facts request failed (${response.statusCode}).');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Unexpected product response format.');
+    }
+
+    return decoded;
   }
 
   Future<void> _pickFromGallery() async {
@@ -633,9 +1054,12 @@ class _ScanScreenState extends State<ScanScreen> {
       return;
     }
 
-    final didDetect = capture != null && capture.barcodes.isNotEmpty;
-    final message = didDetect ? 'Image analyzed successfully.' : 'No barcode detected in selected image.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    if (capture == null || capture.barcodes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No barcode detected in selected image.')));
+      return;
+    }
+
+    await _handleBarcodeDetection(capture);
   }
 
   Future<void> _captureReceiptFromCamera() async {
@@ -895,12 +1319,16 @@ class _ScanScreenState extends State<ScanScreen> {
   void _startProcessingHints() {
     _processingHintTimer?.cancel();
     setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
-    _processingHintTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!mounted || _receiptFlowState != _ReceiptFlowState.processing) {
+    _processingHintTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_isAnyProcessingFlowActive()) {
         return;
       }
       setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
     });
+  }
+
+  bool _isAnyProcessingFlowActive() {
+    return _receiptFlowState == _ReceiptFlowState.processing || _barcodeFlowState == _BarcodeFlowState.processing;
   }
 
   void _stopProcessingHints() {
@@ -1132,6 +1560,8 @@ class _ScanScreenState extends State<ScanScreen> {
 enum _ScanMode { receipt, barcode }
 
 enum _ReceiptFlowState { idle, readyToSubmit, processing, failure, success }
+
+enum _BarcodeFlowState { idle, processing, failure, success }
 
 class _ModeTab extends StatelessWidget {
   const _ModeTab({required this.label, required this.selected, required this.onTap});
