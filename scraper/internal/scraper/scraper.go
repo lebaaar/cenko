@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,6 +22,19 @@ import (
 
 var pdfLinkPattern = regexp.MustCompile(`(?:https?:)?//letak\.spar\.si/[^\s"'<>\\]+/getPdf\.ashx(?:\?[^\s"'<>\\]*)?|/[^\s"'<>\\]+/getPdf\.ashx(?:\?[^\s"'<>\\]*)?`)
 var mercatorPDFLinkPattern = regexp.MustCompile(`(?:https?:)?//(?:www\.)?mercator\.si/assets/[Kk]atalogi/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?|/assets/[Kk]atalogi/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?`)
+var tusPDFLinkPattern = regexp.MustCompile(`(?:https?:)?//(?:www\.)?tus\.si/app/uploads/catalogues/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?|/app/uploads/catalogues/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?`)
+var tusCatalogCardPattern = regexp.MustCompile(`(?is)<li[^>]*class="[^"]*list-item[^"]*"[^>]*>.*?<figcaption>.*?<a href="((?:https?:)?//(?:www\.)?tus\.si/app/uploads/catalogues/[^"]+\.pdf|/app/uploads/catalogues/[^"]+\.pdf)"[^>]*class="[^"]*\bpdf\b[^"]*"[^>]*>.*?</figcaption>.*?<h3>\s*<a[^>]*>([^<]+)</a>`)
+var lidlFlyerIDPattern = regexp.MustCompile(`data-track-id="([0-9a-fA-F-]{36})"`)
+
+const lidlFlyerAPIURL = "https://endpoints.leaflets.schwarz/v4/flyer?flyer_identifier=%s"
+
+type lidlFlyerResponse struct {
+	Flyer struct {
+		Name        string `json:"name"`
+		PDFURL      string `json:"pdfUrl"`
+		HiResPDFURL string `json:"hiResPdfUrl"`
+	} `json:"flyer"`
+}
 
 func GetPageSource(targetURL string) (string, error) {
 	return GetPageSourceWithClient(context.Background(), targetURL, newHTTPClient())
@@ -88,7 +103,7 @@ func FetchSparPDFLinksFromPage(pageURL string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ExtractSparPDFLinks(body), nil
+	return filterCatalogLinks(ExtractSparPDFLinks(body)), nil
 }
 
 func ExtractMercatorPDFLinks(pageSource string) []string {
@@ -125,7 +140,132 @@ func FetchMercatorPDFLinksFromPage(pageURL string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ExtractMercatorPDFLinks(body), nil
+	return filterCatalogLinks(ExtractMercatorPDFLinks(body)), nil
+}
+
+func ExtractTusPDFLinks(pageSource string) []string {
+	// Prefer card-aware extraction so we can keep only entries named as catalogs.
+	cardMatches := tusCatalogCardPattern.FindAllStringSubmatch(pageSource, -1)
+	if len(cardMatches) > 0 {
+		seen := make(map[string]struct{}, len(cardMatches))
+		links := make([]string, 0, len(cardMatches))
+
+		for _, m := range cardMatches {
+			if len(m) < 3 {
+				continue
+			}
+			name := strings.TrimSpace(html.UnescapeString(m[2]))
+			link := normalizeTusLink(m[1])
+			if link == "" {
+				continue
+			}
+			if !isWantedCatalog(name, link) {
+				continue
+			}
+			if _, ok := seen[link]; ok {
+				continue
+			}
+			seen[link] = struct{}{}
+			links = append(links, link)
+		}
+
+		sort.Strings(links)
+		return links
+	}
+
+	// Fallback if card structure changes.
+	matches := tusPDFLinkPattern.FindAllString(pageSource, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(matches))
+	links := make([]string, 0, len(matches))
+
+	for _, m := range matches {
+		link := normalizeTusLink(m)
+		if _, ok := seen[link]; ok {
+			continue
+		}
+		seen[link] = struct{}{}
+		links = append(links, link)
+	}
+
+	sort.Strings(links)
+	return links
+}
+
+func FetchTusPDFLinksFromPage(pageURL string) ([]string, error) {
+	body, err := GetPageSource(pageURL)
+	if err != nil {
+		return nil, err
+	}
+	return filterCatalogLinks(ExtractTusPDFLinks(body)), nil
+}
+
+func ExtractLidlFlyerIDs(pageSource string) []string {
+	matches := lidlFlyerIDPattern.FindAllStringSubmatch(pageSource, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(matches))
+	ids := make([]string, 0, len(matches))
+
+	for _, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		id := strings.ToLower(strings.TrimSpace(m[1]))
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+
+	sort.Strings(ids)
+	return ids
+}
+
+func FetchLidlPDFLinksFromPage(pageURL string) ([]string, error) {
+	body, err := GetPageSource(pageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	flyerIDs := ExtractLidlFlyerIDs(body)
+	if len(flyerIDs) == 0 {
+		return nil, fmt.Errorf("no Lidl flyer IDs found")
+	}
+
+	client := newHTTPClient()
+	seen := make(map[string]struct{}, len(flyerIDs))
+	links := make([]string, 0, len(flyerIDs))
+
+	for _, id := range flyerIDs {
+		name, link, err := fetchLidlPDFURL(client, id, pageURL)
+		if err != nil {
+			return nil, err
+		}
+		if !isWantedCatalog(name, link) {
+			continue
+		}
+		if link == "" {
+			continue
+		}
+		if _, ok := seen[link]; ok {
+			continue
+		}
+		seen[link] = struct{}{}
+		links = append(links, link)
+	}
+
+	sort.Strings(links)
+	return links, nil
 }
 
 func DownloadCatalogPDFs(pageURL, outputRoot, storeName string) ([]string, error) {
@@ -163,6 +303,62 @@ func DownloadMercatorCatalogPDFs(pageURL, outputRoot, storeName string) ([]strin
 	}
 	if len(links) == 0 {
 		return nil, fmt.Errorf("no Mercator PDF links found")
+	}
+
+	outDir := filepath.Join(outputRoot, storeName)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create output directory: %w", err)
+	}
+
+	client := newHTTPClient()
+	saved := make([]string, 0, len(links))
+
+	for _, link := range links {
+		savedPath, _, err := downloadFile(client, link, outDir)
+		if err != nil {
+			return saved, err
+		}
+		saved = append(saved, savedPath)
+	}
+
+	return saved, nil
+}
+
+func DownloadTusCatalogPDFs(pageURL, outputRoot, storeName string) ([]string, error) {
+	links, err := FetchTusPDFLinksFromPage(pageURL)
+	if err != nil {
+		return nil, err
+	}
+	if len(links) == 0 {
+		return nil, fmt.Errorf("no Tuš PDF links found")
+	}
+
+	outDir := filepath.Join(outputRoot, storeName)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create output directory: %w", err)
+	}
+
+	client := newHTTPClient()
+	saved := make([]string, 0, len(links))
+
+	for _, link := range links {
+		savedPath, _, err := downloadFile(client, link, outDir)
+		if err != nil {
+			return saved, err
+		}
+		saved = append(saved, savedPath)
+	}
+
+	return saved, nil
+}
+
+func DownloadLidlCatalogPDFs(pageURL, outputRoot, storeName string) ([]string, error) {
+	links, err := FetchLidlPDFLinksFromPage(pageURL)
+	if err != nil {
+		return nil, err
+	}
+	if len(links) == 0 {
+		return nil, fmt.Errorf("no Lidl PDF links found")
 	}
 
 	outDir := filepath.Join(outputRoot, storeName)
@@ -386,4 +582,87 @@ func filesEqual(pathA, pathB string) (bool, error) {
 	}
 
 	return bytes.Equal(a, b), nil
+}
+
+func fetchLidlPDFURL(client *http.Client, flyerID, pageURL string) (string, string, error) {
+	apiURL := fmt.Sprintf(lidlFlyerAPIURL, url.QueryEscape(flyerID))
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("create Lidl flyer request for %s: %w", flyerID, err)
+	}
+	setBrowserHeaders(req, pageRequestReferer(pageURL), "application/json,text/plain,*/*")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("fetch Lidl flyer %s: %w", flyerID, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", "", fmt.Errorf("fetch Lidl flyer %s: unexpected status code: %d", flyerID, resp.StatusCode)
+	}
+
+	var payload lidlFlyerResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return "", "", fmt.Errorf("decode Lidl flyer %s: %w", flyerID, err)
+	}
+
+	link := strings.TrimSpace(payload.Flyer.HiResPDFURL)
+	if link == "" {
+		link = strings.TrimSpace(payload.Flyer.PDFURL)
+	}
+
+	return strings.TrimSpace(payload.Flyer.Name), link, nil
+}
+
+func normalizeTusLink(v string) string {
+	link := strings.ReplaceAll(v, `\/`, `/`)
+	if strings.HasPrefix(link, "//") {
+		link = "https:" + link
+	} else if strings.HasPrefix(link, "/") {
+		link = "https://www.tus.si" + link
+	}
+
+	return strings.TrimRight(link, ".,)")
+}
+
+func isWantedCatalog(name, link string) bool {
+	text := strings.ToLower(name + " " + link)
+	excludedKeywords := []string{
+		"trajnost",
+		"vodnik",
+		"po-poti-dobrih-vin",
+		"po poti dobrih vin",
+		"zgodbe-iz-mojega-vrta",
+		"zgodbe iz mojega vrta",
+		"vinski-katalog",
+		"vinski katalog",
+		"vrtni-katalog",
+		"vrtni katalog",
+		"kuharija",
+	}
+
+	for _, keyword := range excludedKeywords {
+		if strings.Contains(text, keyword) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func filterCatalogLinks(links []string) []string {
+	if len(links) == 0 {
+		return nil
+	}
+
+	filtered := make([]string, 0, len(links))
+	for _, link := range links {
+		if !isWantedCatalog("", link) {
+			continue
+		}
+		filtered = append(filtered, link)
+	}
+
+	return filtered
 }
