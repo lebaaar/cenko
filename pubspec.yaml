@@ -1,0 +1,57 @@
+name: cenko
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # firebase
+  cloud_firestore: ^6.2.0
+  firebase_auth: ^6.3.0
+  firebase_core: ^4.6.0
+  firebase_storage: ^13.2.0
+  google_sign_in: ^7.2.0
+  google_fonts: ^6.2.1
+
+  cupertino_icons: ^1.0.9
+  go_router: ^17.1.0
+  flutter_riverpod: ^3.3.1
+  flutter_svg: ^2.2.4
+  image_picker: ^1.2.0
+  mobile_scanner: ^7.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # assets:
+    # - assets/icons/barcode_scanner.svg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # Custom fonts - each entry should have a "family" key with the font family name, and a "fonts" key with a list giving the asset and other descriptors for the font.
+  # Example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700

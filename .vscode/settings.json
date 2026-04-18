@@ -1,0 +1,10 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "dart.lineLength": 150,
+    "[dart]": {
+        "editor.rulers": [
+            150
+        ],
+    },
+    "cmake.ignoreCMakeListsMissing": true
+}
