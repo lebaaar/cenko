@@ -1,6 +1,6 @@
 # Cenko
 Cenko helps you hunt down the best deals across Slovenian stores for the products you buy the most. Scan your grocery receipts to automatically track your spending and get personalized deal recommendations based on your shopping list and frequently bought products.
-Powered by cloud OCR and Gemini for structured data extraction, plus a workflow to fetch all catalog deals.
+Powered by OCR and Gemini for structured data extraction, plus a workflow to fetch all catalog deals.
 
 > Dragonhack 2026 - Mobile app built in 24 hours with Flutter and Firebase
 
@@ -13,7 +13,7 @@ Powered by cloud OCR and Gemini for structured data extraction, plus a workflow 
 ## Tech stack
 - Flutter for cross-platform mobile development. State management with [Riverpod](https://pub.dev/packages/flutter_riverpod) and navigation with [GoRouter](https://pub.dev/packages/go_router).
 - Firebase for backend (Auth, Firestore and AI logic)
-- Cloud OCR with Gemini for structured data extraction
+- OCR with Gemini for structured data extraction
 - Web scraping with [Go](https://pptr.dev/), text extraction from PDFs with [pdfplumber](https://github.com/jsvine/pdfplumber) and data structuring with Claude Haiku
 
 ## Future improvements
