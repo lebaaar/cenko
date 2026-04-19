@@ -311,16 +311,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: _saveExtractedReceipt,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Try again'),
+                      onPressed: _resetReceiptFlow,
+                      icon: const Icon(Icons.document_scanner_rounded),
+                      label: const Text('Scan again'),
                       style: _primaryActionStyle(context),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetReceiptFlow, style: _secondaryActionStyle(context), child: const Text('Back to scan')),
                   ),
                 ],
                 if (_receiptFlowState == _ReceiptFlowState.success) ...[
