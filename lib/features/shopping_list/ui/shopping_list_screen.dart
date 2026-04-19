@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/providers/catalog_deals_provider.dart';
+import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
@@ -16,6 +20,7 @@ class ShoppingListScreen extends ConsumerStatefulWidget {
 
 class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   bool _updatingBought = false;
+  final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
 
   // Form modal state
   final _formKey = GlobalKey<FormState>();
@@ -38,6 +43,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final uid = authState.asData?.value?.uid;
+    final dealsAsync = ref.watch(allCatalogDealsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -75,11 +81,14 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                 return const Center(child: Text('No items yet. Tap "Add item" to create your list.'));
                               }
 
+                              final bestDealByItemId = _buildBestDealsByItem(items, dealsAsync.asData?.value);
+
                               return ListView.separated(
                                 itemCount: items.length,
                                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                                 itemBuilder: (context, index) {
                                   final item = items[index];
+                                  final bestDeal = bestDealByItemId[item.id];
                                   return Dismissible(
                                     key: ValueKey(item.id),
                                     direction: DismissDirection.endToStart,
@@ -95,6 +104,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                     ),
                                     child: _ShoppingItemTile(
                                       item: item,
+                                      bestDeal: bestDeal,
                                       onToggleBought: _updatingBought ? null : (value) => _setBought(uid: uid, itemId: item.id, bought: value),
                                       onEdit: () => _openItemForm(uid: uid, item: item),
                                     ),
@@ -359,18 +369,66 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
       }
     }
   }
+
+  Map<String, CatalogDealItem> _buildBestDealsByItem(List<ShoppingListItem> items, List<CatalogDealItem>? deals) {
+    if (deals == null || deals.isEmpty) {
+      return const <String, CatalogDealItem>{};
+    }
+
+    final byId = <String, CatalogDealItem>{};
+    for (final item in items) {
+      final terms = _searchTermsForItem(item);
+      if (terms.isEmpty) {
+        continue;
+      }
+
+      final matched = _dealTextMatcherService.matchDeals(shoppingListTexts: terms, deals: deals, minScore: 0.48);
+      if (matched.isEmpty) {
+        continue;
+      }
+
+      final bestByPrice = matched.reduce((left, right) => left.salePriceCents <= right.salePriceCents ? left : right);
+      byId[item.id] = bestByPrice;
+    }
+
+    return byId;
+  }
+
+  Set<String> _searchTermsForItem(ShoppingListItem item) {
+    final terms = <String>{};
+    final name = item.name.trim();
+    if (name.isNotEmpty) {
+      terms.add(name);
+    }
+
+    final brand = item.brand?.trim();
+    if (brand != null && brand.isNotEmpty) {
+      terms.add(brand);
+      if (name.isNotEmpty) {
+        terms.add('$brand $name');
+        terms.add('$name $brand');
+      }
+    }
+
+    return terms;
+  }
 }
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({required this.item, required this.onToggleBought, required this.onEdit});
+  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit});
 
   final ShoppingListItem item;
+  final CatalogDealItem? bestDeal;
   final ValueChanged<bool>? onToggleBought;
   final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    final subtitleParts = <String>[];
+    final subtitleStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.68));
+    final subtitleText = _subtitleText();
+
     return Container(
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
       child: Row(
@@ -410,15 +468,7 @@ class _ShoppingItemTile extends StatelessWidget {
                         color: item.bought ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.65) : null,
                       ),
                     ),
-                    if (subtitleParts.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitleParts.join(' • '),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-                      ),
-                    ],
+                    if (subtitleText != null) ...[const SizedBox(height: 2), Text(subtitleText, style: subtitleStyle)],
                   ],
                 ),
               ),
@@ -427,5 +477,19 @@ class _ShoppingItemTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String? _subtitleText() {
+    final deal = bestDeal;
+    if (deal == null) {
+      return 'No current deal';
+    }
+
+    final savings = deal.savingsCents;
+    if (savings > 0) {
+      return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)} (save ${formatCents(savings)})';
+    }
+
+    return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)}';
   }
 }

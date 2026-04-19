@@ -16,7 +16,7 @@ class DealsScreen extends ConsumerStatefulWidget {
 enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPrice }
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
-  static const List<String> _storeFilters = ['All', 'Mercator', 'Lidl', 'Hofer', 'Spar', 'Tuš'];
+  static const List<String> _storeFilters = ['All', 'Mercator', 'Spar', 'Tuš', 'Tuš drogerije'];
   static const int _pageSize = 30;
 
   final TextEditingController _searchController = TextEditingController();
@@ -73,15 +73,17 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
   List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals) {
     final hasStoreFilter = !_selectedStores.contains('All');
+    final normalizedSelectedStores = hasStoreFilter ? _selectedStores.map(_normalizedStoreKey).toSet() : const <String>{};
 
     final filtered = deals
         .where((deal) {
           final title = deal.title.toLowerCase();
           final store = deal.storeName.toLowerCase();
+          final normalizedStore = _normalizedStoreKey(deal.storeName);
           final priceEuro = deal.salePriceCents / 100;
 
           final matchesQuery = _query.isEmpty || title.contains(_query) || store.contains(_query);
-          final matchesStore = !hasStoreFilter || _selectedStores.any((selected) => store.contains(selected.toLowerCase()));
+          final matchesStore = !hasStoreFilter || normalizedSelectedStores.contains(normalizedStore);
           final matchesPrice = priceEuro >= _priceRange.start && priceEuro <= _priceRange.end;
 
           return matchesQuery && matchesStore && matchesPrice;
@@ -101,6 +103,19 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     }
 
     return sorted;
+  }
+
+  String _normalizedStoreKey(String value) {
+    final normalized = value
+        .toLowerCase()
+        .replaceAll('š', 's')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z')
+        .replaceAll('đ', 'd')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return normalized;
   }
 
   String _sortLabel(_DealsSortOption option) {

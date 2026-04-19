@@ -15,7 +15,11 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart';
+import 'package:cenko/shared/repository/catalog_deals_repository.dart';
+import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 
 const _processingHints = <String>[
   "Scanning",
@@ -54,6 +58,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
   final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
+  final CatalogDealsRepository _catalogDealsRepository = CatalogDealsRepository();
+  final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
   ScaffoldMessengerState? _scaffoldMessenger;
 
   CameraController? _receiptCamera;
@@ -347,6 +353,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       onPressed: _resetReceiptFlow,
                       icon: const Icon(Icons.document_scanner_rounded),
                       label: const Text('Store another'),
+                      style: FilledButton.styleFrom(foregroundColor: Colors.white),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -884,8 +891,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
 
-      _showSnackBar(SnackBar(content: Text('$name added to shopping list')));
       _resetBarcodeFlow();
+      await _showProductInsightsSheet(productNames: {name});
     } catch (e) {
       if (!mounted) {
         return;
@@ -917,6 +924,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     String? formError;
     var saving = false;
     var itemSaved = false;
+    String? savedItemName;
 
     try {
       await showModalBottomSheet<void>(
@@ -970,6 +978,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 try {
                                   await _shoppingListRepository.addItem(uid: uid, name: name);
                                   itemSaved = true;
+                                  savedItemName = name;
                                   if (sheetContext.mounted) {
                                     Navigator.of(sheetContext).pop();
                                   }
@@ -1003,8 +1012,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    _showSnackBar(const SnackBar(content: Text('Item added to shopping list')));
     _resetBarcodeFlow();
+    if (savedItemName != null && savedItemName!.trim().isNotEmpty) {
+      await _showProductInsightsSheet(productNames: {savedItemName!.trim()});
+    }
   }
 
   ButtonStyle _primaryActionStyle(BuildContext context) {
@@ -1540,6 +1551,103 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     } finally {
       _stopProcessingHints();
     }
+  }
+
+  Future<void> _showProductInsightsSheet({required Set<String> productNames}) async {
+    if (!mounted) {
+      return;
+    }
+
+    final insights = await _buildProductInsights(productNames);
+    if (!mounted || insights.isEmpty) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Quick insights', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                for (final insight in insights) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(padding: EdgeInsets.only(top: 4), child: Icon(Icons.bolt_rounded, size: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(insight, style: Theme.of(context).textTheme.bodyMedium)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      context.go('/deals');
+                    },
+                    icon: const Icon(Icons.local_offer_rounded),
+                    label: const Text('See deals now'),
+                    style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<List<String>> _buildProductInsights(Set<String> productNames) async {
+    final names = productNames.map((name) => _asString(name)).where((name) => name.isNotEmpty).toSet();
+    if (names.isEmpty) {
+      return const <String>[];
+    }
+
+    final activeDeals = await _catalogDealsRepository.watchActiveCatalogDeals(fetchLimit: 400).first;
+    if (activeDeals.isEmpty) {
+      return const <String>[];
+    }
+
+    final matchedDeals = _dealTextMatcherService.matchDeals(shoppingListTexts: names, deals: activeDeals, minScore: 0.48);
+    if (matchedDeals.isEmpty) {
+      return const <String>['This product is not on sale right now, but we will keep watching for deals.'];
+    }
+
+    final uniqueDeals = <String, CatalogDealItem>{};
+    for (final deal in matchedDeals) {
+      uniqueDeals.putIfAbsent(deal.productId, () => deal);
+    }
+
+    final deals = uniqueDeals.values.toList(growable: false);
+    final totalSavings = deals.fold<int>(0, (sum, deal) => sum + deal.savingsCents);
+    final topDeal = deals.reduce((left, right) => (left.discountPercent ?? 0) >= (right.discountPercent ?? 0) ? left : right);
+
+    final storeCounts = <String, int>{};
+    for (final deal in deals) {
+      storeCounts.update(deal.storeName, (value) => value + 1, ifAbsent: () => 1);
+    }
+    final topStore = storeCounts.entries.reduce((left, right) => left.value >= right.value ? left : right);
+
+    final productCountLabel = names.length == 1 ? 'This product is' : '${deals.length} products are';
+
+    return <String>[
+      '$productCountLabel currently on sale.',
+      'Best immediate pick: ${topDeal.title} at ${topDeal.storeName}${(topDeal.discountPercent ?? 0) > 0 ? ' (-${topDeal.discountPercent}%)' : ''}.',
+      'Potential savings across matched items: ${formatCents(totalSavings)}.',
+      'Most opportunities are at ${topStore.key} (${topStore.value} items).',
+    ];
   }
 
   Future<void> _persistReceiptPayload(Map<String, dynamic> payload) async {
