@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +18,6 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
-import 'package:cenko/shared/services/ocr_service.dart';
 
 const _processingHints = <String>[
   "Scanning",
@@ -61,7 +58,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
   final CatalogDealsRepository _catalogDealsRepository = CatalogDealsRepository();
   final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
-  final OcrService _ocrService = OcrService();
   ScaffoldMessengerState? _scaffoldMessenger;
 
   CameraController? _receiptCamera;
@@ -149,7 +145,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _scanBarController.dispose();
     _controller.dispose();
     _receiptCamera?.dispose();
-    _ocrService.dispose();
     _scaffoldMessenger = null;
     super.dispose();
   }
@@ -1102,7 +1097,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (_mode == _ScanMode.barcode) {
       _handleBarcodeDetection(capture);
     } else {
-      _showSnackBar(const SnackBar(content: Text('Receipt captured. OCR parsing is next.')));
+      _showSnackBar(const SnackBar(content: Text('Receipt captured. Cloud parsing is next.')));
       Future<void>.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) {
           return;
@@ -1256,19 +1251,16 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final bytes = await file.readAsBytes();
       final mimeType = _mimeTypeForPath(file.path);
 
-      // Step 1: Run on-device OCR to extract text
-      final ocrText = await _ocrService.extractTextFromFile(file.path);
-
-      final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(ocrText: ocrText, imageBytes: bytes, mimeType: mimeType));
+      final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(imageBytes: bytes, mimeType: mimeType));
 
       final rawText = response.text?.trim();
       if (rawText == null || rawText.isEmpty) {
         throw StateError('Gemini returned no JSON text.');
       }
 
-      final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType, ocrText: ocrText);
+      final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
 
-      final dbReadyPayload = _normalizeDbPayload(decoded, ocrText ?? rawText);
+      final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
       if (!_isReceiptDetected(dbReadyPayload)) {
         throw const _UserVisibleError('No receipt detected. Make sure a full receipt is visible and try again.');
       }
@@ -1311,95 +1303,48 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
   }
 
-  /// Builds the prompt for receipt extraction, using OCR text as primary input.
-  List<Content> _buildReceiptExtractionPrompt({required String? ocrText, required Uint8List imageBytes, required String mimeType}) {
-    final hasOcrText = ocrText != null && ocrText.isNotEmpty;
-
-    if (hasOcrText) {
-      // Primary path: OCR text to LLM (more efficient, privacy-respecting)
-      return [
-        Content.text(
-          'Extract receipt data from the OCR text below and return JSON only in this exact DB-ready structure: '
-          '{"receipt": {...}, "items": [...]} where fields are: '
-          'receipt.receipt_id (string placeholder like "__AUTO_ID__"), '
-          'receipt.store_name (string), '
-          'receipt.total_price (integer cents), '
-          'receipt.item_count (integer), '
-          'receipt.raw_ocr (string full OCR text you received), '
-          'receipt.date (ISO-8601 timestamp string), '
-          'items[].item_id (string placeholder like "__AUTO_ID__"), '
-          'items[].raw_name (string), '
-          'items[].unit_price (integer cents), '
-          'items[].quantity (number), '
-          'items[].total_price (integer cents). '
-          'All prices must be cents as integers.\n\n'
-          'OCR TEXT:\n$ocrText',
-        ),
-      ];
-    } else {
-      // Fallback: image to LLM if OCR failed
-      return [
-        Content.text(
-          'Extract receipt data and return JSON only in this exact DB-ready structure: '
-          '{"receipt": {...}, "items": [...]} where fields are: '
-          'receipt.receipt_id (string placeholder like "__AUTO_ID__"), '
-          'receipt.store_name (string), '
-          'receipt.total_price (integer cents), '
-          'receipt.item_count (integer), '
-          'receipt.raw_ocr (string full OCR text extracted from receipt image), '
-          'receipt.date (ISO-8601 timestamp string), '
-          'items[].item_id (string placeholder like "__AUTO_ID__"), '
-          'items[].raw_name (string), '
-          'items[].unit_price (integer cents), '
-          'items[].quantity (number), '
-          'items[].total_price (integer cents). '
-          'All prices must be cents as integers.',
-        ),
-        Content.inlineData(mimeType, imageBytes),
-      ];
-    }
+  /// Builds the prompt for cloud OCR + structured receipt extraction.
+  List<Content> _buildReceiptExtractionPrompt({required Uint8List imageBytes, required String mimeType}) {
+    return [
+      Content.text(
+        'Extract receipt data from the provided receipt image and return JSON only in this exact DB-ready structure: '
+        '{"receipt": {...}, "items": [...]} where fields are: '
+        'receipt.receipt_id (string placeholder like "__AUTO_ID__"), '
+        'receipt.store_name (string), '
+        'receipt.total_price (integer cents), '
+        'receipt.item_count (integer), '
+        'receipt.raw_ocr (string full OCR text extracted from the image), '
+        'receipt.date (ISO-8601 timestamp string), '
+        'items[].item_id (string placeholder like "__AUTO_ID__"), '
+        'items[].raw_name (string), '
+        'items[].unit_price (integer cents), '
+        'items[].quantity (number), '
+        'items[].total_price (integer cents). '
+        'All prices must be cents as integers.',
+      ),
+      Content.inlineData(mimeType, imageBytes),
+    ];
   }
 
-  Future<Map<String, dynamic>> _decodeReceiptPayload({
-    required String rawText,
-    required Uint8List imageBytes,
-    required String mimeType,
-    required String? ocrText,
-  }) async {
+  Future<Map<String, dynamic>> _decodeReceiptPayload({required String rawText, required Uint8List imageBytes, required String mimeType}) async {
     final direct = _tryParseJsonObject(rawText);
     if (direct != null) {
       return direct;
     }
 
-    final hasOcrText = ocrText != null && ocrText.isNotEmpty;
-
-    final repairedResponse = await _receiptModel.generateContent(
-      hasOcrText
-          ? [
-              Content.text(
-                'You previously returned malformed or truncated JSON for a receipt extraction task. '
-                'Return ONLY one valid JSON object and no markdown, no prose. '
-                'Required shape: '
-                '{"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
-                '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
-                'All prices must be integer cents. ISO-8601 date. '
-                'Use this OCR text to extract the receipt data:\n$ocrText\n\n'
-                'Previous malformed output:\n$rawText',
-              ),
-            ]
-          : [
-              Content.text(
-                'You previously returned malformed or truncated JSON for a receipt extraction task. '
-                'Return ONLY one valid JSON object and no markdown, no prose. '
-                'Required shape: '
-                '{"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
-                '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
-                'All prices must be integer cents. ISO-8601 date. '
-                'Previous malformed output:\n$rawText',
-              ),
-              Content.inlineData(mimeType, imageBytes),
-            ],
-    );
+    final repairedResponse = await _receiptModel.generateContent([
+      Content.text(
+        'You previously returned malformed or truncated JSON for a receipt extraction task. '
+        'Return ONLY one valid JSON object and no markdown, no prose. '
+        'Required shape: '
+        '{"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
+        '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
+        'All prices must be integer cents. ISO-8601 date. '
+        'Use the provided image and repair your output. '
+        'Previous malformed output:\n$rawText',
+      ),
+      Content.inlineData(mimeType, imageBytes),
+    ]);
 
     final repairedText = repairedResponse.text?.trim();
     if (repairedText == null || repairedText.isEmpty) {
@@ -1704,7 +1649,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     final deals = uniqueDeals.values.toList(growable: false);
-    final totalSavings = deals.fold<int>(0, (sum, deal) => sum + deal.savingsCents);
+    final totalSavings = deals.fold<int>(0, (total, deal) => total + deal.savingsCents);
     final topDeal = deals.reduce((left, right) => (left.discountPercent ?? 0) >= (right.discountPercent ?? 0) ? left : right);
 
     final storeCounts = <String, int>{};
