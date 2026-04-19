@@ -9,6 +9,8 @@ import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/widgets/deal_card.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import '../../../app_theme.dart';
+import 'package:cenko/features/home/data/next_best_basket_provider.dart';
+import 'next_best_basket_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -41,6 +43,9 @@ class HomeScreen extends ConsumerWidget {
                 height: 1.4,
                 fontWeight: FontWeight.w500,
               );
+              final basketSummaryAsync = user == null
+                  ? const AsyncValue<NextBestBasketSummary?>.data(null)
+                  : ref.watch(nextBestBasketProvider(user.userId));
               final shoppingListDealsAsync = user == null
                   ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
                   : ref.watch(shoppingListOnSaleProvider(user.userId));
@@ -68,6 +73,8 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  NextBestBasketCard(summaryAsync: basketSummaryAsync),
                   const SizedBox(height: 24),
                   _SectionHeader(title: 'From your shopping list'),
                   SizedBox(height: 10),

@@ -925,8 +925,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         builder: (sheetContext) {
-          final nameCtrl = TextEditingController(); // ✅ moved here
-
           return StatefulBuilder(
             builder: (context, setSheetState) {
               return SingleChildScrollView(
@@ -1134,10 +1132,19 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final isFound = lookup['status'] == 1;
       final product = lookup['product'] is Map<String, dynamic> ? lookup['product'] as Map<String, dynamic> : <String, dynamic>{};
 
+      if (!isFound || product.isEmpty) {
+        setState(() {
+          _barcodeProduct = null;
+          _barcodeFlowState = _BarcodeFlowState.failure;
+          _barcodeFlowMessage = 'No product was found for this barcode.';
+        });
+        return;
+      }
+
       setState(() {
-        _barcodeProduct = isFound ? product : null;
-        _barcodeFlowState = isFound ? _BarcodeFlowState.success : _BarcodeFlowState.failure;
-        _barcodeFlowMessage = isFound ? null : 'No product was found for this barcode.';
+        _barcodeProduct = product;
+        _barcodeFlowState = _BarcodeFlowState.success;
+        _barcodeFlowMessage = null;
       });
     } catch (e) {
       if (mounted) {
@@ -1169,13 +1176,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Future<Map<String, dynamic>> _lookupBarcodeProduct(String barcode) async {
     final uri = Uri.parse('https://world.openfoodfacts.net/api/v2/product/$barcode.json');
     final response = await http.get(uri);
-    if (response.statusCode != 200) {
-      throw StateError('Open Food Facts request failed (${response.statusCode}).');
-    }
 
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Unexpected product response format.');
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 404) {
+      throw StateError('Open Food Facts request failed (${response.statusCode}).');
     }
 
     return decoded;
