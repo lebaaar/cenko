@@ -17,12 +17,14 @@ enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPri
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
   static const List<String> _storeFilters = ['All', 'Mercator', 'Lidl', 'Hofer', 'Spar', 'Tuš'];
+  static const int _pageSize = 30;
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   final Set<String> _selectedStores = {'All'};
   RangeValues _priceRange = const RangeValues(0, 50);
   _DealsSortOption _sortOption = _DealsSortOption.highestDiscount;
+  int _visibleCount = _pageSize;
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     _searchController.addListener(() {
       setState(() {
         _query = _searchController.text.trim().toLowerCase();
+        _visibleCount = _pageSize;
       });
     });
   }
@@ -42,6 +45,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
   void _toggleStore(String store) {
     setState(() {
+      _visibleCount = _pageSize;
       if (store == 'All') {
         _selectedStores
           ..clear()
@@ -170,6 +174,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             onPressed: () {
                               setState(() {
                                 _priceRange = draft;
+                                _visibleCount = _pageSize;
                               });
                               Navigator.of(sheetContext).pop();
                             },
@@ -219,6 +224,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                       }
                       setState(() {
                         _sortOption = value;
+                        _visibleCount = _pageSize;
                       });
                       Navigator.of(sheetContext).pop();
                     },
@@ -245,6 +251,9 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
           error: (error, _) => Center(child: Text('Could not load deals: $error')),
           data: (deals) {
             final filteredDeals = _filterAndSortDeals(deals);
+            final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
+            final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
+            final hasMore = visibleCount < filteredDeals.length;
 
             return CustomScrollView(
               slivers: [
@@ -332,6 +341,13 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           'Price ${_priceRangeLabel(_priceRange)}  •  ${_sortLabel(_sortOption)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Showing $visibleCount of ${filteredDeals.length} deals',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                        ),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -346,17 +362,32 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                     sliver: SliverGrid(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        final deal = filteredDeals[index];
+                        final deal = visibleDeals[index];
                         return DealsGridCard.fromCatalog(deal: deal);
-                      }, childCount: filteredDeals.length),
+                      }, childCount: visibleDeals.length),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                         childAspectRatio: 0.65,
+                      ),
+                    ),
+                  ),
+                if (hasMore)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                    sliver: SliverToBoxAdapter(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _visibleCount = (_visibleCount + _pageSize) < filteredDeals.length ? (_visibleCount + _pageSize) : filteredDeals.length;
+                          });
+                        },
+                        icon: const Icon(Icons.expand_more_rounded),
+                        label: const Text('Load more'),
                       ),
                     ),
                   ),

@@ -114,15 +114,34 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _DealsList extends StatelessWidget {
+class _DealsList extends StatefulWidget {
   const _DealsList({required this.asyncDeals, required this.emptyMessage});
 
   final AsyncValue<List<PersonalizedDealCardItem>> asyncDeals;
   final String emptyMessage;
 
   @override
+  State<_DealsList> createState() => _DealsListState();
+}
+
+class _DealsListState extends State<_DealsList> {
+  static const int _pageSize = 10;
+  int _visibleCount = _pageSize;
+
+  @override
+  void didUpdateWidget(covariant _DealsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final oldCount = oldWidget.asyncDeals.asData?.value.length;
+    final newCount = widget.asyncDeals.asData?.value.length;
+    if (oldCount != newCount) {
+      _visibleCount = _pageSize;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return asyncDeals.when(
+    return widget.asyncDeals.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(child: CircularProgressIndicator()),
@@ -135,13 +154,30 @@ class _DealsList extends StatelessWidget {
         if (items.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(emptyMessage, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(widget.emptyMessage, style: Theme.of(context).textTheme.bodyMedium),
           );
         }
 
+        final visibleCount = _visibleCount > items.length ? items.length : _visibleCount;
+        final visibleItems = items.take(visibleCount);
+        final hasMore = visibleCount < items.length;
+
         return Column(
           children: [
-            for (final item in items) ...[DealCard(item: item), const SizedBox(height: 10)],
+            for (final item in visibleItems) ...[DealCard(item: item), const SizedBox(height: 10)],
+            if (hasMore)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _visibleCount = (_visibleCount + _pageSize) > items.length ? items.length : (_visibleCount + _pageSize);
+                    });
+                  },
+                  icon: const Icon(Icons.expand_more_rounded),
+                  label: const Text('Load more'),
+                ),
+              ),
           ],
         );
       },
