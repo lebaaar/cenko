@@ -57,7 +57,7 @@ CATALOG TEXT:
 model = "claude-haiku-4-5-20251001"
 max_attempts = int(os.getenv("ANTHROPIC_MAX_RETRIES", "3"))
 base_delay_seconds = float(os.getenv("ANTHROPIC_RETRY_BASE_DELAY", "1.0"))
-max_output_tokens = int(os.getenv("ANTHROPIC_MAX_OUTPUT_TOKENS", "8096"))
+max_output_tokens = int(os.getenv("ANTHROPIC_MAX_OUTPUT_TOKENS", "40096"))
 
 def llm_call(text):
 
