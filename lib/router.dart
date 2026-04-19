@@ -49,7 +49,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/scan',
-            builder: (context, state) => ScanScreen(initialMode: state.uri.queryParameters['mode']),
+            builder: (context, state) => ScanScreen(
+              initialMode: state.uri.queryParameters['mode'],
+              returnTo: state.uri.queryParameters['from'],
+            ),
           ),
           GoRoute(path: '/list', builder: (context, state) => const ShoppingListScreen()),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
@@ -82,6 +85,12 @@ class MainScaffold extends StatelessWidget {
 
   void _onTap(BuildContext context, String route) {
     if (GoRouterState.of(context).matchedLocation == route) {
+      return;
+    }
+
+    if (route == '/scan') {
+      final location = GoRouterState.of(context).matchedLocation;
+      context.go('/scan?from=${Uri.encodeQueryComponent(location)}');
       return;
     }
 

@@ -45,10 +45,10 @@ const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key, this.initialMode, this.fromList = false});
+  const ScanScreen({super.key, this.initialMode, this.returnTo});
 
   final String? initialMode;
-  final bool fromList;
+  final String? returnTo;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -517,8 +517,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             ),
           ),
           Align(
-            alignment: Alignment.centerRight,
-            child: _ControlButton(icon: Icons.close_rounded, onTap: _closeScanner),
+            alignment: Alignment.centerLeft,
+            child: _ControlButton(icon: Icons.arrow_back_rounded, onTap: _closeScanner),
           ),
         ],
       ),
@@ -1927,12 +1927,27 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   void _closeScanner() {
     _setScanBarAnimationActive(false);
 
+    final returnTo = _normalizedReturnTo(widget.returnTo);
+    if (returnTo != null) {
+      context.go(returnTo);
+      return;
+    }
+
     if (context.canPop()) {
       context.pop();
       return;
     }
 
     context.go('/home');
+  }
+
+  String? _normalizedReturnTo(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+
+    return trimmed.startsWith('/') ? trimmed : '/$trimmed';
   }
 }
 
