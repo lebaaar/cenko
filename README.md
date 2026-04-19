@@ -1,24 +1,20 @@
 # Cenko
-Cenko tracks your grocery habits and hunts down the best deals across Slovenian stores so you never miss a sale on the things you actually buy.
+Cenko helps you hunt down the best deals across Slovenian stores for the products you buy the most. Scan your grocery receipts to automatically track your spending and get personalized deal recommendations based on your shopping list and frequently bought products.
+Powered by on-device OCR and Gemini for structured data extraction, plus a workflow to fetch all catalog deals.
 
 > Dragonhack 2026 - Mobile app built in 24 hours with Flutter and Firebase
 
 ## Core features
-- **Track spending** - scan receipts to automatically track your spending. See your spending breakdown by store and month, with savings tracked from deals you caught
-- **Shopping list** - scan barcodes or add items manually to a shopping list. See where each item is cheapest at the moment and get notified when something from your list goes on sale
-- **Browse weekly deals** - all catalogs from  Mercator, Spar, Lidl and Hofer in one place, ranked by discount percentage
-- **Get personalized deal alerts** - get notified when an item from your shopping list or something that you regularly buy goes on sale
+- **Track spending** - scan receipts to automatically track your spending and gain insights into your spending by store. Powered by on-device OCR and Gemini for structured data extraction.
+- **Browse all deals in one place** - find the best deals across all major stores in Slovenia (Mercator, Spar, Hofer, Tuš and Tuš drogerija). Powered by a workflow that sends data to Claude for data structuring.
+- **Shopping list** - build a shopping list by scanning barcodes or adding items manually. See where each item is cheapest at the moment.
+- **Personalized recommendations** - get deal recommendations based on your shopping list and frequently bought products.
 
-
-## AI use
-- Receipt OCR - The LLM interprets ambiguous receipt line items (čoko ploščice, ž. spodn. hlač.) and guesses category + likely product
-- Natural language product search: allow users to search for products using natural language queries like "chocolate bars" or "milk alternatives". Use AI to parse the query and match it to products from catalogs.
-- Spending insights: use AI to analyze user's spending habits and provide insights like "You spend 30% of your grocery budget on snacks. Consider switching to cheaper alternatives like X, Y, Z.". Just feed the spending data + catalog data to the LLM and ask for a one-sentence insight.
-
-## Development
-- Stack: Flutter with Firebase backend
-- State management: [Riverpod](https://pub.dev/packages/flutter_riverpod)
-- Routing: [go_router](https://pub.dev/packages/go_router)
+## Tech stack
+- Flutter for cross-platform mobile development. State management with [Riverpod](https://pub.dev/packages/flutter_riverpod) and navigation with [GoRouter](https://pub.dev/packages/go_router).
+- Firebase for backend (Auth, Firestore and AI logic)
+- On-device OCR with [Google ML Kit](https://pub.dev/packages/google_mlkit_text_recognition) and Gemini for structured data extraction
+- Web scraping with [Go](https://pptr.dev/), text extraction from PDFs with [pdfplumber](https://github.com/jsvine/pdfplumber) and data structuring with Claude Haiku
 
 ### Running the application
 - Install depencides:<br>
