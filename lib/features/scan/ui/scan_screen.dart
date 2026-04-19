@@ -122,6 +122,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Map<String, dynamic>? _barcodeProduct;
   String? _barcodeValue;
   late final AnimationController _scanBarController;
+  int _processingHintDots = 1;
 
   @override
   void initState() {
@@ -176,7 +177,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             body: Stack(
               children: [
                 _buildPreview(),
-                if (_mode == _ScanMode.barcode) Positioned.fill(child: IgnorePointer(child: _buildViewfinder(context))),
+                if (_mode == _ScanMode.barcode && _barcodeFlowState == _BarcodeFlowState.idle)
+                  Positioned.fill(child: IgnorePointer(child: _buildViewfinder(context))),
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -290,7 +292,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const SizedBox(width: 72, height: 72, child: CircularProgressIndicator(strokeWidth: 3)),
                   const SizedBox(height: 20),
                   Text(
-                    _processingHint.replaceAll(RegExp(r'\.+$'), ''),
+                    _processingHintWithDots(),
                     style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
@@ -352,8 +354,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: FilledButton.icon(
                       onPressed: _resetReceiptFlow,
                       icon: const Icon(Icons.document_scanner_rounded),
-                      label: const Text('Store another'),
-                      style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                      label: const Text('Scan another'),
+                      style: _primaryActionStyle(context),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -361,10 +363,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () => context.go('/profile'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                      ),
+                      style: _secondaryActionStyle(context),
                       child: const Text('See spendings breakdown'),
                     ),
                   ),
@@ -1484,13 +1483,28 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   void _startProcessingHints() {
     _processingHintTimer?.cancel();
-    setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
-    _processingHintTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    setState(() {
+      _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+      _processingHintDots = 1;
+    });
+    var tick = 0;
+    _processingHintTimer = Timer.periodic(const Duration(milliseconds: 450), (_) {
       if (!mounted || !_isAnyProcessingFlowActive()) {
         return;
       }
-      setState(() => _processingHint = _processingHints[_random.nextInt(_processingHints.length)]);
+      setState(() {
+        _processingHintDots = _processingHintDots == 3 ? 1 : _processingHintDots + 1;
+        tick += 1;
+        if (tick % 11 == 0) {
+          _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+        }
+      });
     });
+  }
+
+  String _processingHintWithDots() {
+    final base = _processingHint.replaceAll(RegExp(r'\.+$'), '');
+    return '$base${'.' * _processingHintDots}';
   }
 
   bool _isAnyProcessingFlowActive() {
