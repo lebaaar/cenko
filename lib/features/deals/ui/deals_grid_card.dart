@@ -6,10 +6,12 @@ import '../data/catalog_deal_item.dart';
 
 class DealsGridCard extends StatelessWidget {
   // constructors
-  const DealsGridCard.fromCatalog({super.key, required this.deal, this.onTap});
+  const DealsGridCard.fromCatalog({super.key, required this.deal, this.onTap, this.onAddToShoppingList, this.isAddingToShoppingList = false});
 
   final CatalogDealItem deal;
   final VoidCallback? onTap;
+  final VoidCallback? onAddToShoppingList;
+  final bool isAddingToShoppingList;
 
   @override
   Widget build(BuildContext context) {
@@ -33,55 +35,83 @@ class DealsGridCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(deal.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
-                      const SizedBox(height: 3),
-                      Text(deal.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text(
-                            formatCents(deal.salePriceCents),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          if (discount != null) const SizedBox(width: 8),
-                          if (discount != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
-                              child: Text(
-                                '-$discount%',
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w800),
-                              ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(deal.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
+                            const SizedBox(height: 3),
+                            Text(deal.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Text(
+                                  formatCents(deal.salePriceCents),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                if (discount != null) const SizedBox(width: 8),
+                                if (discount != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '-$discount%',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
-                      ),
-                      if (deal.originalPriceCents != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          formatCents(deal.originalPriceCents!),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
+                            if (deal.originalPriceCents != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                formatCents(deal.originalPriceCents!),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.schedule_rounded, size: 12, color: colorScheme.onSurfaceVariant),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Valid until ${displayDate(deal.validUntil)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                      const Spacer(),
-                      SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.schedule_rounded, size: 12, color: colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Valid until ${displayDate(deal.validUntil)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: isAddingToShoppingList ? null : onAddToShoppingList,
+                          icon: isAddingToShoppingList
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.playlist_add_rounded, size: 18),
+                          label: Text(isAddingToShoppingList ? 'Adding...' : 'Add to list'),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(34),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            foregroundColor: Colors.white,
+                            textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

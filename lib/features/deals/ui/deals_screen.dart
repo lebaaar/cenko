@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
+import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
 class DealsScreen extends ConsumerStatefulWidget {
@@ -27,6 +29,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
   RangeValues _priceRange = const RangeValues(0, 50);
   _DealsSortOption _sortOption = _DealsSortOption.highestDiscount;
   int _visibleCount = _pageSize;
+  final Set<String> _addingDealIds = <String>{};
 
   @override
   void initState() {
@@ -258,9 +261,43 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     );
   }
 
+  String _dealAddKey(CatalogDealItem deal) => '${deal.productId}_${deal.storeName}_${deal.title}';
+
+  Future<void> _addDealToShoppingList({required CatalogDealItem deal, required String uid}) async {
+    final key = _dealAddKey(deal);
+    if (_addingDealIds.contains(key)) {
+      return;
+    }
+
+    setState(() {
+      _addingDealIds.add(key);
+    });
+
+    try {
+      await ref.read(shoppingListRepositoryProvider).addItem(uid: uid, name: deal.title);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list.')));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list.')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _addingDealIds.remove(key);
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dealsAsync = ref.watch(allCatalogDealsProvider);
+    final userAsync = ref.watch(currentUserProvider);
+    final uid = userAsync.asData?.value?.userId;
 
     return Scaffold(
       body: SafeArea(
@@ -387,13 +424,26 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                     sliver: SliverGrid(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final deal = visibleDeals[index];
-                        return DealsGridCard.fromCatalog(deal: deal);
+                        final dealKey = _dealAddKey(deal);
+                        return DealsGridCard.fromCatalog(
+                          deal: deal,
+                          isAddingToShoppingList: _addingDealIds.contains(dealKey),
+                          onAddToShoppingList: () {
+                            if (uid == null) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list.')));
+                              return;
+                            }
+                            _addDealToShoppingList(deal: deal, uid: uid);
+                          },
+                        );
                       }, childCount: visibleDeals.length),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.65,
+                        childAspectRatio: 0.54,
                       ),
                     ),
                   ),
