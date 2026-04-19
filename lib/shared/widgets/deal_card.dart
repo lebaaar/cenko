@@ -12,6 +12,7 @@ class DealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final showDiscount = (item.discountPercent ?? 0) > 0;
 
     return Material(
       color: Colors.transparent,
@@ -43,12 +44,12 @@ class DealCard extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(formatCents(item.currentPriceCents), style: Theme.of(context).textTheme.titleMedium),
-                            if (item.previousPriceCents != null)
+                            if (showDiscount && item.previousPriceCents != null)
                               Text(
                                 formatCents(item.previousPriceCents!),
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
                               ),
-                            if (item.discountPercent != null)
+                            if (showDiscount)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(

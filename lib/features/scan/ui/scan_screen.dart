@@ -1558,10 +1558,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    final insights = await _buildProductInsights(productNames);
-    if (!mounted || insights.isEmpty) {
+    final productInsights = await _buildProductInsights(productNames);
+    if (!mounted || productInsights.insights.isEmpty) {
       return;
     }
+
+    final productName = productNames.isNotEmpty ? productNames.first.trim() : '';
+    final hasDeals = productInsights.hasDeals && productName.isNotEmpty;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1577,7 +1580,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               children: [
                 Text('Quick insights', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                for (final insight in insights) ...[
+                for (final insight in productInsights.insights) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1594,10 +1597,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   child: FilledButton.icon(
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
-                      context.go('/deals');
+                      if (hasDeals) {
+                        context.go('/deals?query=${Uri.encodeQueryComponent(productName)}');
+                      }
                     },
-                    icon: const Icon(Icons.local_offer_rounded),
-                    label: const Text('See deals now'),
+                    icon: Icon(hasDeals ? Icons.local_offer_rounded : Icons.check_rounded),
+                    label: Text(hasDeals ? 'See deals now' : 'Continue'),
                     style: FilledButton.styleFrom(foregroundColor: Colors.white),
                   ),
                 ),
@@ -1609,20 +1614,20 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
-  Future<List<String>> _buildProductInsights(Set<String> productNames) async {
+  Future<({List<String> insights, bool hasDeals})> _buildProductInsights(Set<String> productNames) async {
     final names = productNames.map((name) => _asString(name)).where((name) => name.isNotEmpty).toSet();
     if (names.isEmpty) {
-      return const <String>[];
+      return (insights: const <String>[], hasDeals: false);
     }
 
     final activeDeals = await _catalogDealsRepository.watchActiveCatalogDeals(fetchLimit: 400).first;
     if (activeDeals.isEmpty) {
-      return const <String>[];
+      return (insights: const <String>[], hasDeals: false);
     }
 
     final matchedDeals = _dealTextMatcherService.matchDeals(shoppingListTexts: names, deals: activeDeals, minScore: 0.48);
     if (matchedDeals.isEmpty) {
-      return const <String>['This product is not on sale right now, but we will keep watching for deals.'];
+      return (insights: const <String>['This product is not on sale right now, but we will keep watching for deals.'], hasDeals: false);
     }
 
     final uniqueDeals = <String, CatalogDealItem>{};
@@ -1642,12 +1647,15 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final productCountLabel = names.length == 1 ? 'This product is' : '${deals.length} products are';
 
-    return <String>[
-      '$productCountLabel currently on sale.',
-      'Best immediate pick: ${topDeal.title} at ${topDeal.storeName}${(topDeal.discountPercent ?? 0) > 0 ? ' (-${topDeal.discountPercent}%)' : ''}.',
-      'Potential savings across matched items: ${formatCents(totalSavings)}.',
-      'Most opportunities are at ${topStore.key} (${topStore.value} items).',
-    ];
+    return (
+      insights: <String>[
+        '$productCountLabel currently on sale.',
+        'Best immediate pick: ${topDeal.title} at ${topDeal.storeName}${(topDeal.discountPercent ?? 0) > 0 ? ' (-${topDeal.discountPercent}%)' : ''}.',
+        'Potential savings across matched items: ${formatCents(totalSavings)}.',
+        'Most opportunities are at ${topStore.key} (${topStore.value} items).',
+      ],
+      hasDeals: true,
+    );
   }
 
   Future<void> _persistReceiptPayload(Map<String, dynamic> payload) async {

@@ -7,7 +7,9 @@ import 'package:cenko/features/deals/ui/deals_grid_card.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
 class DealsScreen extends ConsumerStatefulWidget {
-  const DealsScreen({super.key});
+  const DealsScreen({super.key, this.initialQuery});
+
+  final String? initialQuery;
 
   @override
   ConsumerState<DealsScreen> createState() => _DealsScreenState();
@@ -29,6 +31,10 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+      _searchController.text = widget.initialQuery!.trim();
+      _query = _searchController.text.toLowerCase();
+    }
     _searchController.addListener(() {
       setState(() {
         _query = _searchController.text.trim().toLowerCase();

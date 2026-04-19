@@ -43,7 +43,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainScaffold(child: child),
         routes: [
           GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-          GoRoute(path: '/deals', builder: (context, state) => const DealsScreen()),
+          GoRoute(
+            path: '/deals',
+            builder: (context, state) => DealsScreen(initialQuery: state.uri.queryParameters['query']),
+          ),
           GoRoute(
             path: '/scan',
             builder: (context, state) => ScanScreen(initialMode: state.uri.queryParameters['mode']),
