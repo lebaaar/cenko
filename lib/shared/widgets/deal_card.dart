@@ -27,7 +27,7 @@ class DealCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _DealImage(imageUrl: item.imageUrl),
+                _DealImage(imageUrl: item.imageUrl, storeName: item.storeName),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -77,9 +77,45 @@ class DealCard extends StatelessWidget {
 }
 
 class _DealImage extends StatelessWidget {
-  const _DealImage({this.imageUrl});
+  const _DealImage({this.imageUrl, required this.storeName});
 
   final String? imageUrl;
+  final String storeName;
+
+  String? _fallbackAssetForStore() {
+    final normalized = storeName.toLowerCase();
+    final hasTus = normalized.contains('tus') || normalized.contains('tuš');
+    final hasDrogerija = normalized.contains('droger');
+
+    if (hasTus && hasDrogerija) {
+      return 'assets/images/tus-drogerija.jpg';
+    }
+    if (hasTus) {
+      return 'assets/images/tus.png';
+    }
+    if (normalized.contains('spar')) {
+      return 'assets/images/spar.jpg';
+    }
+    if (normalized.contains('mercator')) {
+      return 'assets/images/mercator.webp';
+    }
+    if (normalized.contains('lidl')) {
+      return 'assets/images/lidl.png';
+    }
+    return null;
+  }
+
+  Widget _fallbackWidget(ColorScheme colorScheme) {
+    final fallbackAsset = _fallbackAssetForStore();
+    if (fallbackAsset != null) {
+      return Image.asset(
+        fallbackAsset,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Icon(Icons.shopping_bag_outlined, color: colorScheme.primary),
+      );
+    }
+    return Icon(Icons.shopping_bag_outlined, color: colorScheme.primary);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,12 +126,8 @@ class _DealImage extends StatelessWidget {
       width: 78,
       color: colorScheme.surfaceContainer,
       child: hasImage
-          ? Image.network(
-              imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Icon(Icons.shopping_bag_outlined, color: colorScheme.primary),
-            )
-          : Icon(Icons.shopping_bag_outlined, color: colorScheme.primary),
+          ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackWidget(colorScheme))
+          : _fallbackWidget(colorScheme),
     );
   }
 }

@@ -409,6 +409,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         },
                         icon: const Icon(Icons.expand_more_rounded),
                         label: const Text('Load more'),
+                        style: FilledButton.styleFrom(foregroundColor: Colors.white),
                       ),
                     ),
                   ),
