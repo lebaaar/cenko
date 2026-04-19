@@ -919,7 +919,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     _isShowingManualAddSheet = true;
 
-    final nameCtrl = TextEditingController();
+    var itemName = '';
     String? formError;
     var saving = false;
     var itemSaved = false;
@@ -949,9 +949,17 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 12),
                     ],
                     TextField(
-                      controller: nameCtrl,
                       autofocus: true,
                       textInputAction: TextInputAction.done,
+                      onChanged: (value) {
+                        itemName = value;
+                      },
+                      onSubmitted: (_) {
+                        if (saving) {
+                          return;
+                        }
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
                       decoration: const InputDecoration(labelText: 'Item name'),
                     ),
                     const SizedBox(height: 20),
@@ -961,7 +969,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                         onPressed: saving
                             ? null
                             : () async {
-                                final name = nameCtrl.text.trim();
+                                final name = itemName.trim();
                                 if (name.isEmpty) {
                                   setSheetState(() {
                                     formError = 'Item name is required';
@@ -979,6 +987,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                   itemSaved = true;
                                   savedItemName = name;
                                   if (sheetContext.mounted) {
+                                    FocusManager.instance.primaryFocus?.unfocus();
                                     Navigator.of(sheetContext).pop();
                                   }
                                 } catch (error) {
@@ -1003,7 +1012,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         },
       );
     } finally {
-      nameCtrl.dispose();
       _isShowingManualAddSheet = false;
     }
 
