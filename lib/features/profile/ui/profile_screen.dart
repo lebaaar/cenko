@@ -465,7 +465,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         const SizedBox(height: 16),
                                         Divider(color: colorScheme.surfaceContainerHighest),
                                         const SizedBox(height: 10),
-                                        Text('Receipts this month', style: Theme.of(context).textTheme.titleMedium),
+                                        Text('Recent receipts', style: Theme.of(context).textTheme.titleMedium),
                                         const SizedBox(height: 8),
                                         monthReceiptsAsync.when(
                                           loading: () => const Padding(

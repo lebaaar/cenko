@@ -42,6 +42,11 @@ class PersonalizedDealsRepository {
   Set<String> _extractShoppingListTexts(QuerySnapshot<Map<String, dynamic>> snapshot) {
     return snapshot.docs.expand((doc) {
       final data = doc.data();
+      final bought = data['bought'] as bool? ?? false;
+      if (bought) {
+        return const <String>[];
+      }
+
       final values = <String>[];
 
       final name = (data['name'] as String?)?.trim();

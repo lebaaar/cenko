@@ -273,19 +273,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       onPressed: _saveExtractedReceipt,
                       icon: const Icon(Icons.save_rounded),
                       label: const Text('Store receipt'),
+                      style: _primaryActionStyle(context),
                     ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _resetReceiptFlow,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                      ),
-                      child: const Text('Scan again'),
-                    ),
+                    child: OutlinedButton(onPressed: _resetReceiptFlow, style: _secondaryActionStyle(context), child: const Text('Scan again')),
                   ),
                 ],
                 if (_receiptFlowState == _ReceiptFlowState.processing) ...[
@@ -317,21 +311,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: _saveExtractedReceipt,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Try again'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
                       onPressed: _resetReceiptFlow,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                      ),
-                      child: const Text('Back to scan'),
+                      icon: const Icon(Icons.document_scanner_rounded),
+                      label: const Text('Scan again'),
+                      style: _primaryActionStyle(context),
                     ),
                   ),
                 ],
@@ -1297,6 +1280,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
 
       final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
+      if (!_isReceiptDetected(dbReadyPayload)) {
+        throw const _UserVisibleError('No receipt detected. Make sure a full receipt is visible and try again.');
+      }
 
       if (!mounted) {
         return;
@@ -1886,6 +1872,43 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     return {'receipt': normalizedReceipt, 'items': normalizedItems};
   }
 
+  bool _isReceiptDetected(Map<String, dynamic> payload) {
+    final receipt = payload['receipt'] is Map<String, dynamic> ? payload['receipt'] as Map<String, dynamic> : const <String, dynamic>{};
+    final items = payload['items'] is List ? payload['items'] as List : const <dynamic>[];
+
+    final storeName = _normalizedStoreKey(receipt['store_name']);
+    final hasKnownStore =
+        storeName.isNotEmpty && storeName != 'unknown' && storeName != 'unknown store' && storeName != 'store' && storeName != 'n a';
+
+    final totalPrice = _asInt(receipt['total_price']);
+    final itemCount = _asInt(receipt['item_count']);
+    final rawOcr = _asString(receipt['raw_ocr']);
+
+    final hasMeaningfulItems = items.whereType<Map<String, dynamic>>().any((item) {
+      final name = _asString(item['raw_name']).toLowerCase();
+      final unitPrice = _asInt(item['unit_price']);
+      final lineTotal = _asInt(item['total_price']);
+      return name.isNotEmpty && name != 'unknown item' && (unitPrice > 0 || lineTotal > 0);
+    });
+
+    final hasReceiptLikeOcr = _hasReceiptLikeOcr(rawOcr);
+    final hasPositiveSignals = hasKnownStore || totalPrice > 0 || itemCount > 0 || hasMeaningfulItems || hasReceiptLikeOcr;
+    return hasPositiveSignals;
+  }
+
+  bool _hasReceiptLikeOcr(String text) {
+    final cleaned = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (cleaned.length < 24) {
+      return false;
+    }
+
+    final digitCount = RegExp(r'\d').allMatches(cleaned).length;
+    final hasPricePattern = RegExp(r'\d+[\.,]\d{2}').hasMatch(cleaned);
+    final hasKeyword = RegExp(r'\b(total|subtotal|tax|vat|receipt|cash|card|change|qty)\b', caseSensitive: false).hasMatch(cleaned);
+
+    return hasPricePattern || (hasKeyword && digitCount >= 4);
+  }
+
   String _asString(dynamic value, {String fallback = ''}) {
     if (value == null) {
       return fallback;
@@ -2030,4 +2053,13 @@ class _CommonBoughtProductStats {
       name = candidateName;
     }
   }
+}
+
+class _UserVisibleError implements Exception {
+  const _UserVisibleError(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
