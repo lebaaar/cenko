@@ -52,6 +52,10 @@ flutter:
   assets:
     - assets/icons/barcode_scanner.svg
     - assets/images/logo.png
+    - assets/images/spar.jpg
+    - assets/images/mercator.webp
+    - assets/images/tus.png
+    - assets/images/tus-drogerija.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
