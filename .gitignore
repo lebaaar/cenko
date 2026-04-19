@@ -52,3 +52,4 @@ app.*.map.json
 
 #firebase
 firebase_key.json
+serviceAccountKey.json
