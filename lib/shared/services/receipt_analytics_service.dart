@@ -71,7 +71,7 @@ class ReceiptAnalyticsService {
         'item_id': productKey,
         'name': stats.name,
         'brand': null,
-        'image_url': null,
+        'image': null,
         'purchase_count': stats.purchaseCount,
         'last_purchased_at': Timestamp.fromDate(stats.lastPurchasedAt),
         'added_at': Timestamp.fromDate(stats.lastPurchasedAt),

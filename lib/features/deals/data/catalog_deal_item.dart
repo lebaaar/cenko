@@ -60,7 +60,7 @@ class CatalogDealItem {
     final scrapedFromUrl = _stringValue(data['scraped_from_url']) ?? '';
     final brand = _stringValue(data['brand']);
     final category = _stringValue(data['category']);
-    final rawImage = _stringValue(data['image_url']);
+    final rawImage = _stringValue(data['image']);
     final originalPrice = _intValue(data['original_price']) ?? 0;
     final salePrice = _intValue(data['sale_price']) ?? 0;
     final discountPercent = _intValue(data['discount_pct']) ?? _derivedDiscountPercent(originalPrice: originalPrice, salePrice: salePrice);
