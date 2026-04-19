@@ -99,6 +99,9 @@ class _DealImage extends StatelessWidget {
     if (normalized.contains('mercator')) {
       return 'assets/images/mercator.webp';
     }
+    if (normalized.contains('hofer')) {
+      return 'assets/images/hofer.png';
+    }
     if (normalized.contains('lidl')) {
       return 'assets/images/lidl.png';
     }

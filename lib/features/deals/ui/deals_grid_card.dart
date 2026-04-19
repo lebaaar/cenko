@@ -59,8 +59,8 @@ class DealsGridCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                                 ),
-                                if (discount != null) const SizedBox(width: 8),
-                                if (discount != null)
+                                if ((discount ?? 0) > 0) const SizedBox(width: 8),
+                                if ((discount ?? 0) > 0)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
@@ -76,7 +76,7 @@ class DealsGridCard extends StatelessWidget {
                                   ),
                               ],
                             ),
-                            if (deal.originalPriceCents != null) ...[
+                            if (deal.originalPriceCents != null && (discount ?? 0) > 0) ...[
                               const SizedBox(height: 2),
                               Text(
                                 formatCents(deal.originalPriceCents!),
@@ -154,6 +154,9 @@ class _DealsImage extends StatelessWidget {
     }
     if (normalized.contains('mercator')) {
       return 'assets/images/mercator.webp';
+    }
+    if (normalized.contains('hofer')) {
+      return 'assets/images/hofer.png';
     }
     if (normalized.contains('lidl')) {
       return 'assets/images/lidl.png';
