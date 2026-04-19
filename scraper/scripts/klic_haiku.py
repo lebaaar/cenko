@@ -10,6 +10,13 @@ client = anthropic.Anthropic()
 
 prompt = """You are extracting product and price data from a retail promotional catalog. The text was extracted from a PDF and may be heavily scrambled — product names, prices, and details may appear on separate lines, characters may be split across lines, and multiple products may be mixed together on the same line.
 
+CATALOG TYPE DETECTION — check this FIRST:
+A catalog is a PROMOTIONAL catalog only if it contains explicit sale validity dates (e.g. "od srede 15. 4.", "velja od ... do ...", "akcija velja", "v akciji od", "SALE", "AKCIJA OD ... DO ...").
+If the catalog has NO validity date range anywhere in the text — it is a SHOWCASE catalog (katalog za razkazovanje), not a promotional one. Showcase catalogs display products at regular prices with no active sale period.
+If you determine this is a SHOWCASE catalog, immediately return: {"items": []}
+Do not extract any products from showcase catalogs.
+CRITICAL: Return ONLY the raw JSON object. No markdown, no explanation, no reasoning — not even after the closing brace. This applies to showcase catalogs too.
+
 PRICE DECODING RULES:
 - Standalone integers may represent prices in cents: 499 = 4.99, 1399 = 13.99
 - Comma or period decimal notation is direct currency: "5,99" or "5.99" = 5.99
@@ -36,8 +43,6 @@ OUTPUT FORMAT — return only valid JSON, no markdown, no explanation:
   ]
 }
 
-RULES:
-- Extract every identifiable product that has at least one associated price
 - Product names are usually in ALL CAPS or Title Case
 - If there is no discount, set sale_price equal to original_price and discount_pct to 0
 - original_price and sale_price must always be present as integers in cents (e.g. 499 for EUR 4.99) — never omit them
@@ -52,7 +57,7 @@ CATALOG TEXT:
 model = "claude-haiku-4-5-20251001"
 max_attempts = int(os.getenv("ANTHROPIC_MAX_RETRIES", "3"))
 base_delay_seconds = float(os.getenv("ANTHROPIC_RETRY_BASE_DELAY", "1.0"))
-max_output_tokens = int(os.getenv("ANTHROPIC_MAX_OUTPUT_TOKENS", "4096"))
+max_output_tokens = int(os.getenv("ANTHROPIC_MAX_OUTPUT_TOKENS", "8096"))
 
 def llm_call(text):
 

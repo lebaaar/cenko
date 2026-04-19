@@ -22,6 +22,17 @@ def _strip_json_fence(raw: str) -> str:
         if lines and lines[-1].startswith("```"):
             lines = lines[:-1]
         cleaned = "\n".join(lines).strip()
+    # Extract just the JSON object, ignoring any trailing text/reasoning
+    start = cleaned.find("{")
+    if start != -1:
+        depth = 0
+        for i, ch in enumerate(cleaned[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return cleaned[start : i + 1]
     return cleaned
 
 
@@ -117,16 +128,22 @@ async def main():
     path = Path(args.katalogi)
     db = get_firestore_client()
 
-    for f in path.rglob("*.pdf"): 
+    print(f"[plumber] katalogi path: {path.absolute()}, exists: {path.exists()}")
+    pdfs = list(path.rglob("*.pdf"))
+    print(f"[plumber] found {len(pdfs)} PDFs")
+    for f in pdfs:
+        print(f"[plumber] processing: {f.name}")
         file_valid_from, file_valid_until = _extract_dates_from_filename(f.name)
-        
+
         katalog_txt = { f.parent.name: "" }
 
         pdf = pdfplumber.open(f)
         for page in pdf.pages:
             katalog_txt[f.parent.name] += page.extract_text(layout=True) or ""
-    
-        if len(katalog_txt[f.parent.name]) > 50: 
+
+        text_len = len(katalog_txt[f.parent.name])
+        print(f"[plumber] extracted {text_len} chars")
+        if text_len > 50:
             llm_response = await asyncio.to_thread(llm_call, katalog_txt[f.parent.name])
 
             if not llm_response:
@@ -142,6 +159,7 @@ async def main():
                 continue
 
             items = payload.get("items", [])
+            print(f"[plumber] LLM returned {len(items)} items")
             now = datetime.now(timezone.utc)
 
             for item in items:

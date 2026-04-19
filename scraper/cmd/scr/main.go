@@ -129,10 +129,16 @@ func runStore(
 }
 
 func runAfterDownloadScript() error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getwd: %w", err)
+	}
+	scriptsDir := filepath.Join(cwd, "scripts")
+
 	python := "python3"
 	venvCandidates := []string{
-		filepath.Join("scripts", ".venv", "bin", "python"),
-		filepath.Join(".venv", "bin", "python"),
+		filepath.Join(scriptsDir, ".venv", "bin", "python"),
+		filepath.Join(cwd, ".venv", "bin", "python"),
 	}
 	for _, venvPython := range venvCandidates {
 		if _, err := os.Stat(venvPython); err == nil {
@@ -141,8 +147,10 @@ func runAfterDownloadScript() error {
 		}
 	}
 
-	cmd := exec.Command(python, "scripts/plumber.py", "katalogi")
-
+	fmt.Printf("[scr] running python plumber.py\n")
+	cmd := exec.Command(python, filepath.Join(scriptsDir, "plumber.py"), "katalogi")
+	cmd.Dir = cwd
+	cmd.Env = append(os.Environ(), "PYTHONPATH="+scriptsDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
