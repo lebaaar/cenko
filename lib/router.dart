@@ -83,7 +83,8 @@ class MainScaffold extends StatelessWidget {
 
     if (route == '/scan') {
       final location = GoRouterState.of(context).matchedLocation;
-      context.go('/scan?from=${Uri.encodeQueryComponent(location)}');
+      final mode = location.startsWith('/deals') ? '&mode=barcode' : '';
+      context.go('/scan?from=${Uri.encodeQueryComponent(location)}$mode');
       return;
     }
 

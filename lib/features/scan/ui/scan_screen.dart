@@ -109,6 +109,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   bool _isCapturingReceipt = false;
   bool _isSwitchingScannerMode = false;
   bool _isShowingManualAddSheet = false;
+  bool _receiptPreviewLocked = false;
+  Uint8List? _frozenReceiptImageBytes;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
   final Random _random = Random();
@@ -618,6 +620,22 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   Widget _buildPreview() {
     if (_mode == _ScanMode.receipt) {
+      if (_receiptPreviewLocked) {
+        final frozenBytes = _frozenReceiptImageBytes;
+        if (frozenBytes == null) {
+          return const ColoredBox(color: Colors.black);
+        }
+
+        return SizedBox.expand(
+          child: Image.memory(
+            frozenBytes,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+          ),
+        );
+      }
+
       if (_receiptCameraInitializing) {
         return const Center(child: CircularProgressIndicator());
       }
@@ -639,6 +657,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           child: SizedBox(width: previewSize.height, height: previewSize.width, child: CameraPreview(camera)),
         ),
       );
+    }
+
+    if (_barcodeFlowState != _BarcodeFlowState.idle) {
+      return const ColoredBox(color: Colors.black);
     }
 
     return ValueListenableBuilder<MobileScannerState>(
@@ -1226,11 +1248,29 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    setState(() => _isCapturingReceipt = true);
+    setState(() {
+      _isCapturingReceipt = true;
+      _receiptPreviewLocked = true;
+      _frozenReceiptImageBytes = null;
+    });
 
     try {
       final file = await camera.takePicture();
-      await _extractReceiptJson(file, autoStore: true);
+      final bytes = await file.readAsBytes();
+      if (mounted) {
+        setState(() {
+          _frozenReceiptImageBytes = bytes;
+        });
+      }
+      await _extractReceiptJson(file, autoStore: true, imageBytes: bytes);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _receiptFlowMessage = 'Could not capture receipt image. Please try again.';
+        _receiptFlowState = _ReceiptFlowState.failure;
+      });
     } finally {
       if (mounted) {
         setState(() => _isCapturingReceipt = false);
@@ -1238,7 +1278,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _extractReceiptJson(XFile file, {bool autoStore = false}) async {
+  Future<void> _extractReceiptJson(XFile file, {bool autoStore = false, Uint8List? imageBytes}) async {
     setState(() {
       _isProcessingReceipt = true;
       _receiptFlowMessage = null;
@@ -1248,7 +1288,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _startProcessingHints();
 
     try {
-      final bytes = await file.readAsBytes();
+      final bytes = imageBytes ?? await file.readAsBytes();
       final mimeType = _mimeTypeForPath(file.path);
 
       final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(imageBytes: bytes, mimeType: mimeType));
@@ -1524,6 +1564,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _receiptFlowState = _ReceiptFlowState.idle;
       _pendingReceiptPayload = null;
       _receiptFlowMessage = null;
+      _receiptPreviewLocked = false;
+      _frozenReceiptImageBytes = null;
     });
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cenko/core/utils/price_util.dart';
@@ -140,21 +141,21 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   ),
                 ),
                 ListTile(
+                  leading: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: 24, height: 24),
+                  title: const Text('Scan barcode'),
+                  subtitle: const Text('Open scanner and scan item barcode'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/scan?mode=barcode&from=list');
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.edit_note_rounded),
                   title: const Text('Add manually'),
                   subtitle: const Text('Manually enter item details'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _openItemForm(uid: uid);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.qr_code_scanner_rounded),
-                  title: const Text('Scan barcode'),
-                  subtitle: const Text('Open scanner and scan item barcode'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.go('/scan?mode=barcode&from=list');
                   },
                 ),
               ],
