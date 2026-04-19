@@ -14,7 +14,7 @@ jobs:
 
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
+      GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-key.json
 
     steps:
       - name: Checkout repo
