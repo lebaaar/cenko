@@ -121,6 +121,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   String? _barcodeFlowMessage;
   Map<String, dynamic>? _barcodeProduct;
   String? _barcodeValue;
+  DateTime? _barcodeDetectionCooldownUntil;
   late final AnimationController _scanBarController;
   int _processingHintDots = 1;
 
@@ -407,7 +408,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Try again')),
+                    child: OutlinedButton(onPressed: _resumeBarcodeScanning, style: _secondaryActionStyle(context), child: const Text('Try again')),
                   ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.success) ...[
@@ -437,7 +438,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetBarcodeFlow, style: _secondaryActionStyle(context), child: const Text('Scan another')),
+                    child: OutlinedButton(
+                      onPressed: _resumeBarcodeScanning,
+                      style: _secondaryActionStyle(context),
+                      child: const Text('Scan another'),
+                    ),
                   ),
                 ],
               ],
@@ -659,10 +664,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       );
     }
 
-    if (_barcodeFlowState != _BarcodeFlowState.idle) {
-      return const ColoredBox(color: Colors.black);
-    }
-
     return ValueListenableBuilder<MobileScannerState>(
       valueListenable: _controller,
       builder: (context, state, _) {
@@ -868,6 +869,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     });
   }
 
+  void _resumeBarcodeScanning() {
+    _barcodeDetectionCooldownUntil = DateTime.now().add(const Duration(seconds: 2));
+    _resetBarcodeFlow();
+    unawaited(_startBarcodeScanner(force: true));
+  }
+
   Future<void> _addBarcodeProductToShoppingList() async {
     final product = _barcodeProduct;
     if (product == null) {
@@ -887,22 +894,23 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     final brand = _asString(product['brands'], fallback: '').trim();
     final barcode = _barcodeValue ?? _asString(product['code']);
 
+    // Resume live scanning immediately after user confirms add.
+    _resetBarcodeFlow();
+    _barcodeDetectionCooldownUntil = DateTime.now().add(const Duration(seconds: 2));
+    unawaited(_startBarcodeScanner(force: true));
+
     try {
       await _shoppingListRepository.addItem(uid: uid, name: name, brand: brand.isEmpty ? null : brand, barcode: barcode.isEmpty ? null : barcode);
       if (!mounted) {
         return;
       }
 
-      _resetBarcodeFlow();
       await _showProductInsightsSheet(productNames: {name});
     } catch (e) {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _barcodeFlowState = _BarcodeFlowState.failure;
-        _barcodeFlowMessage = 'Could not get product details. Please try again.';
-      });
+      _showSnackBar(const SnackBar(content: Text('Could not add product to shopping list. Please try again.')));
     }
   }
 
@@ -1023,6 +1031,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     _resetBarcodeFlow();
+    unawaited(_startBarcodeScanner(force: true));
     if (savedItemName != null && savedItemName!.trim().isNotEmpty) {
       await _showProductInsightsSheet(productNames: {savedItemName!.trim()});
     }
@@ -1106,6 +1115,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   void _onDetect(BarcodeCapture capture) {
+    final cooldownUntil = _barcodeDetectionCooldownUntil;
+    if (_mode == _ScanMode.barcode && cooldownUntil != null && DateTime.now().isBefore(cooldownUntil)) {
+      return;
+    }
+
     if (_isHandlingDetection) {
       return;
     }
