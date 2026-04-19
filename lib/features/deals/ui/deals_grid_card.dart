@@ -112,7 +112,7 @@ class _DealsImage extends StatelessWidget {
       return 'assets/images/tus.png';
     }
     if (normalized.contains('spar')) {
-      return 'assets/images/spar.jpg';
+      return 'assets/images/spar.png';
     }
     if (normalized.contains('mercator')) {
       return 'assets/images/mercator.webp';

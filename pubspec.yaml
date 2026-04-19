@@ -1,6 +1,6 @@
 name: cenko
 description: "Track your spending and discover the best deals across grocery stores"
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
@@ -52,7 +52,7 @@ flutter:
   assets:
     - assets/icons/barcode_scanner.svg
     - assets/images/logo.png
-    - assets/images/spar.jpg
+    - assets/images/spar.png
     - assets/images/mercator.webp
     - assets/images/tus.png
     - assets/images/tus-drogerija.jpg
