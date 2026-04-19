@@ -5,6 +5,7 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
@@ -20,7 +21,7 @@ class DealsScreen extends ConsumerStatefulWidget {
 enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPrice }
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
-  static const List<String> _storeFilters = ['All', 'Mercator', 'Spar', 'Tuš', 'Tuš drogerije'];
+  static const List<String> _storeFilters = ['All', 'Mercator', 'Spar', 'Hofer', 'Tuš', 'Tuš drogerije'];
   static const int _pageSize = 30;
 
   final TextEditingController _searchController = TextEditingController();
@@ -30,6 +31,10 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
   _DealsSortOption _sortOption = _DealsSortOption.highestDiscount;
   int _visibleCount = _pageSize;
   final Set<String> _addingDealIds = <String>{};
+
+  String _normalizedShoppingListKey(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
 
   @override
   void initState() {
@@ -298,6 +303,9 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final userAsync = ref.watch(currentUserProvider);
     final uid = userAsync.asData?.value?.userId;
+    final shoppingListItemsAsync = uid == null
+        ? const AsyncValue<List<ShoppingListItem>>.data(<ShoppingListItem>[])
+        : ref.watch(shoppingListItemsProvider(uid));
 
     return Scaffold(
       body: SafeArea(
@@ -308,6 +316,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
           ),
           error: (error, _) => Center(child: Text('Could not load deals: $error')),
           data: (deals) {
+            final shoppingListItems = shoppingListItemsAsync.asData?.value ?? const <ShoppingListItem>[];
+            final shoppingListKeys = shoppingListItems.map((item) => _normalizedShoppingListKey(item.name)).toSet();
             final filteredDeals = _filterAndSortDeals(deals);
             final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
             final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
@@ -425,10 +435,18 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final deal = visibleDeals[index];
                         final dealKey = _dealAddKey(deal);
+                        final alreadyOnShoppingList = shoppingListKeys.contains(_normalizedShoppingListKey(deal.title));
                         return DealsGridCard.fromCatalog(
                           deal: deal,
                           isAddingToShoppingList: _addingDealIds.contains(dealKey),
+                          isAlreadyOnShoppingList: alreadyOnShoppingList,
                           onAddToShoppingList: () {
+                            if (alreadyOnShoppingList) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list.')));
+                              return;
+                            }
                             if (uid == null) {
                               ScaffoldMessenger.of(
                                 context,

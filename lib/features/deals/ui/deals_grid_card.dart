@@ -6,12 +6,20 @@ import '../data/catalog_deal_item.dart';
 
 class DealsGridCard extends StatelessWidget {
   // constructors
-  const DealsGridCard.fromCatalog({super.key, required this.deal, this.onTap, this.onAddToShoppingList, this.isAddingToShoppingList = false});
+  const DealsGridCard.fromCatalog({
+    super.key,
+    required this.deal,
+    this.onTap,
+    this.onAddToShoppingList,
+    this.isAddingToShoppingList = false,
+    this.isAlreadyOnShoppingList = false,
+  });
 
   final CatalogDealItem deal;
   final VoidCallback? onTap;
   final VoidCallback? onAddToShoppingList;
   final bool isAddingToShoppingList;
+  final bool isAlreadyOnShoppingList;
 
   @override
   Widget build(BuildContext context) {
@@ -98,11 +106,11 @@ class DealsGridCard extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: isAddingToShoppingList ? null : onAddToShoppingList,
+                          onPressed: (isAddingToShoppingList || isAlreadyOnShoppingList) ? null : onAddToShoppingList,
                           icon: isAddingToShoppingList
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.playlist_add_rounded, size: 18),
-                          label: Text(isAddingToShoppingList ? 'Adding...' : 'Add to list'),
+                              : Icon(isAlreadyOnShoppingList ? Icons.check_circle_rounded : Icons.playlist_add_rounded, size: 18),
+                          label: Text(isAddingToShoppingList ? 'Adding...' : (isAlreadyOnShoppingList ? 'On list' : 'Add to list')),
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(34),
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
