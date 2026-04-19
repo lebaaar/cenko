@@ -163,12 +163,18 @@ async def main():
             now = datetime.now(timezone.utc)
 
             for item in items:
+                original_price = _to_cents(item.get("original_price"))
+                sale_price = _to_cents(item.get("sale_price"))
+                if original_price == 0 or sale_price == 0 or not original_price or not sale_price:
+                    print(f"[plumber] skipping {item.get('product_name')!r}: missing price")
+                    continue
                 data = {
                     "store_name": item.get("store_name") or f.parent.name,
                     "product_name": item.get("product_name"),
                     "brand": item.get("brand"),
-                    "original_price": _to_cents(item.get("original_price")),
-                    "sale_price": _to_cents(item.get("sale_price")),
+                    "original_price": original_price,
+                    "sale_price": sale_price,
+                    "image": "",
                     "discount_pct": int(item.get("discount_pct") or 0),
                     "valid_from": _parse_iso8601(item.get("valid_from")) or file_valid_from,
                     "valid_until": _parse_iso8601(item.get("valid_until")) or file_valid_until,
