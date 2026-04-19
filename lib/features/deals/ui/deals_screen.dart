@@ -129,6 +129,24 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
         .replaceAll('đ', 'd')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+
+    // Match known stores even when Firestore has legal suffixes or extra words.
+    if (normalized.contains('tus droger')) {
+      return 'tus drogerije';
+    }
+    if (normalized.contains('mercator')) {
+      return 'mercator';
+    }
+    if (normalized.contains('spar')) {
+      return 'spar';
+    }
+    if (normalized.contains('hofer')) {
+      return 'hofer';
+    }
+    if (normalized.contains('tus')) {
+      return 'tus';
+    }
+
     return normalized;
   }
 
@@ -373,7 +391,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                 showCheckmark: false,
                                 selectedColor: Theme.of(context).colorScheme.primary,
                                 labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 ),
                                 side: BorderSide(
@@ -409,7 +427,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           'Price ${_priceRangeLabel(_priceRange)}  •  ${_sortLabel(_sortOption)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
                         Text(
                           'Showing $visibleCount of ${filteredDeals.length} deals',
                           style: Theme.of(
