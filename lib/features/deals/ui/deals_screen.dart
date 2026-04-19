@@ -326,12 +326,10 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
         : ref.watch(shoppingListItemsProvider(uid));
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: dealsAsync.when(
-          loading: () => SizedBox(
-            height: MediaQuery.of(context).size.height - 120,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Could not load deals: $error')),
           data: (deals) {
             final shoppingListItems = shoppingListItemsAsync.asData?.value ?? const <ShoppingListItem>[];
