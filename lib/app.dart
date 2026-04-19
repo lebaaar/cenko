@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +7,15 @@ import 'core/constants/constants.dart';
 import 'router.dart';
 import 'shared/providers/current_user_provider.dart';
 
-class CenkoApp extends ConsumerWidget {
+class CenkoApp extends ConsumerStatefulWidget {
   const CenkoApp({super.key});
+
+  @override
+  ConsumerState<CenkoApp> createState() => _CenkoAppState();
+}
+
+class _CenkoAppState extends ConsumerState<CenkoApp> {
+  bool? _lastOverlayDark;
 
   ThemeMode _themeModeFromSettings(String? mode) {
     switch (mode) {
@@ -23,15 +29,19 @@ class CenkoApp extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
     final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.settings.theme), orElse: () => ThemeMode.system);
 
-    // Update system UI overlay style based on theme mode
-    ref.listen(currentUserProvider, (_, _) {
-      _updateSystemUIOverlay(themeMode, context);
-    });
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    final brightness = themeMode == ThemeMode.system
+        ? platformBrightness
+        : themeMode == ThemeMode.dark
+        ? Brightness.dark
+        : Brightness.light;
+
+    _updateSystemUIOverlayIfNeeded(brightness);
 
     return MaterialApp.router(
       title: appName,
@@ -40,22 +50,16 @@ class CenkoApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
-      builder: (context, child) {
-        _updateSystemUIOverlay(themeMode, context);
-        return child!;
-      },
     );
   }
 
-  void _updateSystemUIOverlay(ThemeMode themeMode, BuildContext context) {
-    Brightness brightness;
-    if (themeMode == ThemeMode.system) {
-      brightness = MediaQuery.of(context).platformBrightness;
-    } else {
-      brightness = themeMode == ThemeMode.dark ? Brightness.dark : Brightness.light;
-    }
-
+  void _updateSystemUIOverlayIfNeeded(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
+    if (_lastOverlayDark == isDark) {
+      return;
+    }
+    _lastOverlayDark = isDark;
+
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

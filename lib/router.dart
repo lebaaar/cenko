@@ -67,7 +67,8 @@ class MainScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    final showBottomNav = !location.startsWith('/scan');
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final showBottomNav = !location.startsWith('/scan') && !keyboardVisible;
     return Scaffold(
       extendBody: true,
       body: child,
