@@ -5,22 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/receipt_analytics_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:go_router/go_router.dart';
 
 class _MonthReceiptQuery {
-  const _MonthReceiptQuery({required this.uid, required this.month});
+  const _MonthReceiptQuery({required this.uid, required this.month, required this.limit});
 
   final String uid;
   final DateTime month;
+  final int limit;
 
   @override
   bool operator ==(Object other) {
-    return other is _MonthReceiptQuery && other.uid == uid && other.month.year == month.year && other.month.month == month.month;
+    return other is _MonthReceiptQuery &&
+        other.uid == uid &&
+        other.month.year == month.year &&
+        other.month.month == month.month &&
+        other.limit == limit;
   }
 
   @override
-  int get hashCode => Object.hash(uid, month.year, month.month);
+  int get hashCode => Object.hash(uid, month.year, month.month, limit);
 }
 
 class _StoreMonthSpend {
@@ -37,6 +43,23 @@ class _MonthSpendingStats {
   final int spentCents;
   final int receiptsScanned;
   final List<_StoreMonthSpend> stores;
+}
+
+class _MonthReceiptItem {
+  const _MonthReceiptItem({required this.id, required this.storeName, required this.totalPriceCents, required this.itemCount, required this.date});
+
+  final String id;
+  final String storeName;
+  final int totalPriceCents;
+  final int itemCount;
+  final DateTime date;
+}
+
+class _MonthReceiptPage {
+  const _MonthReceiptPage({required this.receipts, required this.hasMore});
+
+  final List<_MonthReceiptItem> receipts;
+  final bool hasMore;
 }
 
 final _monthSpendingStatsProvider = StreamProvider.family<_MonthSpendingStats, _MonthReceiptQuery>((ref, query) {
@@ -82,6 +105,54 @@ final _monthSpendingStatsProvider = StreamProvider.family<_MonthSpendingStats, _
       });
 });
 
+final _monthReceiptsProvider = StreamProvider.family<_MonthReceiptPage, _MonthReceiptQuery>((ref, query) {
+  final monthStartLocal = DateTime(query.month.year, query.month.month);
+  final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
+
+  final monthStart = Timestamp.fromDate(monthStartLocal.toUtc());
+  final nextMonthStart = Timestamp.fromDate(nextMonthStartLocal.toUtc());
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(query.uid)
+      .collection('receipts')
+      .where('date', isGreaterThanOrEqualTo: monthStart)
+      .where('date', isLessThan: nextMonthStart)
+      .orderBy('date', descending: true)
+      .limit(query.limit)
+      .snapshots()
+      .map((snapshot) {
+        final receipts = snapshot.docs
+            .map((doc) {
+              final data = doc.data();
+              return _MonthReceiptItem(
+                id: doc.id,
+                storeName: _monthReceiptStoreName(data),
+                totalPriceCents: data['total_price'] is int ? data['total_price'] as int : 0,
+                itemCount: data['item_count'] is int ? data['item_count'] as int : 0,
+                date: _monthReceiptDate(data['date']),
+              );
+            })
+            .toList(growable: false);
+
+        return _MonthReceiptPage(receipts: receipts, hasMore: snapshot.docs.length == query.limit);
+      });
+});
+
+String _monthReceiptStoreName(Map<String, dynamic> data) {
+  final storeName = (data['store_name'] as String?)?.trim();
+  return storeName == null || storeName.isEmpty ? 'Unknown store' : storeName;
+}
+
+DateTime _monthReceiptDate(dynamic value) {
+  if (value is Timestamp) {
+    return value.toDate().toLocal();
+  }
+
+  final parsed = DateTime.tryParse(value?.toString() ?? '');
+  return parsed?.toLocal() ?? DateTime.now();
+}
+
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -90,6 +161,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  static const int _receiptPageSize = 5;
   static const double _monthSwipeDistanceThreshold = 44;
   static const double _monthSwipeVelocityThreshold = 340;
 
@@ -97,6 +169,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _monthAnimationDirection = 1;
   double _spendingCardDragDx = 0;
   late final List<DateTime> _monthOptions;
+  final ReceiptAnalyticsService _receiptAnalyticsService = ReceiptAnalyticsService();
+  final Map<String, int> _visibleReceiptsByMonth = <String, int>{};
 
   @override
   void initState() {
@@ -104,6 +178,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final now = DateTime.now();
     final currentMonth = DateTime(now.year, now.month);
     _selectedMonth = currentMonth;
+    _visibleReceiptsByMonth[_monthKey(currentMonth)] = _receiptPageSize;
     _monthOptions = [for (var delta = -24; delta <= 0; delta++) DateTime(currentMonth.year, currentMonth.month + delta)];
   }
 
@@ -147,6 +222,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() {
       _monthAnimationDirection = targetIndex >= currentIndex ? 1 : -1;
       _selectedMonth = DateTime(month.year, month.month);
+      _visibleReceiptsByMonth.putIfAbsent(_monthKey(_selectedMonth), () => _receiptPageSize);
+    });
+  }
+
+  int _visibleReceiptCountForMonth(DateTime month) {
+    return _visibleReceiptsByMonth.putIfAbsent(_monthKey(month), () => _receiptPageSize);
+  }
+
+  void _loadMoreReceiptsForMonth(DateTime month) {
+    setState(() {
+      final key = _monthKey(month);
+      _visibleReceiptsByMonth[key] = (_visibleReceiptsByMonth[key] ?? _receiptPageSize) + _receiptPageSize;
     });
   }
 
@@ -207,7 +294,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final monthStatsAsync = ref.watch(_monthSpendingStatsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth)));
+        final monthStatsAsync = ref.watch(
+          _monthSpendingStatsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: _receiptPageSize)),
+        );
+        final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
+        final monthReceiptsAsync = ref.watch(
+          _monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: visibleReceiptCount)),
+        );
 
         final colorScheme = Theme.of(context).colorScheme;
         final initials = user.name.trim().isEmpty
@@ -369,6 +462,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                 ),
                                             ],
                                           ),
+                                        const SizedBox(height: 16),
+                                        Divider(color: colorScheme.surfaceContainerHighest),
+                                        const SizedBox(height: 10),
+                                        Text('Receipts this month', style: Theme.of(context).textTheme.titleMedium),
+                                        const SizedBox(height: 8),
+                                        monthReceiptsAsync.when(
+                                          loading: () => const Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 10),
+                                            child: Center(child: CircularProgressIndicator()),
+                                          ),
+                                          error: (error, _) => Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 4),
+                                            child: Text('Could not load receipts: $error', style: Theme.of(context).textTheme.bodyMedium),
+                                          ),
+                                          data: (page) {
+                                            if (page.receipts.isEmpty) {
+                                              return Text('No receipts scanned in this month.', style: Theme.of(context).textTheme.bodyMedium);
+                                            }
+
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                ListView.separated(
+                                                  itemCount: page.receipts.length,
+                                                  shrinkWrap: true,
+                                                  physics: const NeverScrollableScrollPhysics(),
+                                                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                                  itemBuilder: (context, index) {
+                                                    final receipt = page.receipts[index];
+                                                    return Dismissible(
+                                                      key: ValueKey(receipt.id),
+                                                      direction: DismissDirection.endToStart,
+                                                      confirmDismiss: (_) =>
+                                                          _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
+                                                      background: Container(
+                                                        alignment: Alignment.centerRight,
+                                                        padding: const EdgeInsets.only(right: 18),
+                                                        decoration: BoxDecoration(
+                                                          color: Theme.of(context).colorScheme.errorContainer,
+                                                          borderRadius: BorderRadius.circular(16),
+                                                        ),
+                                                        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                                                      ),
+                                                      child: _MonthReceiptTile(
+                                                        storeName: receipt.storeName,
+                                                        dateLabel: displayDate(receipt.date),
+                                                        totalLabel: formatCents(receipt.totalPriceCents),
+                                                        itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                                if (page.hasMore) ...[
+                                                  const SizedBox(height: 12),
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: OutlinedButton(
+                                                      onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
+                                                      child: const Text('Load more'),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            );
+                                          },
+                                        ),
                                       ],
                                     );
                                   },
@@ -417,6 +576,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       },
     );
   }
+
+  Future<bool> _confirmDeleteReceipt({required BuildContext context, required String uid, required _MonthReceiptItem receipt}) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        var deleting = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(12)),
+                            child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text('Delete receipt?', style: Theme.of(context).textTheme.titleLarge)),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text('This receipt will be removed from your spending history.', style: Theme.of(context).textTheme.bodyMedium),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: deleting ? null : () => Navigator.of(dialogContext).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                                foregroundColor: Theme.of(context).colorScheme.onError,
+                              ),
+                              onPressed: deleting
+                                  ? null
+                                  : () async {
+                                      setDialogState(() => deleting = true);
+                                      try {
+                                        await _receiptAnalyticsService.deleteReceiptAndResyncCommonProducts(uid: uid, receiptId: receipt.id);
+                                        if (dialogContext.mounted) {
+                                          Navigator.of(dialogContext).pop(true);
+                                        }
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt deleted')));
+                                        }
+                                      } catch (error) {
+                                        if (!dialogContext.mounted) {
+                                          return;
+                                        }
+                                        setDialogState(() => deleting = false);
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete receipt: $error')));
+                                      }
+                                    },
+                              child: Text(deleting ? 'Deleting...' : 'Delete'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return shouldDelete == true;
+  }
 }
 
 class _StoreSpendRow extends StatelessWidget {
@@ -447,6 +696,53 @@ class _StoreSpendRow extends StatelessWidget {
           child: Text(amountLabel, textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
+    );
+  }
+}
+
+class _MonthReceiptTile extends StatelessWidget {
+  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel});
+
+  final String storeName;
+  final String dateLabel;
+  final String totalLabel;
+  final String itemLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(storeName, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 2),
+                Text('$dateLabel · $itemLabel', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(totalLabel, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 }
