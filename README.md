@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png" alt="Cenko" height="70" style="border-radius: 30%;" />
+  <img src="assets/images/logo.png" alt="Cenko" height="70" />
   <h1 align="center">Cenko</h1>
 </div>
 
