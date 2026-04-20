@@ -25,9 +25,10 @@ Cenko helps you hunt down the best deals across Slovenian stores for the product
 - Scraping grocery catalogs with [Go](https://pptr.dev/), text extraction from PDFs with [pdfplumber](https://github.com/jsvine/pdfplumber) and data structuring with Claude Haiku
 
 ## Future improvements
-- **Shared shopping lists** - allow users to share shopping lists with family members or friends.
+- **Shared shopping lists** - allow users to share shopping lists with family members or friends
 - **Support more stores** - scrape catalogs of more stores
-- **Price tracking** - track price changes of frequently bought products and notify users of significant price drops.
+- **Price tracking** - track price changes of frequently bought products or shopping lists and notify users of significant price drops
+- **Better OCR and data extraction** - improve the accuracy of receipt scanning and data structuring with more advanced LLMs
 
 ## Development
 **To run the app locally:**
