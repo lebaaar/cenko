@@ -8,7 +8,7 @@ Cenko helps you hunt down the best deals across Slovenian stores for the product
 > Dragonhack 2026 - Best use of APIs reward
 
 <div align="center">
-    <img src="assets/images/cenko.gif" alt="Cenko architecture diagram" width="80%" />
+    <img src="assets/images/cenko.gif" alt="Cenko app demo" height="500" />
 </div>
 
 
