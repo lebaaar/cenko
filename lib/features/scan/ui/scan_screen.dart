@@ -41,6 +41,7 @@ const _processingHints = <String>[
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
+const _commonBoughtProductMinPurchases = 4;
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, this.initialMode, this.returnTo});
@@ -1848,7 +1849,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     for (final entry in productStatsByKey.entries) {
       final productKey = entry.key;
       final stats = entry.value;
-      final qualifies = stats.purchaseCount >= 3 && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
+      final qualifies = stats.purchaseCount >= _commonBoughtProductMinPurchases && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
       final docRef = commonProductsRef.doc(productKey);
 
       if (!qualifies) {

@@ -5,6 +5,7 @@ class ReceiptAnalyticsService {
 
   static const int commonBoughtProductWindowDays = 90;
   static const int commonBoughtProductInactivityDays = 45;
+  static const int commonBoughtProductMinPurchases = 4;
 
   final FirebaseFirestore _firestore;
 
@@ -59,7 +60,7 @@ class ReceiptAnalyticsService {
     for (final entry in productStatsByKey.entries) {
       final productKey = entry.key;
       final stats = entry.value;
-      final qualifies = stats.purchaseCount >= 3 && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
+      final qualifies = stats.purchaseCount >= commonBoughtProductMinPurchases && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
       final docRef = commonProductsRef.doc(productKey);
 
       if (!qualifies) {
@@ -71,7 +72,7 @@ class ReceiptAnalyticsService {
         'item_id': productKey,
         'name': stats.name,
         'brand': null,
-        'image': null,
+        'image_url': null,
         'purchase_count': stats.purchaseCount,
         'last_purchased_at': Timestamp.fromDate(stats.lastPurchasedAt),
         'added_at': Timestamp.fromDate(stats.lastPurchasedAt),
