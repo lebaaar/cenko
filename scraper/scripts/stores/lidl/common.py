@@ -243,7 +243,7 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
         ])
     )
 
-    uid_seed = f"{STORE_NAME}:{source_id or product_name}:{original_price}:{sale_price}"
+    uid_seed = f"{STORE_NAME}:{source_id or product_name}"
     product_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
 
     return {

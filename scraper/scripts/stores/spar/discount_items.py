@@ -129,7 +129,7 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
     scraped_from_url = f"https://online.spar.si/p/{slug}" if slug else None
     image_url = _first_list(raw.get("photosUrl"))
 
-    uid_seed = f"{STORE_NAME}:{source_id}:{original_price}:{sale_price}"
+    uid_seed = f"{STORE_NAME}:{source_id}"
     product_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
 
     return {
