@@ -46,6 +46,7 @@ app.*.map.json
 
 # Python related
 .env
+__pycache__
 
 # ai
 .codex
