@@ -118,7 +118,7 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
     image = raw.get("mainImage") if isinstance(raw.get("mainImage"), dict) else {}
     image_url = _normalize_image_url(image.get("url"))
 
-    uid_seed = f"{STORE_NAME}:{ext_id or slug or title}:{regular_price}:{action_price}"
+    uid_seed = f"{STORE_NAME}:{ext_id or slug or title}"
     product_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
 
     return {
