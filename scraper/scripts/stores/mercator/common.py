@@ -126,14 +126,21 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
     valid_from = _parse_timestamp(valid_from_raw) or scraped_at
     valid_until = _parse_timestamp(valid_until_raw) or scraped_at
 
+    product_url = _normalize_mercator_url(_first(data, ["url"]) or _first(raw, ["url", "link", "product_url"]))
+    image_url = _normalize_mercator_url(
+        _first(data, ["mainImageSrc", "image", "image_url", "imageUrl"])
+        or _first(raw, ["mainImageSrc", "image", "image_url", "imageUrl"])
+    )
     uid_seed = f"{STORE_NAME}:{source_id or name}:{original_price}:{sale_price}"
     generated_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
 
     return {
         "product_id": generated_id,
         "store_name": STORE_NAME,
+        "scraped_from_url": product_url,
         "product_name": str(name),
         "brand": _nullable_str(_first(data, ["brand_name"]) or _first(raw, ["brand", "brandName", "manufacturer"])),
+        "image_url": image_url,
         "original_price": original_price,
         "sale_price": sale_price,
         "discount_pct": discount_pct,
@@ -253,3 +260,14 @@ def _parse_timestamp(value: Any) -> str | None:
             continue
 
     return None
+
+
+def _normalize_mercator_url(value: Any) -> str | None:
+    text = _nullable_str(value)
+    if not text:
+        return None
+    if text.startswith("http://") or text.startswith("https://"):
+        return text
+    if text.startswith("/"):
+        return f"https://mercatoronline.si{text}"
+    return f"https://mercatoronline.si/{text}"
