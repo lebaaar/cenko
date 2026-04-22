@@ -384,6 +384,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
             final columns = availableWidth < 560 ? 2 : 3;
             final itemWidth = (availableWidth - ((columns - 1) * 12)) / columns;
             final gridMainAxisExtent = _estimateDealsCardMainAxisExtent(context, itemWidth);
+            final storeChipRowHeight = (_lineHeight(context, Theme.of(context).textTheme.labelLarge) + 22).clamp(40, 60).toDouble();
 
             return CustomScrollView(
               slivers: [
@@ -420,7 +421,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
-                          height: 40,
+                          height: storeChipRowHeight,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _storeFilters.length,
@@ -428,20 +429,23 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             itemBuilder: (context, index) {
                               final store = _storeFilters[index];
                               final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
-                              return FilterChip(
-                                label: Text(store),
-                                selected: isSelected,
-                                onSelected: (_) => _toggleStore(store),
-                                showCheckmark: false,
-                                selectedColor: Theme.of(context).colorScheme.primary,
-                                labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              return Center(
+                                child: FilterChip(
+                                  label: Text(store),
+                                  selected: isSelected,
+                                  onSelected: (_) => _toggleStore(store),
+                                  showCheckmark: false,
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  selectedColor: Theme.of(context).colorScheme.primary,
+                                  labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                 ),
-                                side: BorderSide(
-                                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                ),
-                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                               );
                             },
                           ),
@@ -538,7 +542,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           });
                         },
                         icon: const Icon(Icons.expand_more_rounded),
-                        label: const Text('Load more'),
+                        label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: const Text('Load more')),
                         style: FilledButton.styleFrom(foregroundColor: Colors.white),
                       ),
                     ),

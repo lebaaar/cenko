@@ -53,11 +53,13 @@ class DealsGridCard extends StatelessWidget {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Text(
-                                  formatCents(deal.salePriceCents),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                Expanded(
+                                  child: Text(
+                                    formatCents(deal.salePriceCents),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
                                 ),
                                 if ((discount ?? 0) > 0) const SizedBox(width: 8),
                                 if ((discount ?? 0) > 0)
@@ -121,7 +123,7 @@ class DealsGridCard extends StatelessWidget {
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(34),
                               visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               foregroundColor: Colors.white,
                               textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
