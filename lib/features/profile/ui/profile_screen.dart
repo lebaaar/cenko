@@ -380,6 +380,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,12 +493,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                   itemCount: page.receipts.length,
                                                   shrinkWrap: true,
                                                   physics: const NeverScrollableScrollPhysics(),
-                                                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                                  separatorBuilder: (_, _) => const SizedBox(height: 1),
                                                   itemBuilder: (context, index) {
                                                     final receipt = page.receipts[index];
                                                     return Dismissible(
                                                       key: ValueKey(receipt.id),
                                                       direction: DismissDirection.endToStart,
+                                                      movementDuration: const Duration(milliseconds: 180),
+                                                      resizeDuration: const Duration(milliseconds: 180),
                                                       confirmDismiss: (_) =>
                                                           _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
                                                       background: Container(
@@ -509,11 +512,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                         ),
                                                         child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
                                                       ),
-                                                      child: _MonthReceiptTile(
-                                                        storeName: receipt.storeName,
-                                                        dateLabel: displayDate(receipt.date),
-                                                        totalLabel: formatCents(receipt.totalPriceCents),
-                                                        itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                      child: ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: _MonthReceiptTile(
+                                                          storeName: receipt.storeName,
+                                                          dateLabel: displayDate(receipt.date),
+                                                          totalLabel: formatCents(receipt.totalPriceCents),
+                                                          itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                        ),
                                                       ),
                                                     );
                                                   },
@@ -737,12 +743,8 @@ class _MonthReceiptTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final trailingPriceWidth = (constraints.maxWidth * 0.26).clamp(78.0, 116.0);
