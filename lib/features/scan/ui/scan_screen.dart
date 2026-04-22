@@ -19,25 +19,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart'
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 
-const _processingHints = <String>[
-  "Scanning",
-  "Receiptling",
-  "Pixelwizzing",
-  "Inkspecting",
-  "Paperwizzing",
-  "Totallying",
-  "Numbersniffing",
-  "Receiptomancing",
-  "Inkdecoding",
-  "Pricehunting",
-  "Tickergazing",
-  "Papyrusreading",
-  "Digitwrangling",
-  "Itemsifting",
-  "Receiptwhispering",
-  "Ledgerdiving",
-  "Taxcrunching",
-];
+const _processingHints = <String>["Scanning", "Processing", "Validating", "Finalizing"];
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;

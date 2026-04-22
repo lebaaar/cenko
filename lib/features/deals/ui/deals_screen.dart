@@ -167,6 +167,47 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return '${range.start.round()} € - ${range.end.round()} €';
   }
 
+  double _lineHeight(BuildContext context, TextStyle? style, {int lines = 1}) {
+    final fallback = Theme.of(context).textTheme.bodyMedium;
+    final resolved = style ?? fallback;
+    if (resolved == null) {
+      return 14 * 1.25 * lines;
+    }
+
+    final fontSize = resolved.fontSize ?? 14;
+    final height = resolved.height ?? 1.25;
+    final scaledFontSize = MediaQuery.textScalerOf(context).scale(fontSize);
+    return scaledFontSize * height * lines;
+  }
+
+  double _estimateDealsCardMainAxisExtent(BuildContext context, double itemWidth) {
+    final textTheme = Theme.of(context).textTheme;
+
+    final titleHeight = _lineHeight(context, textTheme.titleSmall, lines: 2);
+    final storeHeight = _lineHeight(context, textTheme.bodySmall);
+    final salePriceHeight = _lineHeight(context, textTheme.titleMedium);
+    final discountChipHeight = _lineHeight(context, textTheme.labelSmall) + 8;
+    final originalPriceHeight = _lineHeight(context, textTheme.bodySmall);
+    final validUntilHeight = _lineHeight(context, textTheme.labelSmall);
+    final topContentHeight =
+        titleHeight +
+        3 +
+        storeHeight +
+        6 +
+        (salePriceHeight > discountChipHeight ? salePriceHeight : discountChipHeight) +
+        2 +
+        originalPriceHeight +
+        4 +
+        (validUntilHeight > 12 ? validUntilHeight : 12);
+
+    final buttonLabelHeight = _lineHeight(context, textTheme.labelLarge);
+    final buttonContentHeight = ((buttonLabelHeight > 18 ? buttonLabelHeight : 18) + 16).clamp(34, 58).toDouble();
+    final detailsHeight = 8 + topContentHeight + 8 + buttonContentHeight + 8;
+    final imageHeight = itemWidth / 1.28;
+
+    return imageHeight + detailsHeight + 4;
+  }
+
   Future<void> _openPriceSheet() async {
     RangeValues draft = _priceRange;
 
@@ -342,7 +383,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
             final availableWidth = screenWidth - 40;
             final columns = availableWidth < 560 ? 2 : 3;
             final itemWidth = (availableWidth - ((columns - 1) * 12)) / columns;
-            final gridAspectRatio = (itemWidth / (itemWidth * 1.88)).clamp(0.5, 0.62);
+            final gridMainAxisExtent = _estimateDealsCardMainAxisExtent(context, itemWidth);
 
             return CustomScrollView(
               slivers: [
@@ -482,7 +523,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         crossAxisCount: columns,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: gridAspectRatio,
+                        mainAxisExtent: gridMainAxisExtent,
                       ),
                     ),
                   ),
