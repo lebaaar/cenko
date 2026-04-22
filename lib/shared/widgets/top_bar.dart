@@ -25,10 +25,7 @@ class MainTopBar extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
             ),
-            const SizedBox(
-              width: 48,
-              height: 48, // 👈 preserves original height
-            ),
+            const SizedBox(width: 48, height: 48),
           ],
         ),
         const SizedBox(height: 14),
