@@ -435,7 +435,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                   selected: isSelected,
                                   onSelected: (_) => _toggleStore(store),
                                   showCheckmark: false,
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: const VisualDensity(horizontal: -2, vertical: -1),
                                   selectedColor: Theme.of(context).colorScheme.primary,
                                   labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
                                     color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
