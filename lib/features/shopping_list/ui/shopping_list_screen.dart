@@ -141,7 +141,12 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: 24, height: 24),
+                  leading: SvgPicture.asset(
+                    'assets/icons/barcode_scanner.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurfaceVariant, BlendMode.srcIn),
+                  ),
                   title: const Text('Scan barcode'),
                   subtitle: const Text('Open scanner and scan item barcode'),
                   onTap: () {

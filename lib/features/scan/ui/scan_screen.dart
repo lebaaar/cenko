@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,7 +18,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart'
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 
-const _processingHints = <String>["Scanning", "Processing", "Validating", "Finalizing"];
+const _processingHints = <String>['Scanning receipt', 'Extracting items', 'Validating totals', 'Finalizing'];
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
@@ -96,7 +95,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Uint8List? _frozenReceiptImageBytes;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
-  final Random _random = Random();
+  int _processingHintIndex = 0;
   String _processingHint = _processingHints.first;
   Timer? _processingHintTimer;
   String? _receiptFlowMessage;
@@ -1530,7 +1529,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   void _startProcessingHints() {
     _processingHintTimer?.cancel();
     setState(() {
-      _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+      _processingHintIndex = 0;
+      _processingHint = _processingHints[_processingHintIndex];
       _processingHintDots = 1;
     });
     var tick = 0;
@@ -1541,8 +1541,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       setState(() {
         _processingHintDots = _processingHintDots == 3 ? 1 : _processingHintDots + 1;
         tick += 1;
-        if (tick % 11 == 0) {
-          _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+        if (tick % 7 == 0 && _processingHintIndex < _processingHints.length - 1) {
+          _processingHintIndex += 1;
+          _processingHint = _processingHints[_processingHintIndex];
         }
       });
     });
