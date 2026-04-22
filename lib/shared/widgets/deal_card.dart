@@ -24,7 +24,8 @@ class DealCard extends StatelessWidget {
           decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(24)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Row(
+            child: IntrinsicHeight(
+              child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _DealImage(imageUrl: item.imageUrl, storeName: item.storeName),
@@ -33,11 +34,12 @@ class DealCard extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
                         const SizedBox(height: 2),
                         Text(item.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
-                        const Spacer(),
+                        const SizedBox(height: 6),
                         Wrap(
                           spacing: 8,
                           runSpacing: 6,
@@ -68,6 +70,7 @@ class DealCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),
@@ -127,6 +130,7 @@ class _DealImage extends StatelessWidget {
 
     return Container(
       width: 82,
+      constraints: const BoxConstraints(minHeight: 88, maxHeight: 110),
       color: colorScheme.surfaceContainer,
       child: hasImage
           ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackWidget(colorScheme))
