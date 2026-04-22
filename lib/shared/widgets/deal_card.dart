@@ -20,7 +20,7 @@ class DealCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Container(
-          height: 80,
+          constraints: const BoxConstraints(minHeight: 88),
           decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(24)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
@@ -126,7 +126,7 @@ class _DealImage extends StatelessWidget {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
 
     return Container(
-      width: 78,
+      width: 82,
       color: colorScheme.surfaceContainer,
       child: hasImage
           ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackWidget(colorScheme))

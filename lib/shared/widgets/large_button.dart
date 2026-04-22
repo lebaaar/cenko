@@ -13,6 +13,8 @@ class LargeButton extends StatelessWidget {
     final disabled = onPressed == null || loading;
     final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.labelLarge;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final buttonMinHeight = (52 * textScale.clamp(1.0, 1.25)).toDouble();
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(6),
@@ -29,8 +31,8 @@ class LargeButton extends StatelessWidget {
           onTap: disabled ? null : onPressed,
           borderRadius: BorderRadius.circular(6),
           splashColor: Colors.white.withValues(alpha: 0.1),
-          child: SizedBox(
-            height: 52,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: buttonMinHeight),
             child: Center(
               child: loading
                   ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onSurface))

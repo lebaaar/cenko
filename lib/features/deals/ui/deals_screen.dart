@@ -338,6 +338,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
             final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
             final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
             final hasMore = visibleCount < filteredDeals.length;
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            final availableWidth = screenWidth - 40;
+            final columns = availableWidth < 560 ? 2 : 3;
+            final itemWidth = (availableWidth - ((columns - 1) * 12)) / columns;
+            final gridAspectRatio = (itemWidth / (itemWidth * 1.88)).clamp(0.5, 0.62);
 
             return CustomScrollView(
               slivers: [
@@ -473,11 +478,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           },
                         );
                       }, childCount: visibleDeals.length),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.54,
+                        childAspectRatio: gridAspectRatio,
                       ),
                     ),
                   ),

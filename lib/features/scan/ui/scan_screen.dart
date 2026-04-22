@@ -489,17 +489,18 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 10),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
-                  child: Row(
+                  child: SizedBox(
                     key: ValueKey(_mode),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _modeInstruction(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
-                      ),
-                    ],
+                    width: MediaQuery.sizeOf(context).width * 0.8,
+                    child: Text(
+                      _modeInstruction(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ),
               ],
@@ -515,18 +516,27 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildViewfinder(BuildContext context) {
+    final media = MediaQuery.sizeOf(context);
+    final availableFromWidth = media.width - 56;
+    final availableFromHeight = media.height * 0.42;
+    final side = availableFromWidth < availableFromHeight ? availableFromWidth : availableFromHeight;
+    final viewfinderSize = side.clamp(220.0, 320.0).toDouble();
+    final cornerRadius = (viewfinderSize * 0.12).clamp(24.0, 36.0).toDouble();
+    final scanInset = (viewfinderSize * 0.08).clamp(18.0, 24.0).toDouble();
+    final scanTravel = viewfinderSize - (scanInset * 2);
+
     return Center(
       child: Container(
-        width: 300,
-        height: 300,
+        width: viewfinderSize,
+        height: viewfinderSize,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(cornerRadius),
           border: Border.all(color: Colors.white.withValues(alpha: 0.88), width: 1.8),
           color: Colors.white.withValues(alpha: 0.03),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 24, offset: const Offset(0, 10))],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(cornerRadius),
           child: Stack(
             children: [
               Positioned.fill(
@@ -544,10 +554,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               AnimatedBuilder(
                 animation: _scanBarController,
                 builder: (context, _) {
-                  final top = 26.0 + (_scanBarController.value * 248.0);
+                  final top = scanInset + (_scanBarController.value * scanTravel);
                   return Positioned(
-                    left: 24,
-                    right: 24,
+                    left: scanInset,
+                    right: scanInset,
                     top: top,
                     child: IgnorePointer(
                       child: Container(
@@ -594,9 +604,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildFlashButton(),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _ControlButton(icon: Icons.photo_library_rounded, onTap: _pickFromGallery),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _ControlButton(icon: Icons.cameraswitch_rounded, onTap: _switchActiveCamera),
           ],
         ),
@@ -637,7 +647,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             frozenBytes,
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+            errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
           ),
         );
       }

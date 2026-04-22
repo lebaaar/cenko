@@ -87,15 +87,16 @@ class DealsGridCard extends StatelessWidget {
                             ],
                             const SizedBox(height: 4),
                             Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.schedule_rounded, size: 12, color: colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
-                                Text(
-                                  'Valid until ${displayDate(deal.validUntil)}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                Expanded(
+                                  child: Text(
+                                    'Valid until ${displayDate(deal.validUntil)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
                                 ),
                               ],
                             ),

@@ -108,11 +108,16 @@ class _BottomNavBar extends StatelessWidget {
     final selectedColor = Theme.of(context).colorScheme.primary;
     final brightness = Theme.of(context).brightness;
     final unselectedColor = brightness == Brightness.light ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final navHeight = (88 * textScale.clamp(1.0, 1.2)).toDouble();
+    final scanButtonSize = (70 * textScale.clamp(1.0, 1.15)).toDouble();
+    final centerGap = (scanButtonSize - 2).clamp(60.0, 82.0).toDouble();
+    final scanIconSize = (32 * textScale.clamp(1.0, 1.15)).toDouble();
 
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: 88,
+        height: navHeight,
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
@@ -143,7 +148,7 @@ class _BottomNavBar extends StatelessWidget {
                       onTap: () => onTap('/deals'),
                     ),
                   ),
-                  const SizedBox(width: 68),
+                  SizedBox(width: centerGap),
                   Expanded(
                     child: _NavItem(
                       label: 'List',
@@ -172,8 +177,8 @@ class _BottomNavBar extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onTap('/scan'),
                 child: Container(
-                  width: 70,
-                  height: 70,
+                  width: scanButtonSize,
+                  height: scanButtonSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -182,7 +187,9 @@ class _BottomNavBar extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Center(child: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: 32, height: 32)),
+                  child: Center(
+                    child: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: scanIconSize, height: scanIconSize),
+                  ),
                 ),
               ),
             ),
@@ -223,6 +230,8 @@ class _NavItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
           ),
         ],

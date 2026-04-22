@@ -16,7 +16,12 @@ class MainTopBar extends StatelessWidget {
             Expanded(
               child: Center(
                 child: title != null
-                    ? Text(title!, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800))
+                    ? Text(
+                        title!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                      )
                     : const SizedBox.shrink(),
               ),
             ),

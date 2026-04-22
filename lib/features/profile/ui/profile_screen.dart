@@ -554,6 +554,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                         ),
                         _SettingsRow(label: 'Account', onTap: () => context.push('/settings')),
+                        _SettingsRow(label: 'Legal', onTap: () => context.push('/legal')),
+                        _SettingsRow(label: 'About', onTap: () => context.push('/about')),
                       ],
                     ),
                   ),
@@ -679,8 +681,13 @@ class _StoreSpendRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(width: 76, child: Text(storeName, style: Theme.of(context).textTheme.bodyMedium)),
+        Flexible(
+          flex: 3,
+          child: Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        const SizedBox(width: 10),
         Expanded(
+          flex: 4,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
@@ -691,9 +698,15 @@ class _StoreSpendRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        SizedBox(
-          width: 56,
-          child: Text(amountLabel, textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium),
+        Flexible(
+          flex: 2,
+          child: Text(
+            amountLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
       ],
     );
@@ -733,14 +746,27 @@ class _MonthReceiptTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(storeName, style: Theme.of(context).textTheme.titleMedium),
+                Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 2),
-                Text('$dateLabel · $itemLabel', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                Text(
+                  '$dateLabel · $itemLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          Text(totalLabel, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Flexible(
+            child: Text(
+              totalLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
