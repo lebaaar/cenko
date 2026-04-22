@@ -16,7 +16,7 @@ class NextBestBasketCard extends StatelessWidget {
     return summaryAsync.when(
       loading: () => _BasketCardShell(
         child: SizedBox(
-          height: 140,
+          height: 120,
           child: Center(child: CircularProgressIndicator(color: colorScheme.primary)),
         ),
       ),
@@ -83,15 +83,19 @@ class NextBestBasketCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
-                      child: Text(
-                        '${(coverage * 100).round()}% matched',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
-                      ),
-                    ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
+                    child: Text(
+                      '${(coverage * 100).round()}% matched',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(

@@ -316,34 +316,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const MainTopBar(title: 'Profile'),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.primary.withValues(alpha: 0.28)),
-                          child: Text(initials, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(user.name, style: Theme.of(context).textTheme.titleLarge),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Member since ${displayDate(user.createdAt)}',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                              ),
-                            ],
+                  InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => context.push('/settings'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.primary.withValues(alpha: 0.28)),
+                            child: Text(initials, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(user.name, style: Theme.of(context).textTheme.titleLarge),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Member since ${displayDate(user.createdAt)}',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -376,6 +380,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,12 +493,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                   itemCount: page.receipts.length,
                                                   shrinkWrap: true,
                                                   physics: const NeverScrollableScrollPhysics(),
-                                                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                                  separatorBuilder: (_, _) => const SizedBox(height: 1),
                                                   itemBuilder: (context, index) {
                                                     final receipt = page.receipts[index];
                                                     return Dismissible(
                                                       key: ValueKey(receipt.id),
                                                       direction: DismissDirection.endToStart,
+                                                      movementDuration: const Duration(milliseconds: 180),
+                                                      resizeDuration: const Duration(milliseconds: 180),
                                                       confirmDismiss: (_) =>
                                                           _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
                                                       background: Container(
@@ -505,11 +512,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                         ),
                                                         child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
                                                       ),
-                                                      child: _MonthReceiptTile(
-                                                        storeName: receipt.storeName,
-                                                        dateLabel: displayDate(receipt.date),
-                                                        totalLabel: formatCents(receipt.totalPriceCents),
-                                                        itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                      child: ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: _MonthReceiptTile(
+                                                          storeName: receipt.storeName,
+                                                          dateLabel: displayDate(receipt.date),
+                                                          totalLabel: formatCents(receipt.totalPriceCents),
+                                                          itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                        ),
                                                       ),
                                                     );
                                                   },
@@ -554,6 +564,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                         ),
                         _SettingsRow(label: 'Account', onTap: () => context.push('/settings')),
+                        _SettingsRow(label: 'Legal', onTap: () => context.push('/legal')),
+                        _SettingsRow(label: 'About', onTap: () => context.push('/about')),
                       ],
                     ),
                   ),
@@ -677,25 +689,43 @@ class _StoreSpendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(width: 76, child: Text(storeName, style: Theme.of(context).textTheme.bodyMedium)),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: progress.clamp(0, 1),
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final storeWidth = (maxWidth * 0.3).clamp(88.0, 142.0);
+        final amountWidth = (maxWidth * 0.24).clamp(74.0, 112.0);
+
+        return Row(
+          children: [
+            SizedBox(
+              width: storeWidth,
+              child: Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
             ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 56,
-          child: Text(amountLabel, textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium),
-        ),
-      ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  minHeight: 8,
+                  value: progress.clamp(0, 1),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: amountWidth,
+              child: Text(
+                amountLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -713,35 +743,51 @@ class _MonthReceiptTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
-            child: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(storeName, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 2),
-                Text('$dateLabel · $itemLabel', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(totalLabel, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final trailingPriceWidth = (constraints.maxWidth * 0.26).clamp(78.0, 116.0);
+
+          return Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$dateLabel · $itemLabel',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: trailingPriceWidth,
+                child: Text(
+                  totalLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

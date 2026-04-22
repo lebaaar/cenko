@@ -178,8 +178,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
               // Login link
               Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text('Already have an account? ', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                     GestureDetector(

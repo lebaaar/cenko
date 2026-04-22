@@ -167,6 +167,47 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return '${range.start.round()} € - ${range.end.round()} €';
   }
 
+  double _lineHeight(BuildContext context, TextStyle? style, {int lines = 1}) {
+    final fallback = Theme.of(context).textTheme.bodyMedium;
+    final resolved = style ?? fallback;
+    if (resolved == null) {
+      return 14 * 1.25 * lines;
+    }
+
+    final fontSize = resolved.fontSize ?? 14;
+    final height = resolved.height ?? 1.25;
+    final scaledFontSize = MediaQuery.textScalerOf(context).scale(fontSize);
+    return scaledFontSize * height * lines;
+  }
+
+  double _estimateDealsCardMainAxisExtent(BuildContext context, double itemWidth) {
+    final textTheme = Theme.of(context).textTheme;
+
+    final titleHeight = _lineHeight(context, textTheme.titleSmall, lines: 2);
+    final storeHeight = _lineHeight(context, textTheme.bodySmall);
+    final salePriceHeight = _lineHeight(context, textTheme.titleMedium);
+    final discountChipHeight = _lineHeight(context, textTheme.labelSmall) + 8;
+    final originalPriceHeight = _lineHeight(context, textTheme.bodySmall);
+    final validUntilHeight = _lineHeight(context, textTheme.labelSmall);
+    final topContentHeight =
+        titleHeight +
+        3 +
+        storeHeight +
+        6 +
+        (salePriceHeight > discountChipHeight ? salePriceHeight : discountChipHeight) +
+        2 +
+        originalPriceHeight +
+        4 +
+        (validUntilHeight > 12 ? validUntilHeight : 12);
+
+    final buttonLabelHeight = _lineHeight(context, textTheme.labelLarge);
+    final buttonContentHeight = ((buttonLabelHeight > 18 ? buttonLabelHeight : 18) + 16).clamp(34, 58).toDouble();
+    final detailsHeight = 8 + topContentHeight + 8 + buttonContentHeight + 8;
+    final imageHeight = itemWidth / 1.28;
+
+    return imageHeight + detailsHeight + 4;
+  }
+
   Future<void> _openPriceSheet() async {
     RangeValues draft = _priceRange;
 
@@ -338,6 +379,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
             final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
             final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
             final hasMore = visibleCount < filteredDeals.length;
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            final availableWidth = screenWidth - 40;
+            final columns = availableWidth < 560 ? 2 : 3;
+            final itemWidth = (availableWidth - ((columns - 1) * 12)) / columns;
+            final gridMainAxisExtent = _estimateDealsCardMainAxisExtent(context, itemWidth);
+            final storeChipRowHeight = (_lineHeight(context, Theme.of(context).textTheme.labelLarge) + 22).clamp(40, 60).toDouble();
 
             return CustomScrollView(
               slivers: [
@@ -374,7 +421,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
-                          height: 40,
+                          height: storeChipRowHeight,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _storeFilters.length,
@@ -382,20 +429,23 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             itemBuilder: (context, index) {
                               final store = _storeFilters[index];
                               final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
-                              return FilterChip(
-                                label: Text(store),
-                                selected: isSelected,
-                                onSelected: (_) => _toggleStore(store),
-                                showCheckmark: false,
-                                selectedColor: Theme.of(context).colorScheme.primary,
-                                labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              return Center(
+                                child: FilterChip(
+                                  label: Text(store),
+                                  selected: isSelected,
+                                  onSelected: (_) => _toggleStore(store),
+                                  showCheckmark: false,
+                                  visualDensity: const VisualDensity(horizontal: -2, vertical: -1),
+                                  selectedColor: Theme.of(context).colorScheme.primary,
+                                  labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                 ),
-                                side: BorderSide(
-                                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                ),
-                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                               );
                             },
                           ),
@@ -473,11 +523,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           },
                         );
                       }, childCount: visibleDeals.length),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.54,
+                        mainAxisExtent: gridMainAxisExtent,
                       ),
                     ),
                   ),
@@ -492,7 +542,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           });
                         },
                         icon: const Icon(Icons.expand_more_rounded),
-                        label: const Text('Load more'),
+                        label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: const Text('Load more')),
                         style: FilledButton.styleFrom(foregroundColor: Colors.white),
                       ),
                     ),

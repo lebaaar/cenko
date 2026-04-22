@@ -20,54 +20,57 @@ class DealCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Container(
-          height: 80,
+          constraints: const BoxConstraints(minHeight: 88),
           decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(24)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _DealImage(imageUrl: item.imageUrl, storeName: item.storeName),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
-                        const SizedBox(height: 2),
-                        Text(item.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
-                        const Spacer(),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(formatCents(item.currentPriceCents), style: Theme.of(context).textTheme.titleMedium),
-                            if (showDiscount && item.previousPriceCents != null)
-                              Text(
-                                formatCents(item.previousPriceCents!),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
-                              ),
-                            if (showDiscount)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(99),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _DealImage(imageUrl: item.imageUrl, storeName: item.storeName),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
+                          const SizedBox(height: 2),
+                          Text(item.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(formatCents(item.currentPriceCents), style: Theme.of(context).textTheme.titleMedium),
+                              if (showDiscount && item.previousPriceCents != null)
+                                Text(
+                                  formatCents(item.previousPriceCents!),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
                                 ),
-                                child: Text(
-                                  '-${item.discountPercent}%',
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
+                              if (showDiscount)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                  child: Text(
+                                    '-${item.discountPercent}%',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -126,7 +129,8 @@ class _DealImage extends StatelessWidget {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
 
     return Container(
-      width: 78,
+      width: 82,
+      constraints: const BoxConstraints(minHeight: 88, maxHeight: 110),
       color: colorScheme.surfaceContainer,
       child: hasImage
           ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackWidget(colorScheme))

@@ -53,11 +53,13 @@ class DealsGridCard extends StatelessWidget {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Text(
-                                  formatCents(deal.salePriceCents),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                Expanded(
+                                  child: Text(
+                                    formatCents(deal.salePriceCents),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
                                 ),
                                 if ((discount ?? 0) > 0) const SizedBox(width: 8),
                                 if ((discount ?? 0) > 0)
@@ -87,15 +89,16 @@ class DealsGridCard extends StatelessWidget {
                             ],
                             const SizedBox(height: 4),
                             Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.schedule_rounded, size: 12, color: colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
-                                Text(
-                                  'Valid until ${displayDate(deal.validUntil)}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                Expanded(
+                                  child: Text(
+                                    'Valid until ${displayDate(deal.validUntil)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
                                 ),
                               ],
                             ),
@@ -105,18 +108,26 @@ class DealsGridCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: (isAddingToShoppingList || isAlreadyOnShoppingList) ? null : onAddToShoppingList,
-                          icon: isAddingToShoppingList
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : Icon(isAlreadyOnShoppingList ? Icons.check_circle_rounded : Icons.playlist_add_rounded, size: 18),
-                          label: Text(isAddingToShoppingList ? 'Adding...' : (isAlreadyOnShoppingList ? 'On list' : 'Add to list')),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(34),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            foregroundColor: Colors.white,
-                            textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          child: FilledButton.icon(
+                            onPressed: (isAddingToShoppingList || isAlreadyOnShoppingList) ? null : onAddToShoppingList,
+                            icon: isAddingToShoppingList
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Icon(isAlreadyOnShoppingList ? Icons.check_circle_rounded : Icons.playlist_add_rounded, size: 18),
+                            label: Text(
+                              isAddingToShoppingList ? 'Adding...' : (isAlreadyOnShoppingList ? 'On list' : 'Add to list'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(34),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              foregroundColor: Colors.white,
+                              textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                            ),
                           ),
                         ),
                       ),

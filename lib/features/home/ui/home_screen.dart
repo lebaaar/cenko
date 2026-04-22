@@ -56,8 +56,8 @@ class HomeScreen extends ConsumerWidget {
                   const MainTopBar(title: appName),
                   Text('${_greeting()}, $name', style: Theme.of(context).textTheme.displaySmall),
                   const SizedBox(height: 12),
-                  RichText(
-                    text: TextSpan(
+                  Text.rich(
+                    TextSpan(
                       style: secondaryBodyStyle,
                       children: [
                         TextSpan(

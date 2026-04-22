@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,25 +18,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart'
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 
-const _processingHints = <String>[
-  "Scanning",
-  "Receiptling",
-  "Pixelwizzing",
-  "Inkspecting",
-  "Paperwizzing",
-  "Totallying",
-  "Numbersniffing",
-  "Receiptomancing",
-  "Inkdecoding",
-  "Pricehunting",
-  "Tickergazing",
-  "Papyrusreading",
-  "Digitwrangling",
-  "Itemsifting",
-  "Receiptwhispering",
-  "Ledgerdiving",
-  "Taxcrunching",
-];
+const _processingHints = <String>['Scanning receipt', 'Extracting items', 'Validating totals', 'Finalizing'];
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
@@ -114,7 +95,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Uint8List? _frozenReceiptImageBytes;
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
-  final Random _random = Random();
+  int _processingHintIndex = 0;
   String _processingHint = _processingHints.first;
   Timer? _processingHintTimer;
   String? _receiptFlowMessage;
@@ -489,17 +470,18 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 10),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
-                  child: Row(
+                  child: SizedBox(
                     key: ValueKey(_mode),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _modeInstruction(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
-                      ),
-                    ],
+                    width: MediaQuery.sizeOf(context).width * 0.8,
+                    child: Text(
+                      _modeInstruction(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ),
               ],
@@ -515,18 +497,28 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildViewfinder(BuildContext context) {
+    final media = MediaQuery.sizeOf(context);
+    final availableFromWidth = media.width - 56;
+    final availableFromHeight = media.height * 0.42;
+    final side = availableFromWidth < availableFromHeight ? availableFromWidth : availableFromHeight;
+    final viewfinderSize = side < 220.0 ? side : side.clamp(220.0, 320.0).toDouble();
+    ;
+    final cornerRadius = (viewfinderSize * 0.12).clamp(24.0, 36.0).toDouble();
+    final scanInset = (viewfinderSize * 0.08).clamp(18.0, 24.0).toDouble();
+    final scanTravel = viewfinderSize - (scanInset * 2);
+
     return Center(
       child: Container(
-        width: 300,
-        height: 300,
+        width: viewfinderSize,
+        height: viewfinderSize,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(cornerRadius),
           border: Border.all(color: Colors.white.withValues(alpha: 0.88), width: 1.8),
           color: Colors.white.withValues(alpha: 0.03),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 24, offset: const Offset(0, 10))],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(cornerRadius),
           child: Stack(
             children: [
               Positioned.fill(
@@ -544,10 +536,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               AnimatedBuilder(
                 animation: _scanBarController,
                 builder: (context, _) {
-                  final top = 26.0 + (_scanBarController.value * 248.0);
+                  final top = scanInset + (_scanBarController.value * scanTravel);
                   return Positioned(
-                    left: 24,
-                    right: 24,
+                    left: scanInset,
+                    right: scanInset,
                     top: top,
                     child: IgnorePointer(
                       child: Container(
@@ -594,9 +586,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildFlashButton(),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _ControlButton(icon: Icons.photo_library_rounded, onTap: _pickFromGallery),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _ControlButton(icon: Icons.cameraswitch_rounded, onTap: _switchActiveCamera),
           ],
         ),
@@ -605,7 +597,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   String _modeInstruction() {
-    return _mode == _ScanMode.barcode ? 'Scan a barcode to add item to your shopping list.' : 'Scan a receipt to track your spendings.';
+    return _mode == _ScanMode.barcode ? 'Scan a barcode to add item to your shopping list' : 'Scan a receipt to track your spendings';
   }
 
   String _readySummaryText() {
@@ -637,7 +629,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             frozenBytes,
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+            errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
           ),
         );
       }
@@ -1538,7 +1530,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   void _startProcessingHints() {
     _processingHintTimer?.cancel();
     setState(() {
-      _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+      _processingHintIndex = 0;
+      _processingHint = _processingHints[_processingHintIndex];
       _processingHintDots = 1;
     });
     var tick = 0;
@@ -1549,8 +1542,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       setState(() {
         _processingHintDots = _processingHintDots == 3 ? 1 : _processingHintDots + 1;
         tick += 1;
-        if (tick % 11 == 0) {
-          _processingHint = _processingHints[_random.nextInt(_processingHints.length)];
+        if (tick % 7 == 0 && _processingHintIndex < _processingHints.length - 1) {
+          _processingHintIndex += 1;
+          _processingHint = _processingHints[_processingHintIndex];
         }
       });
     });

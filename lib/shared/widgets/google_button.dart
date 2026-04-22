@@ -10,12 +10,15 @@ class GoogleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final labelStyle = Theme.of(context).textTheme.labelLarge;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final buttonMinHeight = (52 * textScale.clamp(1.0, 1.25)).toDouble();
     return SizedBox(
       width: double.infinity,
-      height: 52,
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
+          minimumSize: Size(double.infinity, buttonMinHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           backgroundColor: colors.surfaceContainerHigh,
           disabledBackgroundColor: colors.surfaceContainerHigh,
           foregroundColor: colors.onSurface,
@@ -31,7 +34,14 @@ class GoogleButton extends StatelessWidget {
                 children: [
                   const GoogleLogo(size: 15),
                   const SizedBox(width: 10),
-                  Text('Continue with Google', style: labelStyle?.copyWith(color: colors.onSurface)),
+                  Flexible(
+                    child: Text(
+                      'Continue with Google',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle?.copyWith(color: colors.onSurface),
+                    ),
+                  ),
                 ],
               ),
       ),
