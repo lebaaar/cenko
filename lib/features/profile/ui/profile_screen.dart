@@ -279,6 +279,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       data: (user) {
         if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(authNotifierProvider).signOut();
+            context.go('/auth');
+          });
           return Scaffold(
             body: SafeArea(
               child: Padding(
@@ -286,7 +290,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   children: const [
                     MainTopBar(title: 'Profile'),
-                    Expanded(child: Center(child: Text('Sign in to see your profile.'))),
+                    Expanded(child: Center(child: Text('Signing out...'))),
                   ],
                 ),
               ),
