@@ -1751,7 +1751,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
       final existingIndex = storeStats.indexWhere((store) => _normalizedStoreKey(store['store_name']) == _normalizedStoreKey(normalizedStoreName));
       if (existingIndex == -1) {
-        storeStats.add({'store_name': normalizedStoreName, 'logo_url': '', 'visit_count': 1});
+        storeStats.add({'store_name': normalizedStoreName, 'visit_count': 1});
       } else {
         final existingVisitCount = _asInt(storeStats[existingIndex]['visit_count']);
         storeStats[existingIndex] = {...storeStats[existingIndex], 'store_name': normalizedStoreName, 'visit_count': existingVisitCount + 1};

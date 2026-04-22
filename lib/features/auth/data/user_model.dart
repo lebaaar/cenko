@@ -56,6 +56,7 @@ class UserModel {
   final String? googleId;
   final UserSettings settings;
   final UserStats stats;
+  final String plan;
 
   const UserModel({
     required this.userId,
@@ -66,6 +67,7 @@ class UserModel {
     this.googleId,
     this.settings = const UserSettings(),
     this.stats = const UserStats(),
+    this.plan = 'free',
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -79,6 +81,7 @@ class UserModel {
       googleId: m['google_id'] as String?,
       settings: UserSettings.fromMap(m['settings'] as Map<String, dynamic>),
       stats: UserStats.fromMap(m['stats'] as Map<String, dynamic>),
+      plan: m['plan'] as String? ?? 'free',
     );
   }
 
@@ -91,21 +94,18 @@ class UserModel {
     'google_id': googleId,
     'settings': settings.toMap(),
     'stats': stats.toMap(),
+    'plan': plan,
   };
 }
 
 class Statistics {
   final String storeName;
-  final String logoUrl;
   final int visitCount;
 
-  const Statistics({required this.storeName, required this.logoUrl, required this.visitCount});
+  const Statistics({required this.storeName, required this.visitCount});
 
-  factory Statistics.fromMap(Map<String, dynamic> m) => Statistics(
-    storeName: m['store_name'] as String? ?? 'Unknown store',
-    logoUrl: m['logo_url'] as String? ?? '',
-    visitCount: m['visit_count'] as int? ?? 0,
-  );
+  factory Statistics.fromMap(Map<String, dynamic> m) =>
+      Statistics(storeName: m['store_name'] as String? ?? 'Unknown store', visitCount: m['visit_count'] as int? ?? 0);
 
-  Map<String, dynamic> toMap() => {'store_name': storeName, 'logo_url': logoUrl, 'visit_count': visitCount};
+  Map<String, dynamic> toMap() => {'store_name': storeName, 'visit_count': visitCount};
 }

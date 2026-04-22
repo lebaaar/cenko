@@ -14,6 +14,7 @@ Collections:
   "created_at": "timestamp",
   "auth_provider": "email | google",
   "google_id": "string | null",
+  "plan": "string", // "free"
   "settings": {
     "theme": "system | dark | light",
     "notificationsEnabled": true
@@ -24,7 +25,6 @@ Collections:
     "most_visited_stores": [
       {
         "store_name": "string",
-        "logo_url": "string",
         "visit_count": 0
       }
     ]
