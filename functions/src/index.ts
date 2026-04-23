@@ -7,8 +7,8 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import {setGlobalOptions} from "firebase-functions/v2/options";
+import {onCall, onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 
 // Start writing functions
@@ -29,4 +29,10 @@ setGlobalOptions({ maxInstances: 10 });
 export const helloWorld = onRequest((request, response) => {
   logger.info("Hello logs!", {structuredData: true});
   response.send("Hello from Firebase!");
+});
+
+export const getTestText = onCall(() => {
+  const text = "Firebase function call works.";
+  logger.info("Returning test text", {text, structuredData: true});
+  return {text};
 });
