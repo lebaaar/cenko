@@ -16,7 +16,7 @@ DISCOUNT_SCRIPT_PATHS = [
     Path("stores/lidl/discounted_items.py"),
     Path("stores/mercator/discounted_items.py"),
     Path("stores/tusdrogerija/discounted_items.py"),
-    Path("stores/spar/discount_items.py"),
+    Path("stores/spar/discounted_items.py"),
 ]
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from discount_items import fetch_products, normalize_product, now_iso
+from discounted_items import fetch_products, normalize_product, now_iso
 
 
 def main() -> None:
