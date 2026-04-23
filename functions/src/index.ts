@@ -8,7 +8,7 @@
  */
 
 import {setGlobalOptions} from "firebase-functions/v2/options";
-import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
+import {HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
@@ -29,17 +29,6 @@ import {getFirestore} from "firebase-admin/firestore";
 // this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 initializeApp();
-
-export const helloWorld = onRequest((request, response) => {
-  logger.info("Hello logs!", {structuredData: true});
-  response.send("Hello from Firebase!");
-});
-
-export const getTestText = onCall(() => {
-  const text = "Firebase function call works.";
-  logger.info("Returning test text", {text, structuredData: true});
-  return {text};
-});
 
 export const deleteMyAccount = onCall(async (request) => {
   const idToken = typeof request.data?.idToken === "string" ? request.data.idToken : null;
