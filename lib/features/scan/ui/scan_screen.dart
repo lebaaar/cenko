@@ -502,7 +502,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     final availableFromHeight = media.height * 0.42;
     final side = availableFromWidth < availableFromHeight ? availableFromWidth : availableFromHeight;
     final viewfinderSize = side < 220.0 ? side : side.clamp(220.0, 320.0).toDouble();
-    ;
     final cornerRadius = (viewfinderSize * 0.12).clamp(24.0, 36.0).toDouble();
     final scanInset = (viewfinderSize * 0.08).clamp(18.0, 24.0).toDouble();
     final scanTravel = viewfinderSize - (scanInset * 2);
