@@ -30,21 +30,14 @@ import {getFirestore} from "firebase-admin/firestore";
 setGlobalOptions({ maxInstances: 10 });
 initializeApp();
 
-export const deleteMyAccount = onCall(async (request) => {
-  const idToken = typeof request.data?.idToken === "string" ? request.data.idToken : null;
-  const db = getFirestore();
-  const auth = getAuth();
-
-  let uid = request.auth?.uid ?? null;
-  if (!uid && idToken) {
-    const decoded = await auth.verifyIdToken(idToken, true);
-    uid = decoded.uid;
-  }
-
-  if (!uid) {
+export const deleteMyAccount = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
     throw new HttpsError("unauthenticated", "You must be signed in to delete an account.");
   }
 
+  const uid = request.auth.uid;
+  const db = getFirestore();
+  const auth = getAuth();
   const userRef = db.collection("users").doc(uid);
 
   await db.recursiveDelete(userRef);

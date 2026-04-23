@@ -83,9 +83,8 @@ class AuthNotifier extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final idToken = await user.getIdToken(true);
     final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('deleteMyAccount');
-    await callable.call(<String, dynamic>{'idToken': idToken});
+    await callable.call();
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
   }
