@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -12,6 +13,7 @@ from dotenv import load_dotenv
 from firebase_admin import credentials, firestore
 
 FIRESTORE_BATCH_LIMIT = 500
+TIMESTAMP_FIELDS = frozenset({"scraped_at", "valid_from", "valid_until"})
 DISCOUNT_SCRIPT_PATHS = [
     Path("stores/lidl/discounted_items.py"),
     Path("stores/mercator/discounted_items.py"),
@@ -77,8 +79,9 @@ def upsert_products(
         if not product_id:
             raise ValueError("Each product must contain a non-empty `product_id`.")
 
+        product_payload = _coerce_firestore_types(product)
         doc_ref = db.collection(collection_name).document(str(product_id))
-        batch.set(doc_ref, product, merge=True)
+        batch.set(doc_ref, product_payload, merge=True)
         ops_in_batch += 1
 
         if ops_in_batch >= FIRESTORE_BATCH_LIMIT:
@@ -92,6 +95,31 @@ def upsert_products(
         written += ops_in_batch
 
     return written
+
+
+def _coerce_firestore_types(product: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(product)
+    for field in TIMESTAMP_FIELDS:
+        payload[field] = _parse_iso_datetime(payload.get(field))
+    return payload
+
+
+def _parse_iso_datetime(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+
+    text = value.strip()
+    if not text:
+        return value
+
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return value
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def load_discounted_products(
