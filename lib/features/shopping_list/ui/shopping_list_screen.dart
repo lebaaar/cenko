@@ -205,7 +205,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Text('Item will be removed from the shipping list', style: Theme.of(context).textTheme.bodyMedium),
+                      Text('Item will be removed from the shopping list', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 24),
                       Row(
                         children: [

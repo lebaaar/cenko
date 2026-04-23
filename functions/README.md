@@ -17,4 +17,3 @@ npm run build
 cd ..
 firebase emulators:start --only functions
 ```
-Then you can test the `helloWorld` function with on http://localhost:5001/cenko/us-central1/helloWorld
