@@ -86,13 +86,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed != true || !mounted) return;
     setState(() => _deleteLoading = true);
     try {
-      await ref.read(authNotifierProvider).deleteAccount(uid);
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _deleteLoading = false;
-        _error = e.code == 'requires-recent-login' ? 'Sign out and sign back in before deleting your account.' : e.message ?? e.code;
-      });
+      await ref.read(authNotifierProvider).deleteAccount();
     } catch (e) {
       if (!mounted) return;
       setState(() {

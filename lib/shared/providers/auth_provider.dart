@@ -1,5 +1,6 @@
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ final authStateProvider = StreamProvider<User?>((ref) {
 /// ChangeNotifier that pings GoRouter whenever auth state changes.
 class AuthNotifier extends ChangeNotifier {
   final _auth = FirebaseAuth.instance;
+  final _db = FirebaseFirestore.instance;
   final _userRepo = UserRepository();
 
   AuthNotifier(Ref ref) {
@@ -78,10 +80,32 @@ class AuthNotifier extends ChangeNotifier {
     await Future.wait([_auth.signOut(), GoogleSignIn.instance.signOut()]);
   }
 
-  Future<void> deleteAccount(String uid) async {
+  Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
-    await _userRepo.deleteUser(uid);
+
+    final userDoc = _db.collection('users').doc(user.uid);
+
+    final receipts = await userDoc.collection('receipts').get();
+    for (final receipt in receipts.docs) {
+      final items = await receipt.reference.collection('items').get();
+      for (final item in items.docs) {
+        await item.reference.delete();
+      }
+      await receipt.reference.delete();
+    }
+
+    final shoppingList = await userDoc.collection('shopping_list').get();
+    for (final doc in shoppingList.docs) {
+      await doc.reference.delete();
+    }
+
+    final commonProducts = await userDoc.collection('common_products').get();
+    for (final doc in commonProducts.docs) {
+      await doc.reference.delete();
+    }
+
+    await userDoc.delete();
     await user.delete();
     await GoogleSignIn.instance.signOut();
   }
