@@ -66,7 +66,7 @@ def get_firestore_client(service_account_path: str | None = None) -> firestore.C
 def upsert_products(
     db: firestore.Client,
     products: Iterable[dict],
-    collection_name: str = "catalog_products",
+    collection_name: str = "products",
 ) -> int:
     written = 0
     batch = db.batch()
@@ -137,7 +137,7 @@ def dedupe_products_per_store(products: Iterable[dict[str, Any]]) -> list[dict[s
 
 def sync_discounted_products(
     service_account_path: str | None = None,
-    collection_name: str = "catalog_products",
+    collection_name: str = "products",
 ) -> int:
     db = get_firestore_client(service_account_path=service_account_path)
     discounted_products = load_discounted_products()
@@ -147,7 +147,7 @@ def sync_discounted_products(
 
 def main() -> None:
     service_account_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY") or "serviceAccountKey.json"
-    collection_name = os.getenv("FIRESTORE_COLLECTION", "catalog_products")
+    collection_name = os.getenv("FIRESTORE_COLLECTION", "products")
     written = sync_discounted_products(
         service_account_path=service_account_path,
         collection_name=collection_name,

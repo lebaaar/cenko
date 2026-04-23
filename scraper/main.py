@@ -7,7 +7,7 @@ from scripts.db import sync_discounted_products
 
 def main() -> None:
     service_account_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY") or "serviceAccountKey.json"
-    collection_name = os.getenv("FIRESTORE_COLLECTION", "catalog_products")
+    collection_name = os.getenv("FIRESTORE_COLLECTION", "products")
     written = sync_discounted_products(
         service_account_path=service_account_path,
         collection_name=collection_name,
