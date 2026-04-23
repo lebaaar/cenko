@@ -287,37 +287,39 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       showDragHandle: true,
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Text('Sort deals', style: Theme.of(context).textTheme.titleLarge),
-                ),
-                for (final option in _DealsSortOption.values)
-                  RadioListTile<_DealsSortOption>(
-                    value: option,
-                    groupValue: _sortOption,
-                    title: Text(_sortLabel(option)),
-                    dense: true,
-                    visualDensity: const VisualDensity(vertical: -3),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _sortOption = value;
-                        _visibleCount = _pageSize;
-                      });
-                      Navigator.of(sheetContext).pop();
-                    },
+          child: RadioGroup<_DealsSortOption>(
+            groupValue: _sortOption,
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              setState(() {
+                _sortOption = value;
+                _visibleCount = _pageSize;
+              });
+              Navigator.of(sheetContext).pop();
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Text('Sort deals', style: Theme.of(context).textTheme.titleLarge),
                   ),
-              ],
+                  for (final option in _DealsSortOption.values)
+                    RadioListTile<_DealsSortOption>(
+                      value: option,
+                      title: Text(_sortLabel(option)),
+                      dense: true,
+                      visualDensity: const VisualDensity(vertical: -3),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                ],
+              ),
             ),
           ),
         );

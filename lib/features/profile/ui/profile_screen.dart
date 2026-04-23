@@ -654,6 +654,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         if (dialogContext.mounted) {
                                           Navigator.of(dialogContext).pop(true);
                                         }
+                                        if (!context.mounted) {
+                                          return;
+                                        }
                                         if (mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt deleted')));
                                         }
