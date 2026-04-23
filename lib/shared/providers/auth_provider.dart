@@ -77,6 +77,14 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> signOut() async {
     await Future.wait([_auth.signOut(), GoogleSignIn.instance.signOut()]);
   }
+
+  Future<void> deleteAccount(String uid) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _userRepo.deleteUser(uid);
+    await user.delete();
+    await GoogleSignIn.instance.signOut();
+  }
 }
 
 final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>((ref) {

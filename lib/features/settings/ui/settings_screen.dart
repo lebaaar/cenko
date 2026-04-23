@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,6 +26,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _language = 'en';
   bool _notificationsEnabled = true;
   bool _initialized = false;
+  bool _resetPasswordLoading = false;
+  bool _deleteLoading = false;
 
   @override
   void dispose() {
@@ -60,14 +63,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-  Future<void> _resetDefaults(String uid) async {
-    setState(() {
-      _theme = 'system';
-      _language = 'en';
-      _notificationsEnabled = true;
-      _error = null;
-    });
-    await _savePreferences(uid);
+  Future<void> _deleteAccount(String uid) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account'),
+        content: const Text('This will permanently delete your account and all associated data. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleteLoading = true);
+    try {
+      await ref.read(authNotifierProvider).deleteAccount(uid);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _deleteLoading = false;
+        _error = e.code == 'requires-recent-login' ? 'Sign out and sign back in before deleting your account.' : e.message ?? e.code;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _deleteLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (email == null || email.isEmpty) {
+      setState(() => _error = 'No email found for this account.');
+      return;
+    }
+
+    setState(() => _resetPasswordLoading = true);
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      setState(() => _error = null);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password reset email has been sent to $email')));
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message ?? e.code);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _resetPasswordLoading = false);
+    }
   }
 
   @override
@@ -84,6 +140,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         body: Center(child: Text(error.toString())),
       ),
       data: (user) {
+        final hasPasswordProvider = FirebaseAuth.instance.currentUser?.providerData.any((provider) => provider.providerId == 'password') ?? false;
+
         if (!_initialized && user != null) {
           _nameCtrl.text = user.name;
           _theme = UserSettings.normalizeTheme(user.settings.theme);
@@ -100,10 +158,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Account', style: Theme.of(context).textTheme.headlineMedium),
-                  const SizedBox(height: 8),
-                  Text('Manage your account settings and preferences', style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 24),
                   if (_error != null) ...[
                     Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: Theme.of(context).colorScheme.error)),
                     const SizedBox(height: 16),
@@ -115,7 +169,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Profile', style: Theme.of(context).textTheme.titleLarge),
+                        Text('Account', style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text('Manage your account settings and preferences', style: Theme.of(context).textTheme.bodyMedium),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _nameCtrl,
@@ -123,9 +179,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onChanged: user == null ? null : (value) => _onNameChanged(user.userId, value),
                           decoration: const InputDecoration(labelText: 'Display name'),
                         ),
-                        const SizedBox(height: 24),
-                        Text('Theme', style: Theme.of(context).textTheme.titleLarge),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
                           initialValue: _theme,
                           decoration: const InputDecoration(labelText: 'Theme mode'),
@@ -155,8 +209,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             }
                           },
                         ),
-                        const SizedBox(height: 20),
-                        OutlinedButton(onPressed: user == null ? null : () => _resetDefaults(user.userId), child: const Text('Reset to defaults')),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(24)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Security', style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text('Manage your sign-in and account security.', style: Theme.of(context).textTheme.bodyMedium),
+                        const SizedBox(height: 16),
+                        if (hasPasswordProvider) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: (user == null || _resetPasswordLoading || _deleteLoading) ? null : _resetPassword,
+                              child: _resetPasswordLoading
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Text('Reset password'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: (user == null || _deleteLoading) ? null : () => _deleteAccount(user.userId),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Theme.of(context).colorScheme.error,
+                              side: BorderSide(color: Theme.of(context).colorScheme.error),
+                            ),
+                            child: _deleteLoading
+                                ? SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.error),
+                                  )
+                                : const Text('Delete account'),
+                          ),
+                        ),
                       ],
                     ),
                   ),
