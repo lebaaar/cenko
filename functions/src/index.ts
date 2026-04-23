@@ -8,8 +8,11 @@
  */
 
 import {setGlobalOptions} from "firebase-functions/v2/options";
-import {onCall, onRequest} from "firebase-functions/v2/https";
+import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import {initializeApp} from "firebase-admin/app";
+import {getAuth} from "firebase-admin/auth";
+import {getFirestore} from "firebase-admin/firestore";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -25,6 +28,7 @@ import * as logger from "firebase-functions/logger";
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
+initializeApp();
 
 export const helloWorld = onRequest((request, response) => {
   logger.info("Hello logs!", {structuredData: true});
@@ -35,4 +39,28 @@ export const getTestText = onCall(() => {
   const text = "Firebase function call works.";
   logger.info("Returning test text", {text, structuredData: true});
   return {text};
+});
+
+export const deleteMyAccount = onCall(async (request) => {
+  const idToken = typeof request.data?.idToken === "string" ? request.data.idToken : null;
+  const db = getFirestore();
+  const auth = getAuth();
+
+  let uid = request.auth?.uid ?? null;
+  if (!uid && idToken) {
+    const decoded = await auth.verifyIdToken(idToken, true);
+    uid = decoded.uid;
+  }
+
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to delete an account.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  await db.recursiveDelete(userRef);
+  await auth.deleteUser(uid);
+
+  logger.info("Deleted user account data", {uid, structuredData: true});
+  return {success: true};
 });

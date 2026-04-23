@@ -63,7 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-  Future<void> _deleteAccount(String uid) async {
+  Future<void> _deleteAccount() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -233,7 +233,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
-                            onPressed: (user == null || _deleteLoading) ? null : () => _deleteAccount(user.userId),
+                            onPressed: (user == null || _deleteLoading) ? null : _deleteAccount,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Theme.of(context).colorScheme.error,
                               side: BorderSide(color: Theme.of(context).colorScheme.error),
