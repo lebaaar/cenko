@@ -17,7 +17,6 @@ MAX_PAGES = 300
 
 
 def fetch_products(discounted_only: bool) -> list[dict[str, Any]]:
-    """Fetch all products by paging with `from` (offset is ignored by this API)."""
     all_products: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     seen_page_signatures: set[tuple[str, ...]] = set()
@@ -133,6 +132,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
     )
     uid_seed = f"{STORE_NAME}:{source_id or name}"
     generated_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
+    original_price_cents = _to_cents(original_price)
+    sale_price_cents = _to_cents(sale_price)
 
     return {
         "product_id": generated_id,
@@ -141,8 +142,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
         "product_name": str(name),
         "brand": _nullable_str(_first(data, ["brand_name"]) or _first(raw, ["brand", "brandName", "manufacturer"])),
         "image_url": image_url,
-        "original_price": original_price,
-        "sale_price": sale_price,
+        "original_price": original_price_cents,
+        "sale_price": sale_price_cents,
         "discount_pct": discount_pct,
         "valid_from": valid_from,
         "valid_until": valid_until,
@@ -212,6 +213,10 @@ def _to_float(value: Any) -> float:
         return float(text)
     except ValueError:
         return 0.0
+
+
+def _to_cents(value: float) -> int:
+    return int(round(value * 100))
 
 
 def _nullable_str(value: Any) -> str | None:

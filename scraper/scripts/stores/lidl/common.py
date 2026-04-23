@@ -15,16 +15,15 @@ SEARCH_URL = "https://www.lidl.si/q/api/search"
 DEFAULT_FETCH_SIZE = 96
 MAX_PAGES_PER_QUERY = 500
 FALLBACK_CATEGORY_IDS = [
-    "10068374",  # Hrana in pijača
-    "10068166",  # Kuhinja in gospodinjstvo
-    "10068222",  # Vse za dom in vrt
-    "10068226",  # Šport in prosti čas
-    "10068371",  # Pohištvo in dodatki
-    "10068373",  # Moda in dodatki
-    "10068225",  # Dojenčki, otroci in igrače
+    "10068374",
+    "10068166",
+    "10068222",
+    "10068226",
+    "10068371",
+    "10068373",
+    "10068225",
 ]
 
-# Endpoint often requires this media type on some environments.
 DEFAULT_HEADERS = {
     "Accept": "application/mindshift.search+json;version=2",
     "User-Agent": "Mozilla/5.0",
@@ -44,12 +43,6 @@ def fetch_all_products(
     version: str = "2.1.0",
     fetch_size: int = DEFAULT_FETCH_SIZE,
 ) -> list[dict[str, Any]]:
-    """
-    Fetches all products by paging `offset` until the endpoint stops returning items.
-
-    If `category_ids` is provided, queries each category separately and deduplicates.
-    Otherwise, it tries a single global query (without category filter).
-    """
     queries: list[dict[str, str]] = []
     discovered_ids: list[str] = []
     if category_ids:
@@ -115,7 +108,6 @@ def discover_category_ids(
     assortment: str = "SI",
     version: str = "2.1.0",
 ) -> list[str]:
-    """Extract category IDs from the `category` facet of a broad search call."""
     try:
         payload = _fetch_json(
             {
@@ -245,6 +237,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
 
     uid_seed = f"{STORE_NAME}:{source_id or product_name}"
     product_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
+    original_price_cents = _to_cents(original_price)
+    sale_price_cents = _to_cents(sale_price)
 
     return {
         "product_id": product_id,
@@ -253,8 +247,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
         "product_name": str(product_name),
         "brand": brand,
         "image_url": image_url,
-        "original_price": original_price,
-        "sale_price": sale_price,
+        "original_price": original_price_cents,
+        "sale_price": sale_price_cents,
         "discount_pct": discount_pct,
         "valid_from": valid_from,
         "valid_until": valid_until,
@@ -437,6 +431,10 @@ def _to_float(value: Any) -> float:
         return float(text)
     except ValueError:
         return 0.0
+
+
+def _to_cents(value: float) -> int:
+    return int(round(value * 100))
 
 
 def _parse_timestamp(value: Any) -> str | None:

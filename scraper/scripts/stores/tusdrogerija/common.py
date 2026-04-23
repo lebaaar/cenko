@@ -120,6 +120,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
 
     uid_seed = f"{STORE_NAME}:{ext_id or slug or title}"
     product_id = str(uuid.uuid5(uuid.NAMESPACE_URL, uid_seed))
+    regular_price_cents = _to_cents(regular_price)
+    action_price_cents = _to_cents(action_price)
 
     return {
         "product_id": product_id,
@@ -128,8 +130,8 @@ def normalize_product(raw: dict[str, Any], scraped_at: str) -> dict[str, Any]:
         "product_name": title,
         "brand": _extract_brand(raw),
         "image_url": image_url,
-        "original_price": regular_price,
-        "sale_price": action_price,
+        "original_price": regular_price_cents,
+        "sale_price": action_price_cents,
         "discount_pct": discount_pct,
         "valid_from": valid_from,
         "valid_until": valid_until,
@@ -257,6 +259,10 @@ def _to_float(value: Any) -> float:
         return float(text)
     except ValueError:
         return 0.0
+
+
+def _to_cents(value: float) -> int:
+    return int(round(value * 100))
 
 
 def _parse_iso(value: Any) -> str | None:
