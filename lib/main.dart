@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,10 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
+    providerApple: kDebugMode ? AppleDebugProvider() : AppleAppAttestProvider(),
+  );
   await GoogleSignIn.instance.initialize(serverClientId: defaultTargetPlatform == TargetPlatform.android ? _webClientId : null);
   runApp(const ProviderScope(child: CenkoApp()));
 }
