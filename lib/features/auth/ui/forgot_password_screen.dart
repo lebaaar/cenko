@@ -151,7 +151,7 @@ class _ConfirmationView extends StatelessWidget {
                 text: email,
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
               ),
-              const TextSpan(text: '. Follow the link in the email to set a new password.'),
+              const TextSpan(text: '. Follow the link in the email to set a new password'),
             ],
           ),
         ),

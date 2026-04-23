@@ -487,7 +487,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           ),
                                           data: (page) {
                                             if (page.receipts.isEmpty) {
-                                              return Text('No receipts scanned in this month.', style: Theme.of(context).textTheme.bodyMedium);
+                                              return Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium);
                                             }
 
                                             return Column(
@@ -627,7 +627,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Text('This receipt will be removed from your spending history.', style: Theme.of(context).textTheme.bodyMedium),
+                      Text('This receipt will be removed from your spending history', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 24),
                       Row(
                         children: [

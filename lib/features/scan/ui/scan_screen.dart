@@ -60,10 +60,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             properties: {
               'receipt_id': Schema.string(),
               'store_name': Schema.string(),
-              'total_price': Schema.integer(description: 'Total in cents.'),
+              'total_price': Schema.integer(description: 'Total in cents'),
               'item_count': Schema.integer(),
-              'raw_ocr': Schema.string(description: 'Full OCR text extracted from receipt image.'),
-              'date': Schema.string(description: 'ISO-8601 timestamp string.'),
+              'raw_ocr': Schema.string(description: 'Full OCR text extracted from receipt image'),
+              'date': Schema.string(description: 'ISO-8601 timestamp string'),
             },
             propertyOrdering: const ['receipt_id', 'store_name', 'total_price', 'item_count', 'raw_ocr', 'date'],
           ),
@@ -72,9 +72,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               properties: {
                 'item_id': Schema.string(),
                 'raw_name': Schema.string(),
-                'unit_price': Schema.integer(description: 'Price per unit in cents.'),
-                'quantity': Schema.number(description: 'Quantity purchased.'),
-                'total_price': Schema.integer(description: 'Line total in cents.'),
+                'unit_price': Schema.integer(description: 'Price per unit in cents'),
+                'quantity': Schema.number(description: 'Quantity purchased'),
+                'total_price': Schema.integer(description: 'Line total in cents'),
               },
               propertyOrdering: const ['item_id', 'raw_name', 'unit_price', 'quantity', 'total_price'],
             ),
@@ -245,7 +245,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Press Enter to store this receipt.',
+                    'Press Enter to store this receipt',
                     style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.76)),
                     textAlign: TextAlign.center,
                   ),
@@ -286,7 +286,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _receiptFlowMessage ?? 'Please try again.',
+                    _receiptFlowMessage ?? 'Please try again',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -310,7 +310,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Your spending data has been updated.',
+                    'Your spending data has been updated',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -373,7 +373,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _barcodeFlowMessage ?? 'Could not get product details. Please try again.',
+                    _barcodeFlowMessage ?? 'Could not get product details. Please try again',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -403,7 +403,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    productLabel ?? 'Ready to add to shopping list.',
+                    productLabel ?? 'Ready to add to shopping list',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -602,7 +602,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   String _readySummaryText() {
     final receipt = _pendingReceiptPayload?['receipt'];
     if (receipt is! Map<String, dynamic>) {
-      return 'Review and store this receipt.';
+      return 'Review and store this receipt';
     }
     final storeName = _asString(receipt['store_name'], fallback: 'Unknown store');
     final total = _asInt(receipt['total_price']);
@@ -640,7 +640,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final camera = _receiptCamera;
       if (camera == null || !camera.value.isInitialized) {
         return const Center(
-          child: Padding(padding: EdgeInsets.all(24), child: Text('Camera is not ready.')),
+          child: Padding(padding: EdgeInsets.all(24), child: Text('Camera is not ready')),
         );
       }
       final previewSize = camera.value.previewSize;
@@ -774,7 +774,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       }
 
       if (_cameras.isEmpty) {
-        throw StateError('No camera available on this device.');
+        throw StateError('No camera available on this device');
       }
 
       final targetIndex = cameraIndex ?? _findBackCameraIndex(_cameras);
@@ -877,7 +877,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (uid == null) {
       setState(() {
         _barcodeFlowState = _BarcodeFlowState.failure;
-        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list.';
+        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list';
       });
       return;
     }
@@ -902,7 +902,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       if (!mounted) {
         return;
       }
-      _showSnackBar(const SnackBar(content: Text('Could not add product to shopping list. Please try again.')));
+      _showSnackBar(const SnackBar(content: Text('Could not add product to shopping list. Please try again')));
     }
   }
 
@@ -915,7 +915,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (uid == null) {
       setState(() {
         _barcodeFlowState = _BarcodeFlowState.failure;
-        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list.';
+        _barcodeFlowMessage = 'You must be logged in to add items to your shopping list';
       });
       return;
     }
@@ -945,7 +945,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   children: [
                     Text('Add item manually', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
-                    Text('Enter the item name and save it to your shopping list.', style: Theme.of(context).textTheme.bodyMedium),
+                    Text('Enter the item name and save it to your shopping list', style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 16),
                     if (formError != null) ...[
                       Text(formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -998,7 +998,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                     return;
                                   }
                                   setSheetState(() {
-                                    formError = 'Could not save item. Please try again.';
+                                    formError = 'Could not save item. Please try again';
                                     saving = false;
                                   });
                                 }
@@ -1125,7 +1125,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (_mode == _ScanMode.barcode) {
       _handleBarcodeDetection(capture);
     } else {
-      _showSnackBar(const SnackBar(content: Text('Receipt captured. Cloud parsing is next.')));
+      _showSnackBar(const SnackBar(content: Text('Receipt captured. Cloud parsing is next')));
       Future<void>.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) {
           return;
@@ -1163,7 +1163,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         setState(() {
           _barcodeProduct = null;
           _barcodeFlowState = _BarcodeFlowState.failure;
-          _barcodeFlowMessage = 'No product was found for this barcode.';
+          _barcodeFlowMessage = 'No product was found for this barcode';
         });
         return;
       }
@@ -1178,7 +1178,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         setState(() {
           _barcodeProduct = null;
           _barcodeFlowState = _BarcodeFlowState.failure;
-          _barcodeFlowMessage = 'Could not get product details. Please try again or add the item manually.';
+          _barcodeFlowMessage = 'Could not get product details. Please try again or add the item manually';
         });
       }
     } finally {
@@ -1206,11 +1206,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Unexpected product response format.');
+      throw const FormatException('Unexpected product response format');
     }
 
     if (response.statusCode != 200 && response.statusCode != 404) {
-      throw StateError('Open Food Facts request failed (${response.statusCode}).');
+      throw StateError('Open Food Facts request failed (${response.statusCode})');
     }
 
     return decoded;
@@ -1237,7 +1237,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     if (capture == null || capture.barcodes.isEmpty) {
-      _showSnackBar(const SnackBar(content: Text('No barcode detected in selected image.')));
+      _showSnackBar(const SnackBar(content: Text('No barcode detected in selected image')));
       return;
     }
 
@@ -1248,7 +1248,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     final camera = _receiptCamera;
     if (camera == null || !camera.value.isInitialized) {
       setState(() {
-        _receiptFlowMessage = 'Camera not ready for capture.';
+        _receiptFlowMessage = 'Camera not ready for capture';
         _receiptFlowState = _ReceiptFlowState.failure;
       });
       return;
@@ -1274,7 +1274,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
       setState(() {
-        _receiptFlowMessage = 'Could not capture receipt image. Please try again.';
+        _receiptFlowMessage = 'Could not capture receipt image. Please try again';
         _receiptFlowState = _ReceiptFlowState.failure;
       });
     } finally {
@@ -1301,14 +1301,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
       final rawText = response.text?.trim();
       if (rawText == null || rawText.isEmpty) {
-        throw StateError('Gemini returned no JSON text.');
+        throw StateError('Gemini returned no JSON text');
       }
 
       final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
 
       final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
       if (!_isReceiptDetected(dbReadyPayload)) {
-        throw const _UserVisibleError('No receipt detected. Make sure a full receipt is visible and try again.');
+        throw const _UserVisibleError('No receipt detected. Make sure a full receipt is visible and try again');
       }
 
       if (!mounted) {
@@ -1366,7 +1366,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'items[].unit_price (integer cents), '
         'items[].quantity (number), '
         'items[].total_price (integer cents). '
-        'All prices must be cents as integers.',
+        'All prices must be cents as integers',
       ),
       Content.inlineData(mimeType, imageBytes),
     ];
@@ -1394,7 +1394,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final repairedText = repairedResponse.text?.trim();
     if (repairedText == null || repairedText.isEmpty) {
-      throw const FormatException('AI returned empty text when repairing receipt JSON.');
+      throw const FormatException('AI returned empty text when repairing receipt JSON');
     }
 
     final repaired = _tryParseJsonObject(repairedText);
@@ -1402,7 +1402,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return repaired;
     }
 
-    throw const FormatException('Unexpected end of input in AI JSON response.');
+    throw const FormatException('Unexpected end of input in AI JSON response');
   }
 
   Map<String, dynamic>? _tryParseJsonObject(String input) {
@@ -1690,7 +1690,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final matchedDeals = _dealTextMatcherService.matchDeals(shoppingListTexts: names, deals: activeDeals, minScore: 0.48);
     if (matchedDeals.isEmpty) {
-      return (insights: const <String>['This product is not on sale right now, but we will keep watching for deals.'], hasDeals: false);
+      return (insights: const <String>['This product is not on sale right now, but we will keep watching for deals'], hasDeals: false);
     }
 
     final uniqueDeals = <String, CatalogDealItem>{};
@@ -1712,10 +1712,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     return (
       insights: <String>[
-        '$productCountLabel currently on sale.',
-        'Best immediate pick: ${topDeal.title} at ${topDeal.storeName}${(topDeal.discountPercent ?? 0) > 0 ? ' (-${topDeal.discountPercent}%)' : ''}.',
-        'Potential savings across matched items: ${formatCents(totalSavings)}.',
-        'Most opportunities are at ${topStore.key} (${topStore.value} items).',
+        '$productCountLabel currently on sale',
+        'Best immediate pick: ${topDeal.title} at ${topDeal.storeName}${(topDeal.discountPercent ?? 0) > 0 ? ' (-${topDeal.discountPercent}%)' : ''}',
+        'Potential savings across matched items: ${formatCents(totalSavings)}',
+        'Most opportunities are at ${topStore.key} (${topStore.value} items)',
       ],
       hasDeals: true,
     );
@@ -1724,13 +1724,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Future<void> _persistReceiptPayload(Map<String, dynamic> payload) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      throw StateError('You must be logged in to store a receipt.');
+      throw StateError('You must be logged in to store a receipt');
     }
 
     final receipt = payload['receipt'] as Map<String, dynamic>?;
     final items = payload['items'] as List<dynamic>?;
     if (receipt == null) {
-      throw StateError('Receipt data is missing.');
+      throw StateError('Receipt data is missing');
     }
 
     final firestore = FirebaseFirestore.instance;

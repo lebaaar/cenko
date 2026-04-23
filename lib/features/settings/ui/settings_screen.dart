@@ -68,7 +68,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete account'),
-        content: const Text('This will permanently delete your account and all associated data. This cannot be undone.'),
+        content: const Text('This will permanently delete your account and all associated data. This cannot be undone'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -99,7 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _resetPassword() async {
     final email = FirebaseAuth.instance.currentUser?.email;
     if (email == null || email.isEmpty) {
-      setState(() => _error = 'No email found for this account.');
+      setState(() => _error = 'No email found for this account');
       return;
     }
 
@@ -216,7 +216,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         Text('Security', style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 8),
-                        Text('Manage your sign-in and account security.', style: Theme.of(context).textTheme.bodyMedium),
+                        Text('Manage your sign-in and account security', style: Theme.of(context).textTheme.bodyMedium),
                         const SizedBox(height: 16),
                         if (hasPasswordProvider) ...[
                           SizedBox(

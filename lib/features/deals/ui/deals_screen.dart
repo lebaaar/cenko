@@ -344,12 +344,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list')));
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list')));
     } finally {
       if (mounted) {
         setState(() {
@@ -510,15 +510,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           isAlreadyOnShoppingList: alreadyOnShoppingList,
                           onAddToShoppingList: () {
                             if (alreadyOnShoppingList) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list.')));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list')));
                               return;
                             }
                             if (uid == null) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list.')));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list')));
                               return;
                             }
                             _addDealToShoppingList(deal: deal, uid: uid);

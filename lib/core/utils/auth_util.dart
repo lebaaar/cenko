@@ -9,21 +9,21 @@ String? validateEmail(String? v) {
 String authErrorMessage(String code) {
   switch (code) {
     case 'user-not-found':
-      return 'No account found for this email.';
+      return 'No account found for this email';
     case 'wrong-password':
     case 'invalid-credential':
-      return 'Incorrect email or password.';
+      return 'Incorrect email or password';
     case 'email-already-in-use':
-      return 'An account already exists for this email.';
+      return 'An account already exists for this email';
     case 'weak-password':
-      return 'Password is too weak.';
+      return 'Password is too weak';
     case 'invalid-email':
-      return 'Invalid email address.';
+      return 'Invalid email address';
     case 'too-many-requests':
-      return 'Too many attempts. Try again later.';
+      return 'Too many attempts. Try again later';
     case 'network-request-failed':
-      return 'Network error. Check your connection.';
+      return 'Network error. Check your connection';
     default:
-      return 'Something went wrong. Please try again.';
+      return 'Something went wrong. Please try again';
   }
 }

@@ -71,7 +71,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: uid == null
-                    ? const Center(child: Text('Please sign in to manage your shopping list.'))
+                    ? const Center(child: Text('Please sign in to manage your shopping list'))
                     : ref
                           .watch(shoppingListItemsProvider(uid))
                           .when(
@@ -79,7 +79,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             error: (error, _) => Center(child: Text('Could not load shopping list: $error')),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const Center(child: Text('No items yet. Tap "Add item" to create your list.'));
+                                return const Center(child: Text('No items yet. Tap "Add item" to create your list'));
                               }
 
                               final bestDealByItemId = _buildBestDealsByItem(items, dealsAsync.asData?.value);
@@ -205,7 +205,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Text('Item will be removed from the shipping list.', style: Theme.of(context).textTheme.bodyMedium),
+                      Text('Item will be removed from the shipping list', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -283,7 +283,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     Text(item == null ? 'Add item' : 'Edit item', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
                     Text(
-                      item == null ? 'Add a new item to your shopping list.' : 'Update item details.',
+                      item == null ? 'Add a new item to your shopping list' : 'Update item details',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 16),
