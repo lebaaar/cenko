@@ -33,7 +33,6 @@ Collections:
 ```
 
 ## /users/{user_id}/receipts/{receipt_id}
-
 ```json
 {
   "receipt_id": "string", // auto-generated
@@ -46,7 +45,6 @@ Collections:
 ```
 
 ## /users/{user_id}/receipts/{receipt_id}/items/{item_id}
-
 ```json
 {
   "item_id": "string", // auto-generated id
@@ -57,56 +55,99 @@ Collections:
 }
 ```
 
-## /users/{user_id}/shopping_list/{item_id}
-
-Items the user added to their shopping list
-
+## /users/{user_id}/shopping_lists_memberships/{list_id}
 ```json
 {
-  "item_id": "string", // auto-generated id
-  "name": "string", // eg. Milka Oreo 100g
-  "brand": "string | null", // eg. Milka
-  "barcode": "string | null",
-  "image_url": "string | null",
-  "added_at": "timestamp",
-  "bought": false
+  "list_id": "string", // shopping list id
+  "name": "string", // shopping list name (for quick access without fetching the whole list)
+  "joined_at": "timestamp"
 }
 ```
 
 ## /users/{user_id}/common_products/{item_id}
-
 Items that the user frequently buys, inferred from scanned receipts. Used for personalized deal recommendations on the Home page.
-
 ```json
 {
   "item_id": "string", // auto-generated id
-  "name": "string", // eg. Milka Oreo 100g
-  "brand": "string | null", // eg. Milka
+  "name": "string",
+  "brand": "string | null",
   "image_url": "string | null",
-  "purchase_count": 0, // distinct receipts in the last 90 days
+  "purchase_count": 0,
   "last_purchased_at": "timestamp",
   "added_at": "timestamp" // refreshed to the latest matching receipt date; delete after 45 days of inactivity. Checked each time a receipt is scanned
 }
 ```
 
-## /catalog_products/{product_id}
+<br><br><br>
 
-Scraper results, written by scraper backend (Cloud Function, runs every 3 days).
+## /shopping_lists/{list_id}
+Shpping lists can be shared with other users.
+```json
+{
+  "list_id": "string", // auto-generated id
+  "name": "string",
+  "owner_id": "string", // user_id of list owner - only owner can remove the list (can also transfer ownership to another member)
+  "created_at": "timestamp",
+  "updated_at": "timestamp",
+  "item_count": 88,
+  "bought_count": 14,
+  "members": [ // max 5 members per list, for free plan, TBD for premium plans
+    {
+      "user_id": "string",
+      "joined_at": "timestamp",
+      "role": "owner | member" // owner can remove list and remove members, members can do everything except removing the list and removing other members
+    }
+  ]
+}
+```
 
+## /shopping_lists/{list_id}/items/{item_id}
+```json
+{
+  "item_id": "string", // auto-generated id
+  "name": "string",
+  "brand": "string | null",
+  "quantity": 0,
+  "unit": "string | null",
+  "is_bought": false,
+  "added_by": "string",
+  "added_at": "timestamp",
+  "bought_at": "timestamp | null"
+}
+```
+
+## /shopping_list_invitations/{invitation_id}
+```json
+{
+  "invitation_id": "string", // auto-generated id
+  "list_id": "string",
+  "invited_user_id": "string",
+  "invited_by_user_id": "string",
+  "status": "pending | accepted | declined",
+  "sent_at": "timestamp",
+  "responded_at": "timestamp | null",
+  "expires_at": "timestamp | null"
+}
+```
+
+<br><br><br>
+
+## /products/{product_id}
+Scraper results, products on sale across different stores.
 ```json
 {
   "product_id": "string", // auto-generated id
   "store_name": "string",
-  //"scraped_from_url": "string",
   "product_name": "string",
   "brand": "string | null",
   //"category": "string | null",
-  //"image_url": "string | null",
+  "image_url": "string | null",
   "original_price": 0,
   "sale_price": 0,
   "discount_pct": 0,
   "valid_from": "timestamp",
   "valid_until": "timestamp",
-  "scraped_at": "timestamp"
+  "scraped_at": "timestamp",
+  "scrapped_from_url": "string | null"
 }
 ```
