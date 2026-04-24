@@ -1,7 +1,7 @@
 name: cenko
 description: "Track your spending and discover the best deals across grocery stores"
 publish_to: "none"
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   sdk: ^3.11.4
