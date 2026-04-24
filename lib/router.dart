@@ -49,7 +49,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/scan',
-            builder: (context, state) => ScanScreen(initialMode: state.uri.queryParameters['mode'], returnTo: state.uri.queryParameters['from']),
+            builder: (context, state) => ScanScreen(
+              initialMode: state.uri.queryParameters['mode'],
+              returnTo: state.uri.queryParameters['from'],
+              targetListId: state.uri.queryParameters['listId'],
+            ),
           ),
           GoRoute(
             path: '/list',

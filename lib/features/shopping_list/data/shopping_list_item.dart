@@ -4,7 +4,6 @@ class ShoppingListItem {
   const ShoppingListItem({
     required this.id,
     required this.name,
-    this.brand,
     required this.quantity,
     this.unit,
     required this.isBought,
@@ -15,7 +14,6 @@ class ShoppingListItem {
 
   final String id;
   final String name;
-  final String? brand;
   final int quantity;
   final String? unit;
   final bool isBought;
@@ -26,7 +24,6 @@ class ShoppingListItem {
   factory ShoppingListItem.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     final name = (data?['name'] as String?)?.trim();
-    final brand = (data?['brand'] as String?)?.trim();
     final unit = (data?['unit'] as String?)?.trim();
     final isBought = data?['is_bought'] as bool? ?? false;
     final addedAt = data?['added_at'] as Timestamp?;
@@ -35,7 +32,6 @@ class ShoppingListItem {
     return ShoppingListItem(
       id: doc.id,
       name: (name == null || name.isEmpty) ? 'Unnamed item' : name,
-      brand: (brand == null || brand.isEmpty) ? null : brand,
       quantity: data?['quantity'] as int? ?? 1,
       unit: (unit == null || unit.isEmpty) ? null : unit,
       isBought: isBought,

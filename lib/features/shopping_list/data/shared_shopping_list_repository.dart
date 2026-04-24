@@ -141,14 +141,12 @@ class SharedShoppingListRepository {
     required String listId,
     required String addedBy,
     required String name,
-    String? brand,
     int quantity = 1,
     String? unit,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
-    final trimmedBrand = brand?.trim();
     final trimmedUnit = unit?.trim();
 
     final batch = _firestore.batch();
@@ -156,7 +154,6 @@ class SharedShoppingListRepository {
 
     batch.set(itemRef, {
       'name': trimmedName,
-      'brand': (trimmedBrand == null || trimmedBrand.isEmpty) ? null : trimmedBrand,
       'quantity': quantity,
       'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
       'is_bought': false,
@@ -177,19 +174,16 @@ class SharedShoppingListRepository {
     required String listId,
     required String itemId,
     required String name,
-    String? brand,
     int? quantity,
     String? unit,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
-    final trimmedBrand = brand?.trim();
     final trimmedUnit = unit?.trim();
 
     final updates = <String, dynamic>{
       'name': trimmedName,
-      'brand': (trimmedBrand == null || trimmedBrand.isEmpty) ? null : trimmedBrand,
       'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
     };
     if (quantity != null) updates['quantity'] = quantity;
@@ -390,6 +384,19 @@ class SharedShoppingListRepository {
     });
 
     await batch.commit();
+  }
+
+  Future<List<ShoppingList>> getUserLists(String uid) async {
+    final membershipSnap = await _memberships(uid).get();
+    if (membershipSnap.docs.isEmpty) return [];
+    final docs = await Future.wait(
+      membershipSnap.docs.map((m) => _lists.doc(m.id).get()),
+    );
+    return docs
+        .where((d) => d.exists)
+        .map(ShoppingList.fromDoc)
+        .toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   Future<String?> getPrimaryListId(String uid) async {

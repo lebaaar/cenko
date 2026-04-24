@@ -18,13 +18,30 @@ class PersonalizedDealsRepository {
   final CatalogDealsRepository _catalogDealsRepository;
   final DealTextMatcherService _dealTextMatcherService;
 
-  CollectionReference<Map<String, dynamic>> _shoppingListItems(String uid) => _firestore.collection('users').doc(uid).collection('shopping_list');
+  CollectionReference<Map<String, dynamic>> _memberships(String uid) =>
+      _firestore.collection('users').doc(uid).collection('shopping_lists_memberships');
   CollectionReference<Map<String, dynamic>> _commonProducts(String uid) => _firestore.collection('users').doc(uid).collection('common_products');
 
   Stream<List<PersonalizedDealCardItem>> watchShoppingListOnSale(String uid, {int limit = 10}) {
-    return _shoppingListItems(uid).snapshots().asyncMap((snapshot) async {
-      final shoppingListTexts = _extractShoppingListTexts(snapshot);
-      return _matchDealsForTexts(shoppingListTexts, limit: limit);
+    return _memberships(uid).snapshots().asyncMap((membershipSnap) async {
+      final listIds = membershipSnap.docs.map((d) => d.id).toList();
+      if (listIds.isEmpty) return <PersonalizedDealCardItem>[];
+
+      final snapshots = await Future.wait(
+        listIds.map((id) => _firestore.collection('shopping_lists').doc(id).collection('items').get()),
+      );
+
+      final texts = <String>{};
+      for (final snap in snapshots) {
+        for (final doc in snap.docs) {
+          final data = doc.data();
+          if (data['is_bought'] as bool? ?? false) continue;
+          final name = (data['name'] as String?)?.trim();
+          if (name != null && name.isNotEmpty) texts.add(name);
+        }
+      }
+
+      return _matchDealsForTexts(texts, limit: limit);
     });
   }
 
@@ -37,31 +54,6 @@ class PersonalizedDealsRepository {
 
   Stream<List<PersonalizedDealCardItem>> watchFromSpendingHabitsOnSale(String uid, {int limit = 10}) {
     return watchCommonBoughtProductsOnSale(uid, limit: limit);
-  }
-
-  Set<String> _extractShoppingListTexts(QuerySnapshot<Map<String, dynamic>> snapshot) {
-    return snapshot.docs.expand((doc) {
-      final data = doc.data();
-      final bought = data['bought'] as bool? ?? false;
-      if (bought) {
-        return const <String>[];
-      }
-
-      final values = <String>[];
-
-      final name = (data['name'] as String?)?.trim();
-      if (name != null && name.isNotEmpty) values.add(name);
-
-      final brand = (data['brand'] as String?)?.trim();
-      if (brand != null && brand.isNotEmpty) values.add(brand);
-
-      if (name != null && name.isNotEmpty && brand != null && brand.isNotEmpty) {
-        values.add('$brand $name');
-        values.add('$name $brand');
-      }
-
-      return values;
-    }).toSet();
   }
 
   Set<String> _extractCommonProductTexts(QuerySnapshot<Map<String, dynamic>> snapshot) {

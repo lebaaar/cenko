@@ -28,7 +28,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
-  final _brandCtrl = TextEditingController();
+  final _quantityCtrl = TextEditingController();
+  final _unitCtrl = TextEditingController();
   final _renameCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   bool _saving = false;
@@ -38,7 +39,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _brandCtrl.dispose();
+    _quantityCtrl.dispose();
+    _unitCtrl.dispose();
     _renameCtrl.dispose();
     _inviteEmailCtrl.dispose();
     super.dispose();
@@ -140,7 +142,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   subtitle: const Text('Use your camera to scan a barcode'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    context.go('/scan?mode=barcode&from=list');
+                    context.go('/scan?mode=barcode&from=list&listId=${widget.listId}');
                   },
                 ),
                 ListTile(
@@ -163,7 +165,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   Future<void> _openItemForm({required String uid, ShoppingListItem? item}) async {
     _editingItemId = item?.id;
     _nameCtrl.text = item?.name ?? '';
-    _brandCtrl.text = item?.brand ?? '';
+    _quantityCtrl.text = item != null && item.quantity > 1 ? item.quantity.toString() : '';
+    _unitCtrl.text = item?.unit ?? '';
     _formError = null;
     _formKey.currentState?.reset();
 
@@ -202,10 +205,34 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _brandCtrl,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(labelText: 'Brand (optional)'),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 90,
+                          child: TextFormField(
+                            controller: _quantityCtrl,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(labelText: 'Quantity'),
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty) {
+                                if (int.tryParse(value.trim()) == null || int.parse(value.trim()) < 1) {
+                                  return 'Invalid';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _unitCtrl,
+                            textInputAction: TextInputAction.done,
+                            decoration: const InputDecoration(labelText: 'Unit'),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -237,10 +264,13 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final repo = ref.read(sharedShoppingListRepositoryProvider);
 
     try {
+      final quantity = int.tryParse(_quantityCtrl.text.trim()) ?? 1;
+      final unit = _unitCtrl.text.trim().isEmpty ? null : _unitCtrl.text.trim();
+
       if (_editingItemId != null) {
-        await repo.updateItem(listId: widget.listId, itemId: _editingItemId!, name: _nameCtrl.text, brand: _brandCtrl.text);
+        await repo.updateItem(listId: widget.listId, itemId: _editingItemId!, name: _nameCtrl.text, quantity: quantity, unit: unit);
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, brand: _brandCtrl.text);
+        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit);
       }
 
       if (mounted) Navigator.of(context).pop();
@@ -785,12 +815,6 @@ class _ItemsList extends StatelessWidget {
       final terms = <String>{};
       final name = item.name.trim();
       if (name.isNotEmpty) terms.add(name);
-      final brand = item.brand?.trim();
-      if (brand != null && brand.isNotEmpty) {
-        terms.add(brand);
-        terms.add('$brand $name');
-        terms.add('$name $brand');
-      }
       if (terms.isEmpty) continue;
 
       final matched = dealMatcher.matchDeals(shoppingListTexts: terms, deals: deals!, minScore: 0.48);
@@ -855,6 +879,7 @@ class _ShoppingItemTile extends StatelessWidget {
                         color: item.isBought ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.65) : null,
                       ),
                     ),
+                    if (_quantityUnitText() != null) ...[const SizedBox(height: 2), Text(_quantityUnitText()!, style: subtitleStyle)],
                     if (_subtitleText() != null) ...[const SizedBox(height: 2), Text(_subtitleText()!, style: subtitleStyle)],
                   ],
                 ),
@@ -874,5 +899,14 @@ class _ShoppingItemTile extends StatelessWidget {
       return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)} (save ${formatCents(savings)})';
     }
     return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)}';
+  }
+
+  String? _quantityUnitText() {
+    final hasQty = item.quantity > 1;
+    final hasUnit = item.unit != null && item.unit!.isNotEmpty;
+    if (!hasQty && !hasUnit) return null;
+    if (hasQty && hasUnit) return '${item.quantity} ${item.unit}';
+    if (hasQty) return '× ${item.quantity}';
+    return item.unit;
   }
 }

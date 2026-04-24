@@ -25,10 +25,11 @@ const _commonBoughtProductInactivityDays = 45;
 const _commonBoughtProductMinPurchases = 4;
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key, this.initialMode, this.returnTo});
+  const ScanScreen({super.key, this.initialMode, this.returnTo, this.targetListId});
 
   final String? initialMode;
   final String? returnTo;
+  final String? targetListId;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -865,6 +866,51 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     unawaited(_startBarcodeScanner(force: true));
   }
 
+  /// Returns the list ID to add an item to.
+  /// If navigated from a specific list, returns that list ID directly.
+  /// Otherwise shows a picker so the user can choose.
+  Future<String?> _pickListId(String uid) async {
+    if (widget.targetListId != null) return widget.targetListId;
+
+    final lists = await _shoppingListRepository.getUserLists(uid);
+    if (lists.isEmpty) {
+      if (mounted) {
+        _showSnackBar(const SnackBar(content: Text('No shopping lists found. Create one first.')));
+      }
+      return null;
+    }
+    if (lists.length == 1) return lists.first.id;
+
+    if (!mounted) return null;
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+              ),
+              ...lists.map(
+                (list) => ListTile(
+                  leading: const Icon(Icons.checklist_rounded),
+                  title: Text(list.name),
+                  subtitle: Text('${list.itemCount} items'),
+                  onTap: () => Navigator.of(sheetContext).pop(list.id),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _addBarcodeProductToShoppingList() async {
     final product = _barcodeProduct;
     if (product == null) {
@@ -881,7 +927,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     final name = _formatBarcodeProductName(product);
-    final brand = _asString(product['brands'], fallback: '').trim();
 
     // Resume live scanning immediately after user confirms add.
     _resetBarcodeFlow();
@@ -889,9 +934,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     unawaited(_startBarcodeScanner(force: true));
 
     try {
-      final listId = await _shoppingListRepository.getPrimaryListId(uid);
-      if (listId == null) throw Exception('No shopping list found');
-      await _shoppingListRepository.addItem(listId: listId, addedBy: uid, name: name, brand: brand.isEmpty ? null : brand);
+      final listId = await _pickListId(uid);
+      if (listId == null) return;
+      await _shoppingListRepository.addItem(listId: listId, addedBy: uid, name: name);
       if (!mounted) {
         return;
       }
@@ -985,8 +1030,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 });
 
                                 try {
-                                  final listId = await _shoppingListRepository.getPrimaryListId(uid);
-                                  if (listId == null) throw Exception('No shopping list found');
+                                  final listId = await _pickListId(uid);
+                                  if (listId == null) {
+                                    setSheetState(() => saving = false);
+                                    return;
+                                  }
                                   await _shoppingListRepository.addItem(listId: listId, addedBy: uid, name: name);
                                   itemSaved = true;
                                   savedItemName = name;
