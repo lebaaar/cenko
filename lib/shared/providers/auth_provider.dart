@@ -1,5 +1,6 @@
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,6 +77,16 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> signOut() async {
     await Future.wait([_auth.signOut(), GoogleSignIn.instance.signOut()]);
+  }
+
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('deleteMyAccount');
+    await callable.call();
+    await GoogleSignIn.instance.signOut();
+    await _auth.signOut();
   }
 }
 

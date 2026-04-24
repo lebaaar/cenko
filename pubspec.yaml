@@ -1,7 +1,7 @@
 name: cenko
 description: "Track your spending and discover the best deals across grocery stores"
 publish_to: "none"
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   sdk: ^3.11.4
@@ -11,11 +11,14 @@ dependencies:
     sdk: flutter
 
   # firebase
-  cloud_firestore: ^6.2.0
-  firebase_auth: ^6.3.0
   firebase_core: ^4.6.0
+  firebase_app_check: ^0.4.3
+  firebase_auth: ^6.3.0
   firebase_storage: ^13.2.0
+  cloud_firestore: ^6.2.0
+  cloud_functions: ^6.2.0
   firebase_ai: ^3.11.0
+
   google_sign_in: ^7.2.0
   google_fonts: ^6.2.1
 

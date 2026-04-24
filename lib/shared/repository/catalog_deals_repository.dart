@@ -7,11 +7,11 @@ class CatalogDealsRepository {
 
   final FirebaseFirestore _firestore;
 
-  CollectionReference<Map<String, dynamic>> get _catalogProducts => _firestore.collection('catalog_products');
+  CollectionReference<Map<String, dynamic>> get _products => _firestore.collection('products');
 
   Stream<List<CatalogDealItem>> watchActiveCatalogDeals({int fetchLimit = 400}) {
     final now = Timestamp.fromDate(DateTime.now());
-    return _catalogProducts.where('valid_until', isGreaterThanOrEqualTo: now).orderBy('valid_until').limit(fetchLimit).snapshots().map((snapshot) {
+    return _products.where('valid_until', isGreaterThanOrEqualTo: now).orderBy('valid_until').limit(fetchLimit).snapshots().map((snapshot) {
       return snapshot.docs.map(CatalogDealItem.fromFirestore).where((deal) => deal.isActive).toList(growable: false);
     });
   }

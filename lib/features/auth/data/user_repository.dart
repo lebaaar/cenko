@@ -29,10 +29,6 @@ class UserRepository {
     await _users.doc(uid).update({'settings': settings.toMap()});
   }
 
-  Future<void> deleteUser(String uid) async {
-    await _users.doc(uid).delete();
-  }
-
   Future<bool> userExists(String uid) async {
     final doc = await _users.doc(uid).get();
     return doc.exists;

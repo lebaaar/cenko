@@ -49,7 +49,12 @@ class DealsGridCard extends StatelessWidget {
                           children: [
                             Text(deal.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
                             const SizedBox(height: 3),
-                            Text(deal.storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                            Text(
+                              _displayStoreName(deal.storeName),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -140,6 +145,26 @@ class DealsGridCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _displayStoreName(String storeName) {
+  switch (storeName) {
+    case 'spar':
+      return 'Spar';
+    case 'tus_drogerija':
+    case 'tus_drogrija':
+      return 'Tuš drogerija';
+    case 'tus':
+      return 'Tuš';
+    case 'mercator':
+      return 'Mercator';
+    case 'lidl':
+      return 'Lidl';
+    case 'hofer':
+      return 'Hofer';
+    default:
+      return storeName;
   }
 }
 

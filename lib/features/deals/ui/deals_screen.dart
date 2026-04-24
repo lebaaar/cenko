@@ -21,8 +21,9 @@ class DealsScreen extends ConsumerStatefulWidget {
 enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPrice }
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
-  static const List<String> _storeFilters = ['All', 'Mercator', 'Spar', 'Hofer', 'Tuš', 'Tuš drogerije'];
+  static const List<String> _storeFilters = ['All', 'mercator', 'spar', 'lidl', 'hofer', 'tus', 'tus_drogerija'];
   static const int _pageSize = 30;
+  static const double _minimumPriceSliderMax = 20;
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
@@ -85,20 +86,49 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     });
   }
 
-  List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals) {
+  String _storeDisplayLabel(String value) {
+    switch (value) {
+      case 'All':
+        return 'All';
+      case 'spar':
+        return 'Spar';
+      case 'tus_drogerija':
+        return 'Tuš drogerija';
+      case 'tus':
+        return 'Tuš';
+      case 'mercator':
+        return 'Mercator';
+      case 'lidl':
+        return 'Lidl';
+      case 'hofer':
+        return 'Hofer';
+      default:
+        return value;
+    }
+  }
+
+  String _normalizeStoreValue(String value) {
+    final normalized = value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized == 'tus_drogrija') {
+      return 'tus_drogerija';
+    }
+    return normalized;
+  }
+
+  List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals, RangeValues effectivePriceRange) {
     final hasStoreFilter = !_selectedStores.contains('All');
-    final normalizedSelectedStores = hasStoreFilter ? _selectedStores.map(_normalizedStoreKey).toSet() : const <String>{};
+    final selectedStores = hasStoreFilter ? _selectedStores.map(_normalizeStoreValue).toSet() : const <String>{};
 
     final filtered = deals
         .where((deal) {
           final title = deal.title.toLowerCase();
           final store = deal.storeName.toLowerCase();
-          final normalizedStore = _normalizedStoreKey(deal.storeName);
+          final normalizedStore = _normalizeStoreValue(deal.storeName);
           final priceEuro = deal.salePriceCents / 100;
 
           final matchesQuery = _query.isEmpty || title.contains(_query) || store.contains(_query);
-          final matchesStore = !hasStoreFilter || normalizedSelectedStores.contains(normalizedStore);
-          final matchesPrice = priceEuro >= _priceRange.start && priceEuro <= _priceRange.end;
+          final matchesStore = !hasStoreFilter || selectedStores.contains(normalizedStore);
+          final matchesPrice = priceEuro >= effectivePriceRange.start && priceEuro <= effectivePriceRange.end;
 
           return matchesQuery && matchesStore && matchesPrice;
         })
@@ -119,35 +149,30 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return sorted;
   }
 
-  String _normalizedStoreKey(String value) {
-    final normalized = value
-        .toLowerCase()
-        .replaceAll('š', 's')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z')
-        .replaceAll('đ', 'd')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    // Match known stores even when Firestore has legal suffixes or extra words.
-    if (normalized.contains('tus droger')) {
-      return 'tus drogerije';
-    }
-    if (normalized.contains('mercator')) {
-      return 'mercator';
-    }
-    if (normalized.contains('spar')) {
-      return 'spar';
-    }
-    if (normalized.contains('hofer')) {
-      return 'hofer';
-    }
-    if (normalized.contains('tus')) {
-      return 'tus';
+  double _priceSliderMaxForDeals(List<CatalogDealItem> deals) {
+    if (deals.isEmpty) {
+      return _minimumPriceSliderMax;
     }
 
-    return normalized;
+    final maxDealPrice = deals
+        .map((deal) => deal.salePriceCents / 100)
+        .fold<double>(0, (currentMax, price) => price > currentMax ? price : currentMax);
+
+    final roundedMax = (maxDealPrice / 5).ceil() * 5;
+    return roundedMax < _minimumPriceSliderMax ? _minimumPriceSliderMax : roundedMax.toDouble();
+  }
+
+  RangeValues _clampPriceRange(RangeValues range, double sliderMax) {
+    final clampedStart = range.start.clamp(0, sliderMax).toDouble();
+    final clampedEnd = range.end.clamp(clampedStart, sliderMax).toDouble();
+    return RangeValues(clampedStart, clampedEnd);
+  }
+
+  int _priceSliderDivisions(double sliderMax) {
+    if (sliderMax <= 60) {
+      return sliderMax.round();
+    }
+    return (sliderMax / 2).round();
   }
 
   String _sortLabel(_DealsSortOption option) {
@@ -208,8 +233,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return imageHeight + detailsHeight + 4;
   }
 
-  Future<void> _openPriceSheet() async {
-    RangeValues draft = _priceRange;
+  Future<void> _openPriceSheet(double sliderMax) async {
+    RangeValues draft = _clampPriceRange(_priceRange, sliderMax);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -234,8 +259,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                     RangeSlider(
                       values: draft,
                       min: 0,
-                      max: 50,
-                      divisions: 50,
+                      max: sliderMax,
+                      divisions: _priceSliderDivisions(sliderMax),
                       labels: RangeLabels('${draft.start.round()} €', '${draft.end.round()} €'),
                       onChanged: (values) {
                         setModalState(() {
@@ -250,7 +275,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           child: TextButton(
                             onPressed: () {
                               setModalState(() {
-                                draft = const RangeValues(0, 50);
+                                draft = RangeValues(0, sliderMax);
                               });
                             },
                             child: const Text('Reset'),
@@ -261,11 +286,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           child: FilledButton(
                             onPressed: () {
                               setState(() {
-                                _priceRange = draft;
+                                _priceRange = _clampPriceRange(draft, sliderMax);
                                 _visibleCount = _pageSize;
                               });
                               Navigator.of(sheetContext).pop();
                             },
+                            style: FilledButton.styleFrom(foregroundColor: Colors.white),
                             child: const Text('Apply'),
                           ),
                         ),
@@ -287,37 +313,39 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       showDragHandle: true,
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Text('Sort deals', style: Theme.of(context).textTheme.titleLarge),
-                ),
-                for (final option in _DealsSortOption.values)
-                  RadioListTile<_DealsSortOption>(
-                    value: option,
-                    groupValue: _sortOption,
-                    title: Text(_sortLabel(option)),
-                    dense: true,
-                    visualDensity: const VisualDensity(vertical: -3),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _sortOption = value;
-                        _visibleCount = _pageSize;
-                      });
-                      Navigator.of(sheetContext).pop();
-                    },
+          child: RadioGroup<_DealsSortOption>(
+            groupValue: _sortOption,
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              setState(() {
+                _sortOption = value;
+                _visibleCount = _pageSize;
+              });
+              Navigator.of(sheetContext).pop();
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Text('Sort deals', style: Theme.of(context).textTheme.titleLarge),
                   ),
-              ],
+                  for (final option in _DealsSortOption.values)
+                    RadioListTile<_DealsSortOption>(
+                      value: option,
+                      title: Text(_sortLabel(option)),
+                      dense: true,
+                      visualDensity: const VisualDensity(vertical: -3),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -342,12 +370,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list')));
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list')));
     } finally {
       if (mounted) {
         setState(() {
@@ -373,9 +401,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Could not load deals: $error')),
           data: (deals) {
+            final priceSliderMax = _priceSliderMaxForDeals(deals);
+            final effectivePriceRange = _clampPriceRange(_priceRange, priceSliderMax);
             final shoppingListItems = shoppingListItemsAsync.asData?.value ?? const <ShoppingListItem>[];
             final shoppingListKeys = shoppingListItems.map((item) => _normalizedShoppingListKey(item.name)).toSet();
-            final filteredDeals = _filterAndSortDeals(deals);
+            final filteredDeals = _filterAndSortDeals(deals, effectivePriceRange);
             final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
             final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
             final hasMore = visibleCount < filteredDeals.length;
@@ -431,7 +461,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                               final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
                               return Center(
                                 child: FilterChip(
-                                  label: Text(store),
+                                  label: Text(_storeDisplayLabel(store)),
                                   selected: isSelected,
                                   onSelected: (_) => _toggleStore(store),
                                   showCheckmark: false,
@@ -455,7 +485,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: _openPriceSheet,
+                                onPressed: () => _openPriceSheet(priceSliderMax),
                                 icon: const Icon(Icons.euro_rounded),
                                 label: const Text('Price', overflow: TextOverflow.ellipsis),
                               ),
@@ -472,7 +502,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Price ${_priceRangeLabel(_priceRange)}  •  ${_sortLabel(_sortOption)}',
+                          'Price ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 14),
@@ -491,7 +521,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                     sliver: SliverToBoxAdapter(
-                      child: Text("This product isn't on sale in any supported stores this week.", style: Theme.of(context).textTheme.bodyMedium),
+                      child: Center(
+                        child: Text(
+                          'No results found :(',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ),
                     ),
                   )
                 else
@@ -508,15 +543,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           isAlreadyOnShoppingList: alreadyOnShoppingList,
                           onAddToShoppingList: () {
                             if (alreadyOnShoppingList) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list.')));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list')));
                               return;
                             }
                             if (uid == null) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list.')));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list')));
                               return;
                             }
                             _addDealToShoppingList(deal: deal, uid: uid);

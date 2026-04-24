@@ -46,9 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       setState(() => _error = authErrorMessage(e.code));
     } on FirebaseException catch (e) {
-      setState(
-        () => _error = e.code == 'permission-denied' ? 'Account setup failed. Firestore access is not allowed for this user.' : e.message ?? e.code,
-      );
+      setState(() => _error = e.code == 'permission-denied' ? 'Account setup failed. Access denied' : e.message ?? e.code);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -65,9 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) setState(() => _error = authErrorMessage(e.code));
     } on FirebaseException catch (e) {
       if (mounted) {
-        setState(
-          () => _error = e.code == 'permission-denied' ? 'Account setup failed. Firestore access is not allowed for this user.' : e.message ?? e.code,
-        );
+        setState(() => _error = e.code == 'permission-denied' ? 'Account setup failed. Access denied' : e.message ?? e.code);
       }
     } on GoogleSignInException catch (e) {
       if (mounted && e.code != GoogleSignInExceptionCode.canceled) {
