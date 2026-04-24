@@ -357,31 +357,60 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
   Future<void> _addDealToShoppingList({required CatalogDealItem deal, required String uid}) async {
     final key = _dealAddKey(deal);
-    if (_addingDealIds.contains(key)) {
+    if (_addingDealIds.contains(key)) return;
+
+    final lists = ref.read(userShoppingListsProvider(uid)).asData?.value ?? [];
+    if (lists.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No shopping lists found. Create one first.')));
       return;
     }
 
-    setState(() {
-      _addingDealIds.add(key);
-    });
+    String? listId;
+    if (lists.length == 1) {
+      listId = lists.first.id;
+    } else {
+      listId = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                ),
+                ...lists.map(
+                  (list) => ListTile(
+                    leading: const Icon(Icons.checklist_rounded),
+                    title: Text(list.name),
+                    subtitle: Text('${list.itemCount} items'),
+                    onTap: () => Navigator.of(sheetContext).pop(list.id),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    if (listId == null || !mounted) return;
+
+    setState(() => _addingDealIds.add(key));
 
     try {
-      await ref.read(shoppingListRepositoryProvider).addItem(uid: uid, name: deal.title);
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to shopping list')));
+      await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to list')));
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list')));
     } finally {
-      if (mounted) {
-        setState(() {
-          _addingDealIds.remove(key);
-        });
-      }
+      if (mounted) setState(() => _addingDealIds.remove(key));
     }
   }
 
@@ -390,9 +419,10 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final userAsync = ref.watch(currentUserProvider);
     final uid = userAsync.asData?.value?.userId;
-    final shoppingListItemsAsync = uid == null
+    final primaryListId = uid == null ? null : ref.watch(primaryListIdProvider(uid));
+    final shoppingListItemsAsync = primaryListId == null
         ? const AsyncValue<List<ShoppingListItem>>.data(<ShoppingListItem>[])
-        : ref.watch(shoppingListItemsProvider(uid));
+        : ref.watch(shoppingListItemsProvider(primaryListId));
 
     return Scaffold(
       resizeToAvoidBottomInset: false,

@@ -13,6 +13,7 @@ import 'features/profile/ui/profile_screen.dart';
 import 'features/deals/ui/deals_screen.dart';
 import 'features/scan/ui/scan_screen.dart';
 import 'features/settings/ui/settings_screen.dart';
+import 'features/shopping_list/ui/shared_shopping_list_screen.dart';
 import 'features/shopping_list/ui/shopping_list_screen.dart';
 
 const _authPaths = {'/login', '/register', '/forgot-password'};
@@ -48,9 +49,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/scan',
-            builder: (context, state) => ScanScreen(initialMode: state.uri.queryParameters['mode'], returnTo: state.uri.queryParameters['from']),
+            builder: (context, state) => ScanScreen(
+              initialMode: state.uri.queryParameters['mode'],
+              returnTo: state.uri.queryParameters['from'],
+              targetListId: state.uri.queryParameters['listId'],
+            ),
           ),
-          GoRoute(path: '/list', builder: (context, state) => const ShoppingListScreen()),
+          GoRoute(
+            path: '/list',
+            builder: (context, state) => const ShoppingListScreen(),
+            routes: [
+              GoRoute(
+                path: ':listId',
+                builder: (context, state) => SharedShoppingListScreen(listId: state.pathParameters['listId']!),
+              ),
+            ],
+          ),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
         ],
       ),

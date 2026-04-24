@@ -14,7 +14,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
-import 'package:cenko/features/shopping_list/data/shopping_list_repository.dart';
+import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 
@@ -25,10 +25,11 @@ const _commonBoughtProductInactivityDays = 45;
 const _commonBoughtProductMinPurchases = 4;
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key, this.initialMode, this.returnTo});
+  const ScanScreen({super.key, this.initialMode, this.returnTo, this.targetListId});
 
   final String? initialMode;
   final String? returnTo;
+  final String? targetListId;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -37,7 +38,7 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
   final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
-  final ShoppingListRepository _shoppingListRepository = ShoppingListRepository();
+  final SharedShoppingListRepository _shoppingListRepository = SharedShoppingListRepository();
   final CatalogDealsRepository _catalogDealsRepository = CatalogDealsRepository();
   final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
   ScaffoldMessengerState? _scaffoldMessenger;
@@ -102,7 +103,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   _BarcodeFlowState _barcodeFlowState = _BarcodeFlowState.idle;
   String? _barcodeFlowMessage;
   Map<String, dynamic>? _barcodeProduct;
-  String? _barcodeValue;
   DateTime? _barcodeDetectionCooldownUntil;
   late final AnimationController _scanBarController;
   int _processingHintDots = 1;
@@ -856,7 +856,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _barcodeFlowState = _BarcodeFlowState.idle;
       _barcodeFlowMessage = null;
       _barcodeProduct = null;
-      _barcodeValue = null;
       _isHandlingDetection = false;
     });
   }
@@ -865,6 +864,51 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _barcodeDetectionCooldownUntil = DateTime.now().add(const Duration(seconds: 2));
     _resetBarcodeFlow();
     unawaited(_startBarcodeScanner(force: true));
+  }
+
+  /// Returns the list ID to add an item to.
+  /// If navigated from a specific list, returns that list ID directly.
+  /// Otherwise shows a picker so the user can choose.
+  Future<String?> _pickListId(String uid) async {
+    if (widget.targetListId != null) return widget.targetListId;
+
+    final lists = await _shoppingListRepository.getUserLists(uid);
+    if (lists.isEmpty) {
+      if (mounted) {
+        _showSnackBar(const SnackBar(content: Text('No shopping lists found. Create one first.')));
+      }
+      return null;
+    }
+    if (lists.length == 1) return lists.first.id;
+
+    if (!mounted) return null;
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+              ),
+              ...lists.map(
+                (list) => ListTile(
+                  leading: const Icon(Icons.checklist_rounded),
+                  title: Text(list.name),
+                  subtitle: Text('${list.itemCount} items'),
+                  onTap: () => Navigator.of(sheetContext).pop(list.id),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _addBarcodeProductToShoppingList() async {
@@ -883,8 +927,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     final name = _formatBarcodeProductName(product);
-    final brand = _asString(product['brands'], fallback: '').trim();
-    final barcode = _barcodeValue ?? _asString(product['code']);
 
     // Resume live scanning immediately after user confirms add.
     _resetBarcodeFlow();
@@ -892,7 +934,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     unawaited(_startBarcodeScanner(force: true));
 
     try {
-      await _shoppingListRepository.addItem(uid: uid, name: name, brand: brand.isEmpty ? null : brand, barcode: barcode.isEmpty ? null : barcode);
+      final listId = await _pickListId(uid);
+      if (listId == null) return;
+      await _shoppingListRepository.addItem(listId: listId, addedBy: uid, name: name);
       if (!mounted) {
         return;
       }
@@ -986,7 +1030,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 });
 
                                 try {
-                                  await _shoppingListRepository.addItem(uid: uid, name: name);
+                                  final listId = await _pickListId(uid);
+                                  if (listId == null) {
+                                    setSheetState(() => saving = false);
+                                    return;
+                                  }
+                                  await _shoppingListRepository.addItem(listId: listId, addedBy: uid, name: name);
                                   itemSaved = true;
                                   savedItemName = name;
                                   if (sheetContext.mounted) {
@@ -1145,7 +1194,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       }
 
       setState(() {
-        _barcodeValue = detectedCode;
         _barcodeFlowMessage = null;
         _barcodeProduct = null;
         _barcodeFlowState = _BarcodeFlowState.processing;
