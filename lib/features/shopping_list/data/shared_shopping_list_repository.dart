@@ -310,49 +310,32 @@ class SharedShoppingListRepository {
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
 
-    final userQuery = await _firestore
-        .collection('users')
-        .where('email', isEqualTo: normalizedEmail)
-        .limit(1)
-        .get();
-
-    if (userQuery.docs.isEmpty) {
-      throw Exception('No user found with that email address');
-    }
-
-    final invitedUserDoc = userQuery.docs.first;
-    final invitedUserId = invitedUserDoc.id;
-    final invitedUserName = invitedUserDoc.data()['name'] as String? ?? normalizedEmail;
-
+    // Check member limit (reading own list, allowed by isMemberOf rule)
     final listDoc = await _lists.doc(listId).get();
     final members = (listDoc.data()?['members'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
-
-    if (members.any((m) => m['user_id'] == invitedUserId)) {
-      throw Exception('That user is already a member of this list');
-    }
 
     if (members.length >= 5) {
       throw Exception('This list has reached the maximum of 5 members');
     }
 
+    // Check for existing pending invitation by email — no cross-user read needed
     final existing = await _invitations
         .where('list_id', isEqualTo: listId)
-        .where('invited_user_id', isEqualTo: invitedUserId)
+        .where('invited_email', isEqualTo: normalizedEmail)
         .where('status', isEqualTo: 'pending')
         .limit(1)
         .get();
 
     if (existing.docs.isNotEmpty) {
-      throw Exception('That user has already been invited to this list');
+      throw Exception('That email has already been invited to this list');
     }
 
     final now = Timestamp.now();
     await _invitations.add({
       'list_id': listId,
       'list_name': listName,
-      'invited_user_id': invitedUserId,
-      'invited_user_name': invitedUserName,
+      'invited_email': normalizedEmail,
       'invited_by_user_id': invitedByUid,
       'invited_by_name': invitedByName,
       'status': 'pending',
@@ -362,9 +345,10 @@ class SharedShoppingListRepository {
     });
   }
 
-  Stream<List<ShoppingListInvitation>> watchPendingInvitations(String uid) {
+  // Takes the current user's email — matched via request.auth.token.email in rules
+  Stream<List<ShoppingListInvitation>> watchPendingInvitations(String email) {
     return _invitations
-        .where('invited_user_id', isEqualTo: uid)
+        .where('invited_email', isEqualTo: email.toLowerCase())
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .map((snap) => snap.docs.map(ShoppingListInvitation.fromDoc).toList());
@@ -377,31 +361,26 @@ class SharedShoppingListRepository {
     required String uid,
     required String userName,
   }) async {
-    final listDoc = await _lists.doc(listId).get();
-    final members = (listDoc.data()?['members'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>();
-
-    if (members.length >= 5) {
-      throw Exception('This list has reached the maximum of 5 members');
-    }
-
     final now = Timestamp.now();
     final batch = _firestore.batch();
 
     batch.update(_invitations.doc(invitationId), {
       'status': 'accepted',
       'responded_at': now,
+      'invited_user_id': uid,
     });
 
-    final newMember = {
-      'user_id': uid,
-      'name': userName,
-      'joined_at': now,
-      'role': 'member',
-    };
-
+    // arrayUnion appends the new member without needing to read the list first,
+    // which would fail because the accepting user is not yet a member.
     batch.update(_lists.doc(listId), {
-      'members': [...members, newMember],
+      'members': FieldValue.arrayUnion([
+        {
+          'user_id': uid,
+          'name': userName,
+          'joined_at': now,
+          'role': 'member',
+        },
+      ]),
     });
 
     batch.set(_memberships(uid).doc(listId), {

@@ -5,7 +5,7 @@ class ShoppingListInvitation {
     required this.id,
     required this.listId,
     required this.listName,
-    required this.invitedUserId,
+    required this.invitedEmail,
     required this.invitedByUserId,
     required this.invitedByName,
     required this.status,
@@ -17,7 +17,7 @@ class ShoppingListInvitation {
   final String id;
   final String listId;
   final String listName;
-  final String invitedUserId;
+  final String invitedEmail;
   final String invitedByUserId;
   final String invitedByName;
   final String status; // 'pending' | 'accepted' | 'declined'
@@ -31,7 +31,7 @@ class ShoppingListInvitation {
       id: doc.id,
       listId: data['list_id'] as String? ?? '',
       listName: data['list_name'] as String? ?? 'Shopping List',
-      invitedUserId: data['invited_user_id'] as String? ?? '',
+      invitedEmail: data['invited_email'] as String? ?? '',
       invitedByUserId: data['invited_by_user_id'] as String? ?? '',
       invitedByName: data['invited_by_name'] as String? ?? 'Someone',
       status: data['status'] as String? ?? 'pending',

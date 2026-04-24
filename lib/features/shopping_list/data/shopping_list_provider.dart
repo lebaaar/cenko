@@ -21,8 +21,8 @@ final shoppingListItemsProvider = StreamProvider.family<List<ShoppingListItem>, 
   return ref.watch(sharedShoppingListRepositoryProvider).watchItems(listId);
 });
 
-final pendingInvitationsProvider = StreamProvider.family<List<ShoppingListInvitation>, String>((ref, uid) {
-  return ref.watch(sharedShoppingListRepositoryProvider).watchPendingInvitations(uid);
+final pendingInvitationsProvider = StreamProvider.family<List<ShoppingListInvitation>, String>((ref, email) {
+  return ref.watch(sharedShoppingListRepositoryProvider).watchPendingInvitations(email);
 });
 
 /// The ID of the user's most-recently-updated list, or null if they have none.

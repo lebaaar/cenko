@@ -41,17 +41,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                 title: 'Shopping Lists',
                 trailing: uid == null
                     ? null
-                    : IconButton(
-                        icon: const Icon(Icons.add_rounded),
-                        onPressed: () => _showCreateListDialog(context, uid),
-                        tooltip: 'New list',
-                      ),
+                    : IconButton(icon: const Icon(Icons.add_rounded), onPressed: () => _showCreateListDialog(context, uid), tooltip: 'New list'),
               ),
             ),
             Expanded(
-              child: uid == null
-                  ? const Center(child: Text('Please sign in to view your shopping lists'))
-                  : _Body(uid: uid),
+              child: uid == null ? const Center(child: Text('Please sign in to view your shopping lists')) : _Body(uid: uid),
             ),
           ],
         ),
@@ -86,8 +80,12 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   .read(sharedShoppingListRepositoryProvider)
                   .createList(ownerUid: uid, ownerName: currentUser?.name ?? 'Unknown', name: name)
                   .then((listId) {
-                    if (dialogContext.mounted) { Navigator.of(dialogContext).pop(); }
-                    if (mounted) { router.push('/list/$listId'); }
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                    if (mounted) {
+                      router.push('/list/$listId');
+                    }
                   })
                   .catchError((e) {
                     if (mounted) {
@@ -112,10 +110,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     children: [
                       Text('New shopping list', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 16),
-                      if (error != null) ...[
-                        Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                        const SizedBox(height: 8),
-                      ],
+                      if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
                         controller: _newListNameCtrl,
                         autofocus: true,
@@ -162,8 +157,9 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final email = ref.watch(authStateProvider).asData?.value?.email ?? '';
     final listsAsync = ref.watch(userShoppingListsProvider(uid));
-    final invitationsAsync = ref.watch(pendingInvitationsProvider(uid));
+    final invitationsAsync = ref.watch(pendingInvitationsProvider(email));
 
     return listsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -173,11 +169,7 @@ class _Body extends ConsumerWidget {
 
         if (lists.isEmpty && invitations.isEmpty) {
           return const Center(
-            child: Text(
-              'No shopping lists yet.\nTap + to create one.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15),
-            ),
+            child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
           );
         }
 
@@ -219,10 +211,7 @@ class _ListCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-          ),
+          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -248,9 +237,7 @@ class _ListCard extends StatelessWidget {
                   Icon(Icons.checklist_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
-                    list.itemCount == 0
-                        ? 'Empty'
-                        : '$remaining remaining · ${list.boughtCount} bought',
+                    list.itemCount == 0 ? 'Empty' : '$remaining remaining · ${list.boughtCount} bought',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
@@ -293,15 +280,15 @@ class _InvitationCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _respond(context, ref, false),
-                    child: const Text('Decline'),
-                  ),
+                  child: OutlinedButton(onPressed: () => _respond(context, ref, false), child: const Text('Decline')),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
-                    style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                    style: FilledButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                     onPressed: () => _respond(context, ref, true),
                     child: const Text('Accept'),
                   ),

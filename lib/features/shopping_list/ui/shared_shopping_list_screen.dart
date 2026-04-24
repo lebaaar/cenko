@@ -185,10 +185,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   children: [
                     Text(item == null ? 'Add item' : 'Edit item', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
-                    Text(
-                      item == null ? 'Add a new item to the list' : 'Update item details',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    Text(item == null ? 'Add a new item to the list' : 'Update item details', style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 16),
                     if (_formError != null) ...[
                       Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -241,19 +238,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     try {
       if (_editingItemId != null) {
-        await repo.updateItem(
-          listId: widget.listId,
-          itemId: _editingItemId!,
-          name: _nameCtrl.text,
-          brand: _brandCtrl.text,
-        );
+        await repo.updateItem(listId: widget.listId, itemId: _editingItemId!, name: _nameCtrl.text, brand: _brandCtrl.text);
       } else {
-        await repo.addItem(
-          listId: widget.listId,
-          addedBy: uid,
-          name: _nameCtrl.text,
-          brand: _brandCtrl.text,
-        );
+        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, brand: _brandCtrl.text);
       }
 
       if (mounted) Navigator.of(context).pop();
@@ -294,10 +281,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             width: 40,
                             height: 40,
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(12)),
                             child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                           ),
                           const SizedBox(width: 12),
@@ -328,11 +312,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                   : () async {
                                       setDialogState(() => deleting = true);
                                       try {
-                                        await ref.read(sharedShoppingListRepositoryProvider).deleteItem(
-                                              listId: widget.listId,
-                                              itemId: item.id,
-                                              wasBought: item.isBought,
-                                            );
+                                        await ref
+                                            .read(sharedShoppingListRepositoryProvider)
+                                            .deleteItem(listId: widget.listId, itemId: item.id, wasBought: item.isBought);
                                         if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
@@ -360,11 +342,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   Future<void> _setBought({required String uid, required String itemId, required bool bought}) async {
     setState(() => _updatingBought = true);
     try {
-      await ref.read(sharedShoppingListRepositoryProvider).setBought(
-            listId: widget.listId,
-            itemId: itemId,
-            bought: bought,
-          );
+      await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update item: $e')));
@@ -395,11 +373,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               });
               ref
                   .read(sharedShoppingListRepositoryProvider)
-                  .renameList(
-                    listId: widget.listId,
-                    name: name,
-                    memberUids: list.members.map((m) => m.userId).toList(),
-                  )
+                  .renameList(listId: widget.listId, name: name, memberUids: list.members.map((m) => m.userId).toList())
                   .then((_) {
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   })
@@ -426,10 +400,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     children: [
                       Text('Rename list', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 16),
-                      if (error != null) ...[
-                        Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                        const SizedBox(height: 8),
-                      ],
+                      if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
                         controller: _renameCtrl,
                         autofocus: true,
@@ -487,6 +458,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 setDialogState(() => error = 'Email is required');
                 return;
               }
+              final currentEmail = ref.read(authStateProvider).asData?.value?.email ?? '';
+              if (email.toLowerCase() == currentEmail.toLowerCase()) {
+                setDialogState(() => error = 'You cannot invite yourself');
+                return;
+              }
               setDialogState(() {
                 inviting = true;
                 error = null;
@@ -514,7 +490,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     if (mounted) {
                       setDialogState(() {
                         inviting = false;
-                        error = '$e';
+                        error = e.toString().replaceFirst('Exception: ', '');
                       });
                     }
                   });
@@ -535,14 +511,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       const SizedBox(height: 4),
                       Text('Invite someone to join "${list.name}"', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 16),
-                      if (error != null) ...[
-                        Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                        const SizedBox(height: 8),
-                      ],
-                      if (successMsg != null) ...[
-                        Text(successMsg!, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-                        const SizedBox(height: 8),
-                      ],
+                      if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
+                      if (successMsg != null) ...[Text(successMsg!, style: TextStyle(color: Colors.white)), const SizedBox(height: 8)],
                       TextField(
                         controller: _inviteEmailCtrl,
                         autofocus: true,
@@ -558,7 +528,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: TextButton(
                               style: TextButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: () => Navigator.of(dialogContext).pop(),
-                              child: const Text('Done'),
+                              child: const Text('Close'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -609,10 +579,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         width: 40,
                         height: 40,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Theme.of(dialogContext).colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        decoration: BoxDecoration(color: Theme.of(dialogContext).colorScheme.errorContainer, borderRadius: BorderRadius.circular(12)),
                         child: Icon(
                           isOwner ? Icons.delete_rounded : Icons.exit_to_app_rounded,
                           color: Theme.of(dialogContext).colorScheme.onErrorContainer,
@@ -620,9 +587,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Text('$action list?', style: Theme.of(dialogContext).textTheme.titleLarge),
-                      ),
+                      Expanded(child: Text('$action list?', style: Theme.of(dialogContext).textTheme.titleLarge)),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -662,15 +627,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     try {
       if (isOwner) {
-        await ref.read(sharedShoppingListRepositoryProvider).deleteList(
-              listId: widget.listId,
-              memberUids: list.members.map((m) => m.userId).toList(),
-            );
+        await ref
+            .read(sharedShoppingListRepositoryProvider)
+            .deleteList(listId: widget.listId, memberUids: list.members.map((m) => m.userId).toList());
       } else {
-        await ref.read(sharedShoppingListRepositoryProvider).leaveList(
-              uid: uid,
-              listId: widget.listId,
-            );
+        await ref.read(sharedShoppingListRepositoryProvider).leaveList(uid: uid, listId: widget.listId);
       }
       if (!mounted) return;
       context.go('/list');
@@ -682,13 +643,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.list,
-    required this.uid,
-    required this.onRename,
-    required this.onInvite,
-    required this.onLeave,
-  });
+  const _TopBar({required this.list, required this.uid, required this.onRename, required this.onInvite, required this.onLeave});
 
   final ShoppingList? list;
   final String? uid;
@@ -705,10 +660,7 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => context.go('/list'),
-          ),
+          IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.go('/list')),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -722,39 +674,33 @@ class _TopBar extends StatelessWidget {
                 if (memberNames.isNotEmpty)
                   Text(
                     memberNames,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
           ),
-          if (list != null)
+          if (list != null) ...[
+            IconButton(icon: const Icon(Icons.person_add_rounded), onPressed: onInvite, tooltip: 'Invite people'),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
                   case 'rename':
                     onRename?.call();
-                  case 'invite':
-                    onInvite?.call();
                   case 'leave':
                     onLeave?.call();
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'rename', child: Text('Rename list')),
-                const PopupMenuItem(value: 'invite', child: Text('Invite people')),
                 PopupMenuItem(
                   value: 'leave',
-                  child: Text(
-                    isOwner ? 'Delete list' : 'Leave list',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
+                  child: Text(isOwner ? 'Delete list' : 'Leave list', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
               ],
             ),
+          ],
         ],
       ),
     );
@@ -795,11 +741,7 @@ class _ItemsList extends StatelessWidget {
           data: (items) {
             if (items.isEmpty) {
               return const Center(
-                child: Text(
-                  'Tap "Add item" to add items to this list',
-                  style: TextStyle(fontSize: 15),
-                  textAlign: TextAlign.center,
-                ),
+                child: Text('Tap "Add item" to add items to this list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
               );
             }
 
@@ -817,10 +759,7 @@ class _ItemsList extends StatelessWidget {
                   background: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 18),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
                     child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
                   ),
                   child: _ShoppingItemTile(
@@ -864,12 +803,7 @@ class _ItemsList extends StatelessWidget {
 }
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({
-    required this.item,
-    required this.bestDeal,
-    required this.onToggleBought,
-    required this.onEdit,
-  });
+  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit});
 
   final ShoppingListItem item;
   final CatalogDealItem? bestDeal;
@@ -878,15 +812,12 @@ class _ShoppingItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.68),
-    );
+    final subtitleStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.68));
 
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           GestureDetector(
@@ -899,10 +830,7 @@ class _ShoppingItemTile extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: item.isBought ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
-                    width: 2,
-                  ),
+                  border: Border.all(color: item.isBought ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, width: 2),
                   borderRadius: BorderRadius.circular(6),
                   color: item.isBought ? Theme.of(context).colorScheme.primary : Colors.transparent,
                 ),
@@ -927,10 +855,7 @@ class _ShoppingItemTile extends StatelessWidget {
                         color: item.isBought ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.65) : null,
                       ),
                     ),
-                    if (_subtitleText() != null) ...[
-                      const SizedBox(height: 2),
-                      Text(_subtitleText()!, style: subtitleStyle),
-                    ],
+                    if (_subtitleText() != null) ...[const SizedBox(height: 2), Text(_subtitleText()!, style: subtitleStyle)],
                   ],
                 ),
               ),
