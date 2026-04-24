@@ -56,11 +56,11 @@ class CatalogDealItem {
   factory CatalogDealItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
     final productName = _stringValue(data['product_name']) ?? _stringValue(data['name']) ?? 'Unknown product';
-    final storeName = _stringValue(data['store_name']) ?? 'Unknown store';
+    final storeName = _normalizedStoreName(_stringValue(data['store_name']) ?? 'Unknown store');
     final scrapedFromUrl = _stringValue(data['scraped_from_url']) ?? '';
     final brand = _stringValue(data['brand']);
     final category = _stringValue(data['category']);
-    final rawImage = _stringValue(data['image']);
+    final rawImage = _stringValue(data['image_url']) ?? _stringValue(data['image']);
     final originalPrice = _intValue(data['original_price']) ?? 0;
     final salePrice = _intValue(data['sale_price']) ?? 0;
     final discountPercent = _intValue(data['discount_pct']) ?? _derivedDiscountPercent(originalPrice: originalPrice, salePrice: salePrice);
@@ -99,6 +99,14 @@ class CatalogDealItem {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
     return null;
+  }
+
+  static String _normalizedStoreName(String value) {
+    final normalized = value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized == 'tus_drogrija') {
+      return 'tus_drogerija';
+    }
+    return normalized;
   }
 
   static int? _derivedDiscountPercent({required int originalPrice, required int salePrice}) {

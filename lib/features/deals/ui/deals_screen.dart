@@ -21,7 +21,7 @@ class DealsScreen extends ConsumerStatefulWidget {
 enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPrice }
 
 class _DealsScreenState extends ConsumerState<DealsScreen> {
-  static const List<String> _storeFilters = ['All', 'Mercator', 'Spar', 'Hofer', 'Tuš', 'Tuš drogerije'];
+  static const List<String> _storeFilters = ['All', 'mercator', 'spar', 'lidl', 'hofer', 'tus', 'tus_drogerija'];
   static const int _pageSize = 30;
 
   final TextEditingController _searchController = TextEditingController();
@@ -85,19 +85,48 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     });
   }
 
+  String _storeDisplayLabel(String value) {
+    switch (value) {
+      case 'All':
+        return 'All';
+      case 'spar':
+        return 'Spar';
+      case 'tus_drogerija':
+        return 'Tuš drogerija';
+      case 'tus':
+        return 'Tuš';
+      case 'mercator':
+        return 'Mercator';
+      case 'lidl':
+        return 'Lidl';
+      case 'hofer':
+        return 'Hofer';
+      default:
+        return value;
+    }
+  }
+
+  String _normalizeStoreValue(String value) {
+    final normalized = value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized == 'tus_drogrija') {
+      return 'tus_drogerija';
+    }
+    return normalized;
+  }
+
   List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals) {
     final hasStoreFilter = !_selectedStores.contains('All');
-    final normalizedSelectedStores = hasStoreFilter ? _selectedStores.map(_normalizedStoreKey).toSet() : const <String>{};
+    final selectedStores = hasStoreFilter ? _selectedStores.map(_normalizeStoreValue).toSet() : const <String>{};
 
     final filtered = deals
         .where((deal) {
           final title = deal.title.toLowerCase();
           final store = deal.storeName.toLowerCase();
-          final normalizedStore = _normalizedStoreKey(deal.storeName);
+          final normalizedStore = _normalizeStoreValue(deal.storeName);
           final priceEuro = deal.salePriceCents / 100;
 
           final matchesQuery = _query.isEmpty || title.contains(_query) || store.contains(_query);
-          final matchesStore = !hasStoreFilter || normalizedSelectedStores.contains(normalizedStore);
+          final matchesStore = !hasStoreFilter || selectedStores.contains(normalizedStore);
           final matchesPrice = priceEuro >= _priceRange.start && priceEuro <= _priceRange.end;
 
           return matchesQuery && matchesStore && matchesPrice;
@@ -117,37 +146,6 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     }
 
     return sorted;
-  }
-
-  String _normalizedStoreKey(String value) {
-    final normalized = value
-        .toLowerCase()
-        .replaceAll('š', 's')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z')
-        .replaceAll('đ', 'd')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    // Match known stores even when Firestore has legal suffixes or extra words.
-    if (normalized.contains('tus droger')) {
-      return 'tus drogerije';
-    }
-    if (normalized.contains('mercator')) {
-      return 'mercator';
-    }
-    if (normalized.contains('spar')) {
-      return 'spar';
-    }
-    if (normalized.contains('hofer')) {
-      return 'hofer';
-    }
-    if (normalized.contains('tus')) {
-      return 'tus';
-    }
-
-    return normalized;
   }
 
   String _sortLabel(_DealsSortOption option) {
@@ -266,6 +264,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                               });
                               Navigator.of(sheetContext).pop();
                             },
+                            style: FilledButton.styleFrom(foregroundColor: Colors.white),
                             child: const Text('Apply'),
                           ),
                         ),
@@ -433,7 +432,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                               final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
                               return Center(
                                 child: FilterChip(
-                                  label: Text(store),
+                                  label: Text(_storeDisplayLabel(store)),
                                   selected: isSelected,
                                   onSelected: (_) => _toggleStore(store),
                                   showCheckmark: false,
@@ -493,7 +492,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                     sliver: SliverToBoxAdapter(
-                      child: Text("This product isn't on sale in any supported stores this week.", style: Theme.of(context).textTheme.bodyMedium),
+                      child: Center(
+                        child: Text(
+                          'No results found :(',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ),
                     ),
                   )
                 else
