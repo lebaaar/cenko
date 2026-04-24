@@ -23,6 +23,7 @@ enum _DealsSortOption { highestDiscount, lowestDiscount, lowestPrice, highestPri
 class _DealsScreenState extends ConsumerState<DealsScreen> {
   static const List<String> _storeFilters = ['All', 'mercator', 'spar', 'lidl', 'hofer', 'tus', 'tus_drogerija'];
   static const int _pageSize = 30;
+  static const double _minimumPriceSliderMax = 20;
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
@@ -114,7 +115,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return normalized;
   }
 
-  List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals) {
+  List<CatalogDealItem> _filterAndSortDeals(List<CatalogDealItem> deals, RangeValues effectivePriceRange) {
     final hasStoreFilter = !_selectedStores.contains('All');
     final selectedStores = hasStoreFilter ? _selectedStores.map(_normalizeStoreValue).toSet() : const <String>{};
 
@@ -127,7 +128,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
           final matchesQuery = _query.isEmpty || title.contains(_query) || store.contains(_query);
           final matchesStore = !hasStoreFilter || selectedStores.contains(normalizedStore);
-          final matchesPrice = priceEuro >= _priceRange.start && priceEuro <= _priceRange.end;
+          final matchesPrice = priceEuro >= effectivePriceRange.start && priceEuro <= effectivePriceRange.end;
 
           return matchesQuery && matchesStore && matchesPrice;
         })
@@ -146,6 +147,32 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     }
 
     return sorted;
+  }
+
+  double _priceSliderMaxForDeals(List<CatalogDealItem> deals) {
+    if (deals.isEmpty) {
+      return _minimumPriceSliderMax;
+    }
+
+    final maxDealPrice = deals
+        .map((deal) => deal.salePriceCents / 100)
+        .fold<double>(0, (currentMax, price) => price > currentMax ? price : currentMax);
+
+    final roundedMax = (maxDealPrice / 5).ceil() * 5;
+    return roundedMax < _minimumPriceSliderMax ? _minimumPriceSliderMax : roundedMax.toDouble();
+  }
+
+  RangeValues _clampPriceRange(RangeValues range, double sliderMax) {
+    final clampedStart = range.start.clamp(0, sliderMax).toDouble();
+    final clampedEnd = range.end.clamp(clampedStart, sliderMax).toDouble();
+    return RangeValues(clampedStart, clampedEnd);
+  }
+
+  int _priceSliderDivisions(double sliderMax) {
+    if (sliderMax <= 60) {
+      return sliderMax.round();
+    }
+    return (sliderMax / 2).round();
   }
 
   String _sortLabel(_DealsSortOption option) {
@@ -206,8 +233,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return imageHeight + detailsHeight + 4;
   }
 
-  Future<void> _openPriceSheet() async {
-    RangeValues draft = _priceRange;
+  Future<void> _openPriceSheet(double sliderMax) async {
+    RangeValues draft = _clampPriceRange(_priceRange, sliderMax);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -232,8 +259,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                     RangeSlider(
                       values: draft,
                       min: 0,
-                      max: 50,
-                      divisions: 50,
+                      max: sliderMax,
+                      divisions: _priceSliderDivisions(sliderMax),
                       labels: RangeLabels('${draft.start.round()} €', '${draft.end.round()} €'),
                       onChanged: (values) {
                         setModalState(() {
@@ -248,7 +275,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           child: TextButton(
                             onPressed: () {
                               setModalState(() {
-                                draft = const RangeValues(0, 50);
+                                draft = RangeValues(0, sliderMax);
                               });
                             },
                             child: const Text('Reset'),
@@ -259,7 +286,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           child: FilledButton(
                             onPressed: () {
                               setState(() {
-                                _priceRange = draft;
+                                _priceRange = _clampPriceRange(draft, sliderMax);
                                 _visibleCount = _pageSize;
                               });
                               Navigator.of(sheetContext).pop();
@@ -374,9 +401,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Could not load deals: $error')),
           data: (deals) {
+            final priceSliderMax = _priceSliderMaxForDeals(deals);
+            final effectivePriceRange = _clampPriceRange(_priceRange, priceSliderMax);
             final shoppingListItems = shoppingListItemsAsync.asData?.value ?? const <ShoppingListItem>[];
             final shoppingListKeys = shoppingListItems.map((item) => _normalizedShoppingListKey(item.name)).toSet();
-            final filteredDeals = _filterAndSortDeals(deals);
+            final filteredDeals = _filterAndSortDeals(deals, effectivePriceRange);
             final visibleCount = _visibleCount < filteredDeals.length ? _visibleCount : filteredDeals.length;
             final visibleDeals = filteredDeals.take(visibleCount).toList(growable: false);
             final hasMore = visibleCount < filteredDeals.length;
@@ -456,7 +485,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: _openPriceSheet,
+                                onPressed: () => _openPriceSheet(priceSliderMax),
                                 icon: const Icon(Icons.euro_rounded),
                                 label: const Text('Price', overflow: TextOverflow.ellipsis),
                               ),
@@ -473,7 +502,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Price ${_priceRangeLabel(_priceRange)}  •  ${_sortLabel(_sortOption)}',
+                          'Price ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 14),
