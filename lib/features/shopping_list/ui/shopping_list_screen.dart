@@ -79,7 +79,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             error: (error, _) => Center(child: Text('Could not load shopping list: $error')),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const Center(child: Text('No items yet. Tap "Add item" to create your list'));
+                                return const Center(child: Text('Tap "Add item" to add items to your shopping list', style: TextStyle(fontSize: 15)));
                               }
 
                               final bestDealByItemId = _buildBestDealsByItem(items, dealsAsync.asData?.value);
@@ -148,7 +148,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurfaceVariant, BlendMode.srcIn),
                   ),
                   title: const Text('Scan barcode'),
-                  subtitle: const Text('Open scanner and scan item barcode'),
+                  subtitle: const Text('Use your camera to scan an item\'s barcode'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     context.go('/scan?mode=barcode&from=list');
