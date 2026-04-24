@@ -54,6 +54,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final dealsAsync = ref.watch(allCatalogDealsProvider);
 
     final list = listAsync.asData?.value;
+    final pendingInviteCount = uid == null
+        ? 0
+        : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
 
     return Scaffold(
       body: SafeArea(
@@ -66,6 +69,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               onRename: list == null ? null : () => _showRenameDialog(context, list),
               onInvite: (list == null || uid == null) ? null : () => _showInviteDialog(context, uid, list),
               onLeave: (list == null || uid == null) ? null : () => _confirmLeaveOrDelete(uid, list),
+              onManageMembers: (list == null || uid == null || list.ownerId != uid || (list.members.length <= 1 && pendingInviteCount == 0))
+                  ? null
+                  : () => _showManageMembersDialog(uid, list),
             ),
             if (uid != null)
               Padding(
@@ -582,6 +588,120 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     );
   }
 
+  Future<void> _showManageMembersDialog(String ownerUid, ShoppingList list) async {
+    final repo = ref.read(sharedShoppingListRepositoryProvider);
+    final initialInvitations = await repo.getListPendingInvitations(list.id);
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        var pendingInvitations = List.of(initialInvitations);
+        final members = list.members.where((m) => m.userId != ownerUid).toList();
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Manage members', style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${list.members.length} member${list.members.length == 1 ? '' : 's'}'
+                        '${pendingInvitations.isNotEmpty ? ' · ${pendingInvitations.length} pending' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 16),
+                      _MemberRow(
+                        name: list.members.firstWhere((m) => m.userId == ownerUid, orElse: () => list.members.first).name,
+                        isOwner: true,
+                        isSelf: true,
+                      ),
+                      if (members.isNotEmpty) ...[
+                        const Divider(height: 20),
+                        ...members.map(
+                          (member) => _MemberRow(
+                            name: member.name,
+                            isOwner: false,
+                            isSelf: false,
+                            onMakeOwner: () async {
+                              try {
+                                await repo.transferOwnership(listId: list.id, currentOwnerUid: ownerUid, newOwnerUid: member.userId);
+                                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                }
+                              }
+                            },
+                            onRemove: () async {
+                              try {
+                                await repo.removeMember(listId: list.id, memberUid: member.userId);
+                                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                      if (pendingInvitations.isNotEmpty) ...[
+                        const Divider(height: 20),
+                        Text(
+                          'Pending invitations',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        ...pendingInvitations.map(
+                          (inv) => _PendingInvitationRow(
+                            email: inv.invitedEmail,
+                            onCancel: () async {
+                              try {
+                                await repo.cancelInvitation(inv.id);
+                                setDialogState(() => pendingInvitations.remove(inv));
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                      if (members.isEmpty && pendingInvitations.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text('No other members yet.', style: Theme.of(context).textTheme.bodyMedium),
+                      ],
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          style: TextButton.styleFrom(foregroundColor: Colors.white),
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _confirmLeaveOrDelete(String uid, ShoppingList list) async {
     final isOwner = list.ownerId == uid;
     final action = isOwner ? 'Delete' : 'Leave';
@@ -673,13 +793,14 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.list, required this.uid, required this.onRename, required this.onInvite, required this.onLeave});
+  const _TopBar({required this.list, required this.uid, required this.onRename, required this.onInvite, required this.onLeave, this.onManageMembers});
 
   final ShoppingList? list;
   final String? uid;
   final VoidCallback? onRename;
   final VoidCallback? onInvite;
   final VoidCallback? onLeave;
+  final VoidCallback? onManageMembers;
 
   @override
   Widget build(BuildContext context) {
@@ -718,11 +839,14 @@ class _TopBar extends StatelessWidget {
                 switch (value) {
                   case 'rename':
                     onRename?.call();
+                  case 'manage':
+                    onManageMembers?.call();
                   case 'leave':
                     onLeave?.call();
                 }
               },
               itemBuilder: (context) => [
+                if (onManageMembers != null) const PopupMenuItem(value: 'manage', child: Text('Manage members')),
                 const PopupMenuItem(value: 'rename', child: Text('Rename list')),
                 PopupMenuItem(
                   value: 'leave',
@@ -908,5 +1032,103 @@ class _ShoppingItemTile extends StatelessWidget {
     if (hasQty && hasUnit) return '${item.quantity} ${item.unit}';
     if (hasQty) return '× ${item.quantity}';
     return item.unit;
+  }
+}
+
+class _MemberRow extends StatelessWidget {
+  const _MemberRow({required this.name, required this.isOwner, required this.isSelf, this.onMakeOwner, this.onRemove});
+
+  final String name;
+  final bool isOwner;
+  final bool isSelf;
+  final VoidCallback? onMakeOwner;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(isSelf ? '$name (You)' : name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  isOwner ? 'Owner' : 'Member',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          if (!isSelf && !isOwner)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'owner') onMakeOwner?.call();
+                if (value == 'remove') onRemove?.call();
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'owner', child: Text('Make owner')),
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Text('Remove from list', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingInvitationRow extends StatelessWidget {
+  const _PendingInvitationRow({required this.email, required this.onCancel});
+
+  final String email;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Icon(Icons.mail_outline_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(email, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Pending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) { if (value == 'cancel') onCancel(); },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'cancel',
+                child: Text('Cancel invitation', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

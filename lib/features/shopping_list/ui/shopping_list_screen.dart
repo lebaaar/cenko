@@ -201,7 +201,8 @@ class _ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final memberNames = list.members.map((m) => m.name).join(', ');
+    final isPrivate = list.members.length == 1;
+    final memberNames = isPrivate ? 'Private' : list.members.map((m) => m.name).join(', ');
     final remaining = list.itemCount - list.boughtCount;
 
     return Padding(
@@ -219,7 +220,7 @@ class _ListCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(Icons.people_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
