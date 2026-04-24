@@ -484,7 +484,6 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       builder: (dialogContext) {
         var inviting = false;
         String? error;
-        String? successMsg;
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -502,8 +501,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               setDialogState(() {
                 inviting = true;
                 error = null;
-                successMsg = null;
               });
+              final messenger = ScaffoldMessenger.of(context);
               ref
                   .read(sharedShoppingListRepositoryProvider)
                   .inviteByEmail(
@@ -514,13 +513,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     email: email,
                   )
                   .then((_) {
-                    if (mounted) {
-                      setDialogState(() {
-                        inviting = false;
-                        successMsg = 'Invitation sent to $email';
-                        _inviteEmailCtrl.clear();
-                      });
-                    }
+                    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                    messenger.showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
                   })
                   .catchError((e) {
                     if (mounted) {
@@ -548,7 +542,6 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       Text('Invite someone to join "${list.name}"', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 16),
                       if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
-                      if (successMsg != null) ...[Text(successMsg!, style: TextStyle(color: Colors.white)), const SizedBox(height: 8)],
                       TextField(
                         controller: _inviteEmailCtrl,
                         autofocus: true,

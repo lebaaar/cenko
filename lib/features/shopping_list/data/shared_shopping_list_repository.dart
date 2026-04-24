@@ -249,15 +249,26 @@ class SharedShoppingListRepository {
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
 
-    // Check member limit (reading own list, allowed by isMemberOf rule)
+    // Verify the email belongs to a registered user
+    final userQuery = await _firestore.collection('users').where('email', isEqualTo: normalizedEmail).limit(1).get();
+    if (userQuery.docs.isEmpty) {
+      throw Exception('No user with that email address was found');
+    }
+    final invitedUid = userQuery.docs.first.id;
+
+    // Check member limit and whether already a member
     final listDoc = await _lists.doc(listId).get();
     final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+
+    if (members.any((m) => m['user_id'] == invitedUid)) {
+      throw Exception('User is already a member of this list');
+    }
 
     if (members.length >= 5) {
       throw Exception('This list has reached the maximum of 5 members');
     }
 
-    // Check for existing pending invitation by email — all docs are pending by definition
+    // Check for existing pending invitation
     final existing = await _invitations.where('list_id', isEqualTo: listId).where('invited_email', isEqualTo: normalizedEmail).limit(1).get();
 
     if (existing.docs.isNotEmpty) {
