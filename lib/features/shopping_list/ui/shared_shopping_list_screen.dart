@@ -1,0 +1,953 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/providers/catalog_deals_provider.dart';
+import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+
+class SharedShoppingListScreen extends ConsumerStatefulWidget {
+  const SharedShoppingListScreen({super.key, required this.listId});
+
+  final String listId;
+
+  @override
+  ConsumerState<SharedShoppingListScreen> createState() => _SharedShoppingListScreenState();
+}
+
+class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScreen> {
+  bool _updatingBought = false;
+  final DealTextMatcherService _dealMatcher = const DealTextMatcherService();
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _brandCtrl = TextEditingController();
+  final _renameCtrl = TextEditingController();
+  final _inviteEmailCtrl = TextEditingController();
+  bool _saving = false;
+  String? _formError;
+  String? _editingItemId;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _brandCtrl.dispose();
+    _renameCtrl.dispose();
+    _inviteEmailCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final uid = authState.asData?.value?.uid;
+    final listAsync = ref.watch(shoppingListProvider(widget.listId));
+    final dealsAsync = ref.watch(allCatalogDealsProvider);
+
+    final list = listAsync.asData?.value;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TopBar(
+              list: list,
+              uid: uid,
+              onRename: list == null ? null : () => _showRenameDialog(context, list),
+              onInvite: (list == null || uid == null) ? null : () => _showInviteDialog(context, uid, list),
+              onLeave: (list == null || uid == null) ? null : () => _confirmLeaveOrDelete(uid, list),
+            ),
+            if (uid != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () => _showAddActions(context, uid),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Add item'),
+                    style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: uid == null
+                    ? const Center(child: Text('Please sign in'))
+                    : listAsync.when(
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(child: Text('Could not load list: $e')),
+                        data: (list) {
+                          if (list == null) {
+                            return const Center(child: Text('List not found'));
+                          }
+                          return _ItemsList(
+                            listId: widget.listId,
+                            uid: uid,
+                            list: list,
+                            deals: dealsAsync.asData?.value,
+                            dealMatcher: _dealMatcher,
+                            updatingBought: _updatingBought,
+                            onToggleBought: (itemId, bought) => _setBought(uid: uid, itemId: itemId, bought: bought),
+                            onEdit: (item) => _openItemForm(uid: uid, item: item),
+                            onDelete: (item) => _confirmDeleteItem(context: context, item: item),
+                          );
+                        },
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAddActions(BuildContext context, String uid) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                ),
+                ListTile(
+                  leading: SvgPicture.asset(
+                    'assets/icons/barcode_scanner.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurfaceVariant, BlendMode.srcIn),
+                  ),
+                  title: const Text('Scan barcode'),
+                  subtitle: const Text('Use your camera to scan a barcode'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/scan?mode=barcode&from=list');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit_note_rounded),
+                  title: const Text('Add manually'),
+                  subtitle: const Text('Manually enter item details'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _openItemForm(uid: uid);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openItemForm({required String uid, ShoppingListItem? item}) async {
+    _editingItemId = item?.id;
+    _nameCtrl.text = item?.name ?? '';
+    _brandCtrl.text = item?.brand ?? '';
+    _formError = null;
+    _formKey.currentState?.reset();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item == null ? 'Add item' : 'Edit item', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text(
+                      item == null ? 'Add a new item to the list' : 'Update item details',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    if (_formError != null) ...[
+                      Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      const SizedBox(height: 12),
+                    ],
+                    TextFormField(
+                      controller: _nameCtrl,
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(labelText: 'Item name'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return 'Item name is required';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _brandCtrl,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(labelText: 'Brand (optional)'),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                        onPressed: _saving ? null : () => _saveItemForm(uid: uid, setModalState: setModalState),
+                        child: Text(_saving ? 'Saving...' : (item == null ? 'Add item' : 'Save changes')),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveItemForm({required String uid, required StateSetter setModalState}) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setModalState(() {
+      _saving = true;
+      _formError = null;
+    });
+
+    final repo = ref.read(sharedShoppingListRepositoryProvider);
+
+    try {
+      if (_editingItemId != null) {
+        await repo.updateItem(
+          listId: widget.listId,
+          itemId: _editingItemId!,
+          name: _nameCtrl.text,
+          brand: _brandCtrl.text,
+        );
+      } else {
+        await repo.addItem(
+          listId: widget.listId,
+          addedBy: uid,
+          name: _nameCtrl.text,
+          brand: _brandCtrl.text,
+        );
+      }
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setModalState(() {
+          _formError = 'Could not save item: $e';
+          _saving = false;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<bool> _confirmDeleteItem({required BuildContext context, required ShoppingListItem item}) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        var deleting = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text('Delete ${item.name}?', style: Theme.of(context).textTheme.titleLarge)),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text('Item will be removed from the list', style: Theme.of(context).textTheme.bodyMedium),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: deleting ? null : () => Navigator.of(dialogContext).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                                foregroundColor: Theme.of(context).colorScheme.onError,
+                              ),
+                              onPressed: deleting
+                                  ? null
+                                  : () async {
+                                      setDialogState(() => deleting = true);
+                                      try {
+                                        await ref.read(sharedShoppingListRepositoryProvider).deleteItem(
+                                              listId: widget.listId,
+                                              itemId: item.id,
+                                              wasBought: item.isBought,
+                                            );
+                                        if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
+                                      } catch (e) {
+                                        if (!dialogContext.mounted) return;
+                                        setDialogState(() => deleting = false);
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete item: $e')));
+                                      }
+                                    },
+                              child: Text(deleting ? 'Deleting...' : 'Delete'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    return shouldDelete == true;
+  }
+
+  Future<void> _setBought({required String uid, required String itemId, required bool bought}) async {
+    setState(() => _updatingBought = true);
+    try {
+      await ref.read(sharedShoppingListRepositoryProvider).setBought(
+            listId: widget.listId,
+            itemId: itemId,
+            bought: bought,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update item: $e')));
+    } finally {
+      if (mounted) setState(() => _updatingBought = false);
+    }
+  }
+
+  Future<void> _showRenameDialog(BuildContext context, ShoppingList list) async {
+    _renameCtrl.text = list.name;
+    _renameCtrl.selection = TextSelection(baseOffset: 0, extentOffset: list.name.length);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        var saving = false;
+        String? error;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void doRename() {
+              final name = _renameCtrl.text.trim();
+              if (name.isEmpty) {
+                setDialogState(() => error = 'Name is required');
+                return;
+              }
+              setDialogState(() {
+                saving = true;
+                error = null;
+              });
+              ref
+                  .read(sharedShoppingListRepositoryProvider)
+                  .renameList(
+                    listId: widget.listId,
+                    name: name,
+                    memberUids: list.members.map((m) => m.userId).toList(),
+                  )
+                  .then((_) {
+                    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  })
+                  .catchError((e) {
+                    if (mounted) {
+                      setDialogState(() {
+                        saving = false;
+                        error = 'Could not rename list: $e';
+                      });
+                    }
+                  });
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Rename list', style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 16),
+                      if (error != null) ...[
+                        Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                        const SizedBox(height: 8),
+                      ],
+                      TextField(
+                        controller: _renameCtrl,
+                        autofocus: true,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(labelText: 'List name'),
+                        onSubmitted: saving ? null : (_) => doRename(),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: saving ? null : doRename,
+                              child: Text(saving ? 'Saving...' : 'Rename'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showInviteDialog(BuildContext context, String uid, ShoppingList list) async {
+    _inviteEmailCtrl.clear();
+    final currentUser = ref.read(currentUserProvider).asData?.value;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        var inviting = false;
+        String? error;
+        String? successMsg;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void doInvite() {
+              final email = _inviteEmailCtrl.text.trim();
+              if (email.isEmpty) {
+                setDialogState(() => error = 'Email is required');
+                return;
+              }
+              setDialogState(() {
+                inviting = true;
+                error = null;
+                successMsg = null;
+              });
+              ref
+                  .read(sharedShoppingListRepositoryProvider)
+                  .inviteByEmail(
+                    listId: widget.listId,
+                    listName: list.name,
+                    invitedByUid: uid,
+                    invitedByName: currentUser?.name ?? 'Unknown',
+                    email: email,
+                  )
+                  .then((_) {
+                    if (mounted) {
+                      setDialogState(() {
+                        inviting = false;
+                        successMsg = 'Invitation sent to $email';
+                        _inviteEmailCtrl.clear();
+                      });
+                    }
+                  })
+                  .catchError((e) {
+                    if (mounted) {
+                      setDialogState(() {
+                        inviting = false;
+                        error = '$e';
+                      });
+                    }
+                  });
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Invite to list', style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text('Invite someone to join "${list.name}"', style: Theme.of(context).textTheme.bodyMedium),
+                      const SizedBox(height: 16),
+                      if (error != null) ...[
+                        Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                        const SizedBox(height: 8),
+                      ],
+                      if (successMsg != null) ...[
+                        Text(successMsg!, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                        const SizedBox(height: 8),
+                      ],
+                      TextField(
+                        controller: _inviteEmailCtrl,
+                        autofocus: true,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(labelText: 'Email address'),
+                        onSubmitted: inviting ? null : (_) => doInvite(),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Done'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                              onPressed: inviting ? null : doInvite,
+                              child: Text(inviting ? 'Inviting...' : 'Invite'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmLeaveOrDelete(String uid, ShoppingList list) async {
+    final isOwner = list.ownerId == uid;
+    final action = isOwner ? 'Delete' : 'Leave';
+    final description = isOwner
+        ? 'This will permanently delete "${list.name}" and all its items for all members.'
+        : 'You will be removed from "${list.name}".';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Theme.of(dialogContext).colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          isOwner ? Icons.delete_rounded : Icons.exit_to_app_rounded,
+                          color: Theme.of(dialogContext).colorScheme.onErrorContainer,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text('$action list?', style: Theme.of(dialogContext).textTheme.titleLarge),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(description, style: Theme.of(dialogContext).textTheme.bodyMedium),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          style: TextButton.styleFrom(foregroundColor: Colors.white),
+                          onPressed: () => Navigator.of(dialogContext).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                            foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+                          ),
+                          onPressed: () => Navigator.of(dialogContext).pop(true),
+                          child: Text(action),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      if (isOwner) {
+        await ref.read(sharedShoppingListRepositoryProvider).deleteList(
+              listId: widget.listId,
+              memberUids: list.members.map((m) => m.userId).toList(),
+            );
+      } else {
+        await ref.read(sharedShoppingListRepositoryProvider).leaveList(
+              uid: uid,
+              listId: widget.listId,
+            );
+      }
+      if (!mounted) return;
+      context.go('/list');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not $action list: $e')));
+    }
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.list,
+    required this.uid,
+    required this.onRename,
+    required this.onInvite,
+    required this.onLeave,
+  });
+
+  final ShoppingList? list;
+  final String? uid;
+  final VoidCallback? onRename;
+  final VoidCallback? onInvite;
+  final VoidCallback? onLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOwner = list != null && uid != null && list!.ownerId == uid;
+    final memberNames = list?.members.map((m) => m.name).join(', ') ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.go('/list'),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  list?.name ?? 'Shopping List',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (memberNames.isNotEmpty)
+                  Text(
+                    memberNames,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          if (list != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'rename':
+                    onRename?.call();
+                  case 'invite':
+                    onInvite?.call();
+                  case 'leave':
+                    onLeave?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'rename', child: Text('Rename list')),
+                const PopupMenuItem(value: 'invite', child: Text('Invite people')),
+                PopupMenuItem(
+                  value: 'leave',
+                  child: Text(
+                    isOwner ? 'Delete list' : 'Leave list',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemsList extends StatelessWidget {
+  const _ItemsList({
+    required this.listId,
+    required this.uid,
+    required this.list,
+    required this.deals,
+    required this.dealMatcher,
+    required this.updatingBought,
+    required this.onToggleBought,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final String listId;
+  final String uid;
+  final ShoppingList list;
+  final List<CatalogDealItem>? deals;
+  final DealTextMatcherService dealMatcher;
+  final bool updatingBought;
+  final void Function(String itemId, bool bought) onToggleBought;
+  final void Function(ShoppingListItem item) onEdit;
+  final Future<bool> Function(ShoppingListItem item) onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final itemsAsync = ref.watch(shoppingListItemsProvider(listId));
+        return itemsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Could not load items: $e')),
+          data: (items) {
+            if (items.isEmpty) {
+              return const Center(
+                child: Text(
+                  'Tap "Add item" to add items to this list',
+                  style: TextStyle(fontSize: 15),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            final bestDealById = _buildBestDeals(items);
+
+            return ListView.separated(
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return Dismissible(
+                  key: ValueKey(item.id),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) => onDelete(item),
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                  ),
+                  child: _ShoppingItemTile(
+                    item: item,
+                    bestDeal: bestDealById[item.id],
+                    onToggleBought: updatingBought ? null : (v) => onToggleBought(item.id, v),
+                    onEdit: () => onEdit(item),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Map<String, CatalogDealItem> _buildBestDeals(List<ShoppingListItem> items) {
+    if (deals == null || deals!.isEmpty) return const {};
+
+    final result = <String, CatalogDealItem>{};
+    for (final item in items) {
+      final terms = <String>{};
+      final name = item.name.trim();
+      if (name.isNotEmpty) terms.add(name);
+      final brand = item.brand?.trim();
+      if (brand != null && brand.isNotEmpty) {
+        terms.add(brand);
+        terms.add('$brand $name');
+        terms.add('$name $brand');
+      }
+      if (terms.isEmpty) continue;
+
+      final matched = dealMatcher.matchDeals(shoppingListTexts: terms, deals: deals!, minScore: 0.48);
+      if (matched.isEmpty) continue;
+
+      result[item.id] = matched.reduce((a, b) => a.salePriceCents <= b.salePriceCents ? a : b);
+    }
+    return result;
+  }
+}
+
+class _ShoppingItemTile extends StatelessWidget {
+  const _ShoppingItemTile({
+    required this.item,
+    required this.bestDeal,
+    required this.onToggleBought,
+    required this.onEdit,
+  });
+
+  final ShoppingListItem item;
+  final CatalogDealItem? bestDeal;
+  final ValueChanged<bool>? onToggleBought;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.68),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onToggleBought == null ? null : () => onToggleBought!(!item.isBought),
+            child: Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: item.isBought ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                  color: item.isBought ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                ),
+                alignment: Alignment.center,
+                child: item.isBought ? Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.onPrimary) : null,
+              ),
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: onEdit,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: item.isBought ? FontWeight.w500 : FontWeight.w600,
+                        decoration: item.isBought ? TextDecoration.lineThrough : null,
+                        color: item.isBought ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.65) : null,
+                      ),
+                    ),
+                    if (_subtitleText() != null) ...[
+                      const SizedBox(height: 2),
+                      Text(_subtitleText()!, style: subtitleStyle),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _subtitleText() {
+    final deal = bestDeal;
+    if (deal == null) return 'No current deal';
+    final savings = deal.savingsCents;
+    if (savings > 0) {
+      return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)} (save ${formatCents(savings)})';
+    }
+    return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)}';
+  }
+}

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class MainTopBar extends StatelessWidget {
-  const MainTopBar({super.key, this.onProfileTap, required this.title});
+  const MainTopBar({super.key, this.onProfileTap, required this.title, this.trailing});
 
   final VoidCallback? onProfileTap;
   final String? title;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,7 @@ class MainTopBar extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
             ),
-            const SizedBox(width: 48, height: 48),
+            SizedBox(width: 48, height: 48, child: trailing),
           ],
         ),
         const SizedBox(height: 14),

@@ -366,7 +366,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     });
 
     try {
-      await ref.read(shoppingListRepositoryProvider).addItem(uid: uid, name: deal.title);
+      final listId = ref.read(primaryListIdProvider(uid));
+      if (listId == null) {
+        throw Exception('Shopping list not found');
+      }
+      await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
       if (!mounted) {
         return;
       }
@@ -390,9 +394,10 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final userAsync = ref.watch(currentUserProvider);
     final uid = userAsync.asData?.value?.userId;
-    final shoppingListItemsAsync = uid == null
+    final primaryListId = uid == null ? null : ref.watch(primaryListIdProvider(uid));
+    final shoppingListItemsAsync = primaryListId == null
         ? const AsyncValue<List<ShoppingListItem>>.data(<ShoppingListItem>[])
-        : ref.watch(shoppingListItemsProvider(uid));
+        : ref.watch(shoppingListItemsProvider(primaryListId));
 
     return Scaffold(
       resizeToAvoidBottomInset: false,

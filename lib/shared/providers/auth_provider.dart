@@ -1,5 +1,6 @@
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,7 @@ final authStateProvider = StreamProvider<User?>((ref) {
 class AuthNotifier extends ChangeNotifier {
   final _auth = FirebaseAuth.instance;
   final _userRepo = UserRepository();
+  final _shoppingListRepo = SharedShoppingListRepository();
 
   AuthNotifier(Ref ref) {
     ref.listen(authStateProvider, (_, _) => notifyListeners());
@@ -35,15 +37,23 @@ class AuthNotifier extends ChangeNotifier {
       return;
     }
 
+    final userName = name?.trim().isNotEmpty == true ? name!.trim() : _fallbackName(user);
+
     await _userRepo.saveUser(
       UserModel(
         userId: user.uid,
-        name: name?.trim().isNotEmpty == true ? name!.trim() : _fallbackName(user),
+        name: userName,
         email: user.email ?? '',
         createdAt: DateTime.now(),
         authProvider: authProvider,
         googleId: googleId,
       ),
+    );
+
+    await _shoppingListRepo.createList(
+      ownerUid: user.uid,
+      ownerName: userName,
+      name: 'My Shopping List',
     );
   }
 

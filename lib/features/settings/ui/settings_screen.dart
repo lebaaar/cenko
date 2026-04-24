@@ -108,7 +108,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
       setState(() => _error = null);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password reset email has been sent to $email')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text('Password reset email has been sent to $email. Check your inbox and spam folder'),
+        ),
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message ?? e.code);
