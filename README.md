@@ -3,7 +3,7 @@
   <h1 align="center">Cenko</h1>
 </div>
 
-Cenko helps you hunt down the best deals across Slovenian stores for the products you buy the most. Scan your grocery receipts to automatically track your spending and get personalized deal recommendations based on your shopping list and frequently bought products.
+Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Scan your receipts to automatically track your spending, and share shopping lists with family or friends to get personalized deal recommendations based on what you buy most.
 
 > Dragonhack 2026 - Best use of APIs reward
 
@@ -15,7 +15,7 @@ Cenko helps you hunt down the best deals across Slovenian stores for the product
 ## Core features
 - **Track spending** - scan receipts to automatically track your spending and gain insights into your spending by store
 - **Browse all deals in one place** - find the best deals across all major stores in Slovenia (Mercator, Spar, Hofer, Tuš and Tuš drogerija)
-- **Shopping list** - see where each item is cheapest at the moment by building a shopping list via barcode scan or manual entry
+- **Shared shopping list** - create shopping lists and share them with family or friends and make sure you always get the best deal for the products on your list
 - **Personalized recommendations** - get deal recommendations based on your shopping list and frequently bought products
 
 ## Tech stack
