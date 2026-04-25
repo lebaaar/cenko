@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
@@ -281,7 +282,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Could not save receipt',
+                    'Failed to save receipt',
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 10),
@@ -368,12 +369,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Could not load product',
+                    'Failed to load product',
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _barcodeFlowMessage ?? 'Could not get product details. Please try again',
+                    _barcodeFlowMessage ?? 'Failed to get product details',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -799,7 +800,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (mounted) {
         setState(() {
-          _receiptFlowMessage = 'Camera init failed: $e';
+          _receiptFlowMessage = 'Camera init failed: ${e.toString().replaceFirst('Exception: ', '')}';
           _receiptFlowState = _ReceiptFlowState.failure;
         });
       }
@@ -946,7 +947,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       if (!mounted) {
         return;
       }
-      _showSnackBar(const SnackBar(content: Text('Could not add product to shopping list. Please try again')));
+      _showSnackBar(const SnackBar(content: Text('Failed to add product to shopping list. Please try again')));
     }
   }
 
@@ -1047,7 +1048,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                     return;
                                   }
                                   setSheetState(() {
-                                    formError = 'Could not save item. Please try again';
+                                    formError = 'Failed to save item. Please try again';
                                     saving = false;
                                   });
                                 }
@@ -1226,7 +1227,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         setState(() {
           _barcodeProduct = null;
           _barcodeFlowState = _BarcodeFlowState.failure;
-          _barcodeFlowMessage = 'Could not get product details. Please try again or add the item manually';
+          _barcodeFlowMessage = 'Failed to get product details. Please try again or add the item manually';
         });
       }
     } finally {
@@ -1322,7 +1323,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
       setState(() {
-        _receiptFlowMessage = 'Could not capture receipt image. Please try again';
+        _receiptFlowMessage = 'Failed to capture receipt image. Please try again';
         _receiptFlowState = _ReceiptFlowState.failure;
       });
     } finally {
@@ -1783,6 +1784,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final firestore = FirebaseFirestore.instance;
     final userRef = firestore.collection('users').doc(uid);
+
+    final receiptCount = (await userRef.collection('receipts').count().get()).count ?? 0;
+    if (receiptCount > maxNumberOfReceipts) {
+      throw Exception('You\'ve reached the limit of $maxNumberOfReceipts receipts');
+    }
+
     final receiptRef = userRef.collection('receipts').doc();
     final parsedDate = _parseDate(receipt['date']);
     final normalizedStoreName = _asString(receipt['store_name'], fallback: 'Unknown store');
@@ -1845,7 +1852,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     try {
       await _syncCommonBoughtProducts(uid: uid);
     } catch (error) {
-      debugPrint('Could not update common bought products: $error');
+      debugPrint('Failed to update common bought products: ${error.toString().replaceFirst('Exception: ', '')}');
     }
   }
 

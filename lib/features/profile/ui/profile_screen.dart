@@ -427,7 +427,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                   error: (error, _) => Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text('Could not load spendings: $error', style: Theme.of(context).textTheme.bodyMedium),
+                                    child: Text(
+                                      'Failed to load spendings: ${error.toString().replaceFirst('Exception: ', '')}',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
                                   ),
                                   data: (monthStats) {
                                     final stores = monthStats.stores;
@@ -523,7 +526,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                               ),
                                               error: (error, _) => Padding(
                                                 padding: const EdgeInsets.symmetric(vertical: 4),
-                                                child: Text('Could not load receipts: $error', style: Theme.of(context).textTheme.bodyMedium),
+                                                child: Text(
+                                                  'Failed to load receipts: ${error.toString().replaceFirst('Exception: ', '')}',
+                                                  style: Theme.of(context).textTheme.bodyMedium,
+                                                ),
                                               ),
                                               data: (page) {
                                                 if (page.receipts.isEmpty) {
@@ -706,7 +712,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           return;
                                         }
                                         setDialogState(() => deleting = false);
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete receipt: $error')));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to delete receipt: ${error.toString().replaceFirst('Exception: ', '')}')),
+                                        );
                                       }
                                     },
                               child: Text(deleting ? 'Deleting...' : 'Delete'),

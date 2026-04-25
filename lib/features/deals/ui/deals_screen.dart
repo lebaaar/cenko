@@ -408,7 +408,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to list')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add item to shopping list')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to add item to shopping list')));
     } finally {
       if (mounted) setState(() => _addingDealIds.remove(key));
     }
@@ -429,7 +429,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       body: SafeArea(
         child: dealsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Could not load deals: $error')),
+          error: (error, _) => Center(child: Text('Failed to load deals: ${error.toString().replaceFirst('Exception: ', '')}')),
           data: (deals) {
             final priceSliderMax = _priceSliderMaxForDeals(deals);
             final effectivePriceRange = _clampPriceRange(_priceRange, priceSliderMax);

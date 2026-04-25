@@ -91,7 +91,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     if (mounted) {
                       setDialogState(() {
                         creating = false;
-                        error = 'Could not create list: $e';
+                        error = 'Failed to create list: ${e.toString().replaceFirst('Exception: ', '')}';
                       });
                     }
                   });
@@ -163,7 +163,7 @@ class _Body extends ConsumerWidget {
 
     return listsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Could not load lists: $e')),
+      error: (e, _) => Center(child: Text('Could not load lists: ${e.toString().replaceFirst('Exception: ', '')}')),
       data: (lists) {
         final invitations = invitationsAsync.asData?.value ?? [];
 
@@ -220,7 +220,11 @@ class _ListCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(
+                    isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -323,7 +327,7 @@ class _InvitationCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
       }
     }
   }

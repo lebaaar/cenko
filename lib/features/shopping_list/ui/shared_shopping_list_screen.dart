@@ -54,9 +54,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final dealsAsync = ref.watch(allCatalogDealsProvider);
 
     final list = listAsync.asData?.value;
-    final pendingInviteCount = uid == null
-        ? 0
-        : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
+    final pendingInviteCount = uid == null ? 0 : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
 
     return Scaffold(
       body: SafeArea(
@@ -93,7 +91,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     ? const Center(child: Text('Please sign in'))
                     : listAsync.when(
                         loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Could not load list: $e')),
+                        error: (e, _) => Center(child: Text('Failed to load list: ${e.toString().replaceFirst('Exception: ', '')}')),
                         data: (list) {
                           if (list == null) {
                             return const Center(child: Text('List not found'));
@@ -283,7 +281,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     } catch (e) {
       if (mounted) {
         setModalState(() {
-          _formError = 'Could not save item: $e';
+          _formError = 'Failed to save item: ${e.toString().replaceFirst('Exception: ', '')}';
           _saving = false;
         });
       }
@@ -355,7 +353,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete item: $e')));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to delete item:${e.toString().replaceFirst('Exception: ', '')}')),
+                                        );
                                       }
                                     },
                               child: Text(deleting ? 'Deleting...' : 'Delete'),
@@ -381,7 +381,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update item: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}')));
     } finally {
       if (mounted) setState(() => _updatingBought = false);
     }
@@ -417,7 +417,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     if (mounted) {
                       setDialogState(() {
                         saving = false;
-                        error = 'Could not rename list: $e';
+                        error = 'Failed to rename list: ${e.toString().replaceFirst('Exception: ', '')}';
                       });
                     }
                   });
@@ -539,7 +539,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     children: [
                       Text('Invite to list', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 4),
-                      Text('Invite someone to join "${list.name}"', style: Theme.of(context).textTheme.bodyMedium),
+                      Text('Invite user to join this shopping list', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 16),
                       if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
@@ -699,8 +699,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final isOwner = list.ownerId == uid;
     final action = isOwner ? 'Delete' : 'Leave';
     final description = isOwner
-        ? 'This will permanently delete "${list.name}" and all its items for all members.'
-        : 'You will be removed from "${list.name}".';
+        ? 'This will permanently delete ${list.name} and all its items for all members'
+        : 'You will be removed from ${list.name} and will no longer see it in your lists';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -780,7 +780,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       context.go('/list');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not $action list: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to $action list: ${e.toString().replaceFirst('Exception: ', '')}')));
     }
   }
 }
@@ -884,11 +884,11 @@ class _ItemsList extends StatelessWidget {
         final itemsAsync = ref.watch(shoppingListItemsProvider(listId));
         return itemsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Could not load items: $e')),
+          error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
           data: (items) {
             if (items.isEmpty) {
               return const Center(
-                child: Text('Tap "Add item" to add items to this list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
+                child: Text('Tap "Add item" to add items to this shopping list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
               );
             }
 
@@ -1112,7 +1112,9 @@ class _PendingInvitationRow extends StatelessWidget {
             ),
           ),
           PopupMenuButton<String>(
-            onSelected: (value) { if (value == 'cancel') onCancel(); },
+            onSelected: (value) {
+              if (value == 'cancel') onCancel();
+            },
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'cancel',

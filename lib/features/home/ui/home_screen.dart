@@ -149,7 +149,7 @@ class _DealsListState extends State<_DealsList> {
       ),
       error: (error, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('Could not load deals: $error', style: Theme.of(context).textTheme.bodySmall),
+        child: Text('Failed to load deals: ${error.toString().replaceFirst('Exception: ', '')}', style: Theme.of(context).textTheme.bodySmall),
       ),
       data: (items) {
         if (items.isEmpty) {
