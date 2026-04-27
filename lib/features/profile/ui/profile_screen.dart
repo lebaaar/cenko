@@ -600,6 +600,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                   ),
+                  // TODO - premium plan details and benefits page
+                  // const SizedBox(height: 30),
+                  // Container(
+                  //   width: double.infinity,
+                  //   decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Padding(
+                  //         padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                  //         child: Text(
+                  //           'PLAN',
+                  //           style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
+                  //         ),
+                  //       ),
+                  //       _SettingsRow(label: 'Upgrade to Premium', onTap: () => context.push('/premium')),
+                  //     ],
+                  //   ),
+                  // ),
                   const SizedBox(height: 30),
                   Container(
                     width: double.infinity,
