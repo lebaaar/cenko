@@ -14,6 +14,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/user_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
@@ -1382,12 +1383,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         });
       }
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
-        _receiptFlowMessage = e.toString();
+        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
         _receiptFlowState = _ReceiptFlowState.failure;
       });
     } finally {
@@ -1652,13 +1651,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         _receiptFlowState = _ReceiptFlowState.success;
       });
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _receiptFlowState = _ReceiptFlowState.failure;
-        _receiptFlowMessage = e.toString();
+        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
       _stopProcessingHints();
@@ -1785,9 +1782,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     final firestore = FirebaseFirestore.instance;
     final userRef = firestore.collection('users').doc(uid);
 
-    final receiptCount = (await userRef.collection('receipts').count().get()).count ?? 0;
-    if (receiptCount > maxNumberOfReceipts) {
-      throw Exception('You\'ve reached the limit of $maxNumberOfReceipts receipts');
+    if (await isFreePlan(firestore, uid)) {
+      final receiptCount = (await userRef.collection('receipts').count().get()).count ?? 0;
+      if (receiptCount >= maxNumberOfReceipts) {
+        throw Exception(
+          'You\'ve reached the limit of $maxNumberOfReceipts receipts. Please delete some old receipts in Profile page to add new ones.',
+        );
+      }
     }
 
     final receiptRef = userRef.collection('receipts').doc();

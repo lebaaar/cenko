@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/core/utils/user_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'shopping_list.dart';
@@ -22,9 +23,11 @@ class SharedShoppingListRepository {
   CollectionReference<Map<String, dynamic>> _items(String listId) => _lists.doc(listId).collection('items');
 
   Future<String> createList({required String ownerUid, required String ownerName, required String name}) async {
-    final existing = await getUserLists(ownerUid);
-    if (existing.length >= maxNumberOfShoppingLists) {
-      throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
+    if (await isFreePlan(_firestore, ownerUid)) {
+      final existing = await getUserLists(ownerUid);
+      if (existing.length >= maxNumberOfShoppingLists) {
+        throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
+      }
     }
 
     final listRef = _lists.doc();
@@ -274,10 +277,12 @@ class SharedShoppingListRepository {
       throw Exception('This list has reached the maximum of 5 members');
     }
 
-    final invitorLists = await getUserLists(invitedByUid);
-    final invitorSharedCount = invitorLists.where((l) => l.members.length > 1).length;
-    if (invitorSharedCount >= maxNumberOfSharedShoppingLists) {
-      throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+    if (await isFreePlan(_firestore, invitedByUid)) {
+      final invitorLists = await getUserLists(invitedByUid);
+      final invitorSharedCount = invitorLists.where((l) => l.members.length > 1).length;
+      if (invitorSharedCount >= maxNumberOfSharedShoppingLists) {
+        throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+      }
     }
 
     // Check for existing pending invitation
@@ -321,14 +326,15 @@ class SharedShoppingListRepository {
     required String uid,
     required String userName,
   }) async {
-    final userLists = await getUserLists(uid);
-    if (userLists.length >= maxNumberOfShoppingLists) {
-      throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
-    }
-
-    final sharedCount = userLists.where((l) => l.members.length > 1).length;
-    if (sharedCount >= maxNumberOfSharedShoppingLists) {
-      throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+    if (await isFreePlan(_firestore, uid)) {
+      final userLists = await getUserLists(uid);
+      if (userLists.length >= maxNumberOfShoppingLists) {
+        throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
+      }
+      final sharedCount = userLists.where((l) => l.members.length > 1).length;
+      if (sharedCount >= maxNumberOfSharedShoppingLists) {
+        throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+      }
     }
 
     final now = Timestamp.now();
