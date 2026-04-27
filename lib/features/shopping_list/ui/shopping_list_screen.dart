@@ -91,7 +91,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     if (mounted) {
                       setDialogState(() {
                         creating = false;
-                        error = 'Failed to create list: ${e.toString().replaceFirst('Exception: ', '')}';
+                        error = e.toString().replaceFirst('Exception: ', '');
                       });
                     }
                   });

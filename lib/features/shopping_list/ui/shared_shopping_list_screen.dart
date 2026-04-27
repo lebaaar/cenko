@@ -354,7 +354,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to delete item:${e.toString().replaceFirst('Exception: ', '')}')),
+                                          SnackBar(content: Text('Failed to delete item: ${e.toString().replaceFirst('Exception: ', '')}')),
                                         );
                                       }
                                     },
