@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
@@ -109,6 +110,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _deleteLoading = true);
     try {
       await ref.read(authNotifierProvider).deleteAccount();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _deleteLoading = false);
+      if (e.code == 'failed-precondition') {
+        final ownedLists = (e.details?['ownedLists'] as List?)?.cast<String>() ?? [];
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Cannot delete account'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('You are the owner of shared lists. Transfer ownership before deleting your account.'),
+                if (ownedLists.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ...ownedLists.map(
+                    (name) => Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 4),
+                      child: Text('• $name', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text('To transfer ownership:'),
+                const SizedBox(height: 6),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('1. Open the list'),
+                    SizedBox(height: 6),
+
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [Text('2. Tap '), Icon(Icons.more_vert, size: 16), Text(' in the top right corner')],
+                    ),
+                    SizedBox(height: 6),
+
+                    Text('3. Tap "Manage members"'),
+                    SizedBox(height: 6),
+
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [Text('4. Select a member and tap '), Icon(Icons.more_vert, size: 16)],
+                    ),
+                    SizedBox(height: 6),
+
+                    Text('5. Tap "Make owner"'),
+                  ],
+                ),
+              ],
+            ),
+            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+          ),
+        );
+      } else {
+        setState(() => _error = e.message ?? e.code);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
