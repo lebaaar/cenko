@@ -25,6 +25,10 @@ class UserRepository {
     await _users.doc(uid).update({'name': name.trim()});
   }
 
+  Future<void> updateEmail(String uid, String email) async {
+    await _users.doc(uid).update({'email': email.trim()});
+  }
+
   Future<void> updateSettings(String uid, UserSettings settings) async {
     await _users.doc(uid).update({'settings': settings.toMap()});
   }

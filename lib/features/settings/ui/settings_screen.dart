@@ -20,7 +20,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _repo = UserRepository();
   final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   Timer? _nameDebounce;
+  Timer? _emailDebounce;
   String? _error;
   String _theme = 'system';
   String _language = 'en';
@@ -32,7 +34,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _nameDebounce?.cancel();
+    _emailDebounce?.cancel();
     _nameCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -41,6 +45,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (trimmed.isEmpty) return;
     try {
       await _repo.updateDisplayName(uid, trimmed);
+      if (mounted) setState(() => _error = null);
+    } on FirebaseException catch (e) {
+      if (mounted) setState(() => _error = e.message ?? e.code);
+    }
+  }
+
+  Future<void> _saveEmail(String uid, String value) async {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      await _repo.updateEmail(uid, trimmed);
       if (mounted) setState(() => _error = null);
     } on FirebaseException catch (e) {
       if (mounted) setState(() => _error = e.message ?? e.code);
@@ -60,6 +75,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _nameDebounce?.cancel();
     _nameDebounce = Timer(const Duration(milliseconds: 500), () {
       _saveDisplayName(uid, value);
+    });
+  }
+
+  void _onEmailChanged(String uid, String value) {
+    _emailDebounce?.cancel();
+    _emailDebounce = Timer(const Duration(milliseconds: 500), () {
+      _saveEmail(uid, value);
     });
   }
 
@@ -143,6 +165,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         if (!_initialized && user != null) {
           _nameCtrl.text = user.name;
+          _emailCtrl.text = user.email;
           _theme = UserSettings.normalizeTheme(user.settings.theme);
           _language = user.settings.language;
           _notificationsEnabled = user.settings.notificationsEnabled;
@@ -177,6 +200,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           textInputAction: TextInputAction.next,
                           onChanged: user == null ? null : (value) => _onNameChanged(user.userId, value),
                           decoration: const InputDecoration(labelText: 'Display name'),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _emailCtrl,
+                          textInputAction: TextInputAction.next,
+                          onChanged: user == null ? null : (value) => _onEmailChanged(user.userId, value),
+                          decoration: const InputDecoration(labelText: 'Email'),
+                          enabled: false, // TODO
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
