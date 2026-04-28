@@ -178,8 +178,13 @@ class _Body extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
               children: [
-                if (invitations.isNotEmpty) ...[Text('Invitations'), ...invitations.map((inv) => _InvitationCard(invitation: inv, uid: uid))],
-                if (lists.isNotEmpty) ...[Text('Your lists'), ...lists.map((list) => _ListCard(list: list))],
+                if (invitations.isNotEmpty) ...[
+                  Text('Invitations'),
+                  const SizedBox(height: 8),
+                  ...invitations.map((inv) => _InvitationCard(invitation: inv, uid: uid)),
+                  const SizedBox(height: 12),
+                ],
+                if (lists.isNotEmpty) ...[Text('Your lists'), const SizedBox(height: 8), ...lists.map((list) => _ListCard(list: list))],
               ],
             );
           },

@@ -46,6 +46,7 @@ class SharedShoppingListRepository {
       'members': [
         {'user_id': ownerUid, 'name': ownerName, 'joined_at': now, 'role': 'owner'},
       ],
+      'member_uids': [ownerUid],
     });
 
     batch.set(_memberships(ownerUid).doc(listRef.id), {'list_id': listRef.id, 'name': trimmedName, 'joined_at': now});
@@ -89,7 +90,13 @@ class SharedShoppingListRepository {
                 listsById.remove(id);
               }
               emit();
-            }, onError: controller.addError);
+            }, onError: (_) {
+              // Ignore per-list errors (e.g. transient PERMISSION_DENIED during
+              // membership propagation) — omit the list rather than crashing the stream.
+              listSubs.remove(id)?.cancel();
+              listsById.remove(id);
+              emit();
+            });
           }
         }
 
@@ -220,7 +227,7 @@ class SharedShoppingListRepository {
     final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>().where((m) => m['user_id'] != uid).toList();
 
     final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {'members': members});
+    batch.update(_lists.doc(listId), {'members': members, 'member_uids': FieldValue.arrayRemove([uid])});
     batch.delete(_memberships(uid).doc(listId));
     await batch.commit();
   }
@@ -233,7 +240,7 @@ class SharedShoppingListRepository {
         .toList();
 
     final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {'members': members});
+    batch.update(_lists.doc(listId), {'members': members, 'member_uids': FieldValue.arrayRemove([memberUid])});
     batch.delete(_memberships(memberUid).doc(listId));
     await batch.commit();
   }
@@ -348,6 +355,7 @@ class SharedShoppingListRepository {
       'members': FieldValue.arrayUnion([
         {'user_id': uid, 'name': userName, 'joined_at': now, 'role': 'member'},
       ]),
+      'member_uids': FieldValue.arrayUnion([uid]),
     });
 
     batch.set(_memberships(uid).doc(listId), {'list_id': listId, 'name': listName, 'joined_at': now});

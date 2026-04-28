@@ -94,7 +94,17 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         error: (e, _) => Center(child: Text('Failed to load list: ${e.toString().replaceFirst('Exception: ', '')}')),
                         data: (list) {
                           if (list == null) {
-                            return const Center(child: Text('List not found'));
+                            // loading spinner is shown for 2 seconds, then "List not found" if list is still null
+                            return FutureBuilder(
+                              future: Future.delayed(const Duration(seconds: 2)),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                } else {
+                                  return const Center(child: Text('List not found'));
+                                }
+                              },
+                            );
                           }
                           return _ItemsList(
                             listId: widget.listId,
