@@ -123,7 +123,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                         children: [
                           Expanded(
                             child: TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: creating ? null : () => Navigator.of(dialogContext).pop(),
                               child: const Text('Cancel'),
                             ),
@@ -163,31 +163,26 @@ class _Body extends ConsumerWidget {
 
     return listsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Could not load lists: ${e.toString().replaceFirst('Exception: ', '')}')),
+      error: (e, _) => Center(child: Text('Failed to load shopping lists: ${e.toString().replaceFirst('Exception: ', '')}')),
       data: (lists) {
-        final invitations = invitationsAsync.asData?.value ?? [];
+        return invitationsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Could not load invitations')),
+          data: (invitations) {
+            if (lists.isEmpty && invitations.isEmpty) {
+              return const Center(
+                child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
+              );
+            }
 
-        if (lists.isEmpty && invitations.isEmpty) {
-          return const Center(
-            child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
-          );
-        }
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
-          children: [
-            if (invitations.isNotEmpty) ...[
-              Text('Invitations', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              ...invitations.map((inv) => _InvitationCard(invitation: inv, uid: uid)),
-              const SizedBox(height: 20),
-            ],
-            if (lists.isNotEmpty) ...[
-              Text('Your lists', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              ...lists.map((list) => _ListCard(list: list)),
-            ],
-          ],
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
+              children: [
+                if (invitations.isNotEmpty) ...[Text('Invitations'), ...invitations.map((inv) => _InvitationCard(invitation: inv, uid: uid))],
+                if (lists.isNotEmpty) ...[Text('Your lists'), ...lists.map((list) => _ListCard(list: list))],
+              ],
+            );
+          },
         );
       },
     );

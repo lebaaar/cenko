@@ -329,9 +329,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         children: [
                           Expanded(
                             child: TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: deleting ? null : () => Navigator.of(dialogContext).pop(false),
-                              child: const Text('Cancel'),
+                              child: const Text('Close'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -449,9 +449,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         children: [
                           Expanded(
                             child: TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
-                              child: const Text('Cancel'),
+                              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
+                              child: const Text('Close'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -555,7 +555,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         children: [
                           Expanded(
                             child: TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.white),
+                              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: () => Navigator.of(dialogContext).pop(),
                               child: const Text('Close'),
                             ),
@@ -673,13 +673,13 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       ],
                       if (members.isEmpty && pendingInvitations.isEmpty) ...[
                         const SizedBox(height: 8),
-                        Text('No other members yet.', style: Theme.of(context).textTheme.bodyMedium),
+                        Text('No other members yet', style: Theme.of(context).textTheme.bodyMedium),
                       ],
                       const SizedBox(height: 16),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          style: TextButton.styleFrom(foregroundColor: Colors.white),
+                          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           child: const Text('Close'),
                         ),
@@ -740,7 +740,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     children: [
                       Expanded(
                         child: TextButton(
-                          style: TextButton.styleFrom(foregroundColor: Colors.white),
+                          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                           onPressed: () => Navigator.of(dialogContext).pop(false),
                           child: const Text('Cancel'),
                         ),
