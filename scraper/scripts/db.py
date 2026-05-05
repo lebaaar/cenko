@@ -42,17 +42,10 @@ def _resolve_key_path(path_value: str) -> Path:
 def get_firestore_client(service_account_path: str | None = None) -> firestore.Client:
     _load_env()
 
-    key_path_value = (
-        service_account_path
-        or os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
-        or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    )
+    key_path_value = (service_account_path or os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY"))
 
     if not key_path_value:
-        raise ValueError(
-            "Missing Firebase credentials path. Set FIREBASE_SERVICE_ACCOUNT_KEY "
-            "or GOOGLE_APPLICATION_CREDENTIALS, or pass service_account_path."
-        )
+        raise ValueError("Missing Firebase credentials path. Set FIREBASE_SERVICE_ACCOUNT_KEY or provide it as an argument.")
 
     key_path = _resolve_key_path(key_path_value)
     if not key_path.is_file():
