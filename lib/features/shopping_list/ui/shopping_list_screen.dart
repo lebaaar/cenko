@@ -150,46 +150,145 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   }
 }
 
-class _Body extends ConsumerWidget {
+class _Body extends ConsumerStatefulWidget {
   const _Body({required this.uid});
 
   final String uid;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Body> createState() => _BodyState();
+}
+
+enum SortOption {
+  alphabeticalAZ('Alphabetical (A-Z)'),
+  alphabeticalZA('Alphabetical (Z-A)'),
+  recentlyUpdated('Recently updated'),
+  mostItems('Most items'),
+  leastItems('Least items');
+
+  final String label;
+  const SortOption(this.label);
+}
+
+class _BodyState extends ConsumerState<_Body> {
+  SortOption _sortOption = SortOption.alphabeticalAZ;
+  bool _acceptingInvitation = false;
+
+  List<ShoppingList> _sortLists(List<ShoppingList> lists) {
+    final sorted = [...lists];
+    switch (_sortOption) {
+      case SortOption.alphabeticalAZ:
+        sorted.sort((a, b) => a.name.compareTo(b.name));
+      case SortOption.alphabeticalZA:
+        sorted.sort((a, b) => b.name.compareTo(a.name));
+      case SortOption.recentlyUpdated:
+        sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      case SortOption.mostItems:
+        sorted.sort((a, b) => b.itemCount.compareTo(a.itemCount));
+      case SortOption.leastItems:
+        sorted.sort((a, b) => a.itemCount.compareTo(b.itemCount));
+    }
+    return sorted;
+  }
+
+  Future<void> _handleRefresh() async {
+    // Refresh is automatic via Riverpod's realtime listeners, but this allows the UI to show the refresh animation
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final email = ref.watch(authStateProvider).asData?.value?.email ?? '';
-    final listsAsync = ref.watch(userShoppingListsProvider(uid));
+    final listsAsync = ref.watch(userShoppingListsProvider(widget.uid));
     final invitationsAsync = ref.watch(pendingInvitationsProvider(email));
 
-    return listsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load shopping lists: ${e.toString().replaceFirst('Exception: ', '')}')),
-      data: (lists) {
-        return invitationsAsync.when(
+    return Stack(
+      children: [
+        listsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Could not load invitations')),
-          data: (invitations) {
-            if (lists.isEmpty && invitations.isEmpty) {
-              return const Center(
-                child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
-              );
-            }
+          error: (e, _) => Center(child: Text('Failed to load shopping lists: ${e.toString().replaceFirst('Exception: ', '')}')),
+          data: (lists) {
+            return invitationsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Could not load invitations')),
+              data: (invitations) {
+                if (lists.isEmpty && invitations.isEmpty) {
+                  return const Center(
+                    child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
+                  );
+                }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
-              children: [
-                if (invitations.isNotEmpty) ...[
-                  Text('Invitations'),
-                  const SizedBox(height: 8),
-                  ...invitations.map((inv) => _InvitationCard(invitation: inv, uid: uid)),
-                  const SizedBox(height: 12),
-                ],
-                if (lists.isNotEmpty) ...[Text('Your lists'), const SizedBox(height: 8), ...lists.map((list) => _ListCard(list: list))],
-              ],
+                final sortedLists = _sortLists(lists);
+
+                return RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
+                    children: [
+                      if (invitations.isNotEmpty) ...[
+                        Text('Invitations'),
+                        const SizedBox(height: 8),
+                        ...invitations.map(
+                          (inv) => _InvitationCard(
+                            invitation: inv,
+                            uid: widget.uid,
+                            onAcceptingChanged: (accepting) => setState(() => _acceptingInvitation = accepting),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (lists.isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Your lists'),
+                            PopupMenuButton<SortOption>(
+                              onSelected: (option) => setState(() => _sortOption = option),
+                              itemBuilder: (context) => SortOption.values
+                                  .map(
+                                    (option) => PopupMenuItem(
+                                      value: option,
+                                      child: Row(
+                                        children: [
+                                          if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+                                          const SizedBox(width: 12),
+                                          Text(option.label),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              tooltip: 'Sort options',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _sortOption.label.split('(')[0].trim(),
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...sortedLists.map((list) => _ListCard(list: list)),
+                      ],
+                    ],
+                  ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+        if (_acceptingInvitation)
+          Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 }
@@ -256,10 +355,11 @@ class _ListCard extends StatelessWidget {
 }
 
 class _InvitationCard extends ConsumerStatefulWidget {
-  const _InvitationCard({required this.invitation, required this.uid});
+  const _InvitationCard({required this.invitation, required this.uid, required this.onAcceptingChanged});
 
   final ShoppingListInvitation invitation;
   final String uid;
+  final Function(bool) onAcceptingChanged;
 
   @override
   ConsumerState<_InvitationCard> createState() => _InvitationCardState();
@@ -302,9 +402,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _loading ? null : () => _respond(true),
-                    child: _loading
-                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Accept'),
+                    child: const Text('Accept'),
                   ),
                 ),
               ],
@@ -318,6 +416,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
   Future<void> _respond(bool accept) async {
     if (_loading) return;
     setState(() => _loading = true);
+    widget.onAcceptingChanged(true);
 
     final repo = ref.read(sharedShoppingListRepositoryProvider);
     final currentUser = ref.read(currentUserProvider).asData?.value;
@@ -331,15 +430,16 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
           uid: widget.uid,
           userName: currentUser?.name ?? 'Unknown',
         );
-        // Stream auto-updates via Firestore realtime listener — no manual refresh needed.
-        if (mounted) context.push('/list/${widget.invitation.listId}');
       } else {
         await repo.declineInvitation(widget.invitation.id);
-        // Stream auto-updates — no manual invalidation needed.
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      }
+    } finally {
+      widget.onAcceptingChanged(false);
+      if (mounted) {
         setState(() => _loading = false);
       }
     }
