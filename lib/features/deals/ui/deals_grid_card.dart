@@ -121,7 +121,7 @@ class DealsGridCard extends StatelessWidget {
                                 ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                 : Icon(isAlreadyOnShoppingList ? Icons.check_circle_rounded : Icons.playlist_add_rounded, size: 18),
                             label: Text(
-                              isAddingToShoppingList ? 'Adding...' : (isAlreadyOnShoppingList ? 'On list' : 'Add to list'),
+                              isAlreadyOnShoppingList ? 'On list' : 'Add to list',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

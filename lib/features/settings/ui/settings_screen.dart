@@ -232,7 +232,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _initialized = true;
         }
 
-        return Scaffold(
+        return Stack(
+          children: [
+            Scaffold(
           appBar: AppBar(title: const Text('Settings')),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -334,13 +336,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               foregroundColor: Theme.of(context).colorScheme.error,
                               side: BorderSide(color: Theme.of(context).colorScheme.error),
                             ),
-                            child: _deleteLoading
-                                ? SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.error),
-                                  )
-                                : const Text('Delete account'),
+                            child: const Text('Delete account'),
                           ),
                         ),
                       ],
@@ -350,6 +346,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
+            ),
+            if (_deleteLoading) ...[
+              const ModalBarrier(dismissible: false, color: Colors.black54),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ],
         );
       },
     );

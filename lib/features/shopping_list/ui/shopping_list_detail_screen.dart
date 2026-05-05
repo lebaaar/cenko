@@ -262,7 +262,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       child: FilledButton(
                         style: FilledButton.styleFrom(foregroundColor: Colors.white),
                         onPressed: _saving ? null : () => _saveItemForm(uid: uid, setModalState: setModalState),
-                        child: Text(_saving ? 'Saving...' : (item == null ? 'Add item' : 'Save changes')),
+                        child: _saving
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Text(item == null ? 'Add item' : 'Save changes'),
                       ),
                     ),
                   ],
@@ -376,7 +378,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                         );
                                       }
                                     },
-                              child: Text(deleting ? 'Deleting...' : 'Delete'),
+                              child: deleting
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('Delete'),
                             ),
                           ),
                         ],
@@ -477,7 +481,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: FilledButton(
                               style: FilledButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: saving ? null : doRename,
-                              child: Text(saving ? 'Saving...' : 'Rename'),
+                              child: saving
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('Rename'),
                             ),
                           ),
                         ],
@@ -583,7 +589,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: FilledButton(
                               style: FilledButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: inviting ? null : doInvite,
-                              child: Text(inviting ? 'Inviting...' : 'Invite'),
+                              child: inviting
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('Invite'),
                             ),
                           ),
                         ],

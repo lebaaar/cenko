@@ -1071,7 +1071,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                 }
                               },
                         style: _primaryActionStyle(context),
-                        child: Text(saving ? 'Saving...' : 'Add item'),
+                        child: saving
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Add item'),
                       ),
                     ),
                   ],

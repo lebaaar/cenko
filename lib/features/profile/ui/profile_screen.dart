@@ -300,7 +300,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   children: const [
                     MainTopBar(title: 'Profile'),
-                    Expanded(child: Center(child: Text('Signing out...'))),
+                    Expanded(child: Center(child: CircularProgressIndicator())),
                   ],
                 ),
               ),
@@ -736,7 +736,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         );
                                       }
                                     },
-                              child: Text(deleting ? 'Deleting...' : 'Delete'),
+                              child: deleting
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('Delete'),
                             ),
                           ),
                         ],

@@ -133,7 +133,9 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             child: FilledButton(
                               style: FilledButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: creating ? null : doCreate,
-                              child: Text(creating ? 'Creating...' : 'Create'),
+                              child: creating
+                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('Create'),
                             ),
                           ),
                         ],
