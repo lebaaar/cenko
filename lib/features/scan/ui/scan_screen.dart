@@ -887,26 +887,39 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     return showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
-              ),
-              ...lists.map(
-                (list) => ListTile(
-                  leading: const Icon(Icons.checklist_rounded),
-                  title: Text(list.name),
-                  subtitle: Text('${list.itemCount} items'),
-                  onTap: () => Navigator.of(sheetContext).pop(list.id),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.4,
+            minChildSize: 0.2,
+            maxChildSize: 0.9,
+            builder: (_, controller) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                Expanded(
+                  child: ListView(
+                    controller: controller,
+                    children: [
+                      ...lists.map(
+                        (list) => ListTile(
+                          leading: const Icon(Icons.checklist_rounded),
+                          title: Text(list.name),
+                          subtitle: Text('${list.itemCount} items'),
+                          onTap: () => Navigator.of(sheetContext).pop(list.id),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

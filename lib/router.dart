@@ -13,7 +13,7 @@ import 'features/profile/ui/profile_screen.dart';
 import 'features/deals/ui/deals_screen.dart';
 import 'features/scan/ui/scan_screen.dart';
 import 'features/settings/ui/settings_screen.dart';
-import 'features/shopping_list/ui/shared_shopping_list_screen.dart';
+import 'features/shopping_list/ui/shopping_list_detail_screen.dart';
 import 'features/shopping_list/ui/shopping_list_screen.dart';
 
 const _authPaths = {'/login', '/register', '/forgot-password'};
