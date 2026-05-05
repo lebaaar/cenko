@@ -57,6 +57,17 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final pendingInviteCount = uid == null ? 0 : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
 
     return Scaffold(
+      floatingActionButton: uid == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 130),
+              child: FloatingActionButton.extended(
+                onPressed: () => _showAddActions(context, uid),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add item'),
+                foregroundColor: Colors.white,
+              ),
+            ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,19 +82,6 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   ? null
                   : () => _showManageMembersDialog(uid, list),
             ),
-            if (uid != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: () => _showAddActions(context, uid),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add item'),
-                    style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                  ),
-                ),
-              ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -809,6 +807,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOwner = list != null && uid != null && list!.ownerId == uid;
     final memberNames = list?.members.map((m) => m.name).join(', ') ?? '';
+    final showMembers = list != null && list!.members.length > 1 && memberNames.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
@@ -825,7 +824,7 @@ class _TopBar extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (memberNames.isNotEmpty)
+                if (showMembers)
                   Text(
                     memberNames,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -864,7 +863,19 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _ItemsList extends StatelessWidget {
+enum _ItemSortOption {
+  newestFirst('Added (newest first)'),
+  oldestFirst('Added (oldest first)'),
+  alphabeticalAZ('Alphabetical (A-Z)'),
+  alphabeticalZA('Alphabetical (Z-A)'),
+  unboughtFirst('Unbought first'),
+  boughtFirst('Bought first');
+
+  final String label;
+  const _ItemSortOption(this.label);
+}
+
+class _ItemsList extends ConsumerStatefulWidget {
   const _ItemsList({
     required this.listId,
     required this.uid,
@@ -888,54 +899,129 @@ class _ItemsList extends StatelessWidget {
   final Future<bool> Function(ShoppingListItem item) onDelete;
 
   @override
+  ConsumerState<_ItemsList> createState() => _ItemsListState();
+}
+
+class _ItemsListState extends ConsumerState<_ItemsList> {
+  _ItemSortOption _sortOption = _ItemSortOption.newestFirst;
+
+  List<ShoppingListItem> _sort(List<ShoppingListItem> items) {
+    final sorted = [...items];
+    switch (_sortOption) {
+      case _ItemSortOption.newestFirst:
+        sorted.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+      case _ItemSortOption.oldestFirst:
+        sorted.sort((a, b) => a.addedAt.compareTo(b.addedAt));
+      case _ItemSortOption.alphabeticalAZ:
+        sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      case _ItemSortOption.alphabeticalZA:
+        sorted.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+      case _ItemSortOption.unboughtFirst:
+        sorted.sort((a, b) {
+          if (a.isBought == b.isBought) return 0;
+          if (a.isBought && !b.isBought) return 1;
+          return -1;
+        });
+      case _ItemSortOption.boughtFirst:
+        sorted.sort((a, b) {
+          if (a.isBought == b.isBought) return 0;
+          if (a.isBought && !b.isBought) return -1;
+          return 1;
+        });
+    }
+    return sorted;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final itemsAsync = ref.watch(shoppingListItemsProvider(listId));
-        return itemsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
-          data: (items) {
-            if (items.isEmpty) {
-              return const Center(
-                child: Text('Tap "Add item" to add items to this shopping list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
-              );
-            }
+    final itemsAsync = ref.watch(shoppingListItemsProvider(widget.listId));
+    return itemsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
+      data: (items) {
+        if (items.isEmpty) {
+          return const Center(
+            child: Text('Tap "Add item" to add items to this shopping list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
+          );
+        }
 
-            final bestDealById = _buildBestDeals(items);
+        final sorted = _sort(items);
+        final bestDealById = _buildBestDeals(items);
 
-            return ListView.separated(
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return Dismissible(
-                  key: ValueKey(item.id),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (_) => onDelete(item),
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 18),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
-                    child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+        return Column(
+          children: [
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Items'),
+                PopupMenuButton<_ItemSortOption>(
+                  onSelected: (option) => setState(() => _sortOption = option),
+                  itemBuilder: (context) => _ItemSortOption.values
+                      .map(
+                        (option) => PopupMenuItem(
+                          value: option,
+                          child: Row(
+                            children: [
+                              if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+                              const SizedBox(width: 12),
+                              Text(option.label),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  tooltip: 'Sort items',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Text(
+                        _sortOption.label.split('(')[0].trim(),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                   ),
-                  child: _ShoppingItemTile(
-                    item: item,
-                    bestDeal: bestDealById[item.id],
-                    onToggleBought: updatingBought ? null : (v) => onToggleBought(item.id, v),
-                    onEdit: () => onEdit(item),
-                  ),
-                );
-              },
-            );
-          },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.only(bottom: 160),
+                itemCount: sorted.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final item = sorted[index];
+                  return Dismissible(
+                    key: ValueKey(item.id),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (_) => widget.onDelete(item),
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 18),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
+                      child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                    ),
+                    child: _ShoppingItemTile(
+                      item: item,
+                      bestDeal: bestDealById[item.id],
+                      onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
+                      onEdit: () => widget.onEdit(item),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
   Map<String, CatalogDealItem> _buildBestDeals(List<ShoppingListItem> items) {
-    if (deals == null || deals!.isEmpty) return const {};
+    if (widget.deals == null || widget.deals!.isEmpty) return const {};
 
     final result = <String, CatalogDealItem>{};
     for (final item in items) {
@@ -944,7 +1030,7 @@ class _ItemsList extends StatelessWidget {
       if (name.isNotEmpty) terms.add(name);
       if (terms.isEmpty) continue;
 
-      final matched = dealMatcher.matchDeals(shoppingListTexts: terms, deals: deals!, minScore: 0.48);
+      final matched = widget.dealMatcher.matchDeals(shoppingListTexts: terms, deals: widget.deals!, minScore: 0.48);
       if (matched.isEmpty) continue;
 
       result[item.id] = matched.reduce((a, b) => a.salePriceCents <= b.salePriceCents ? a : b);

@@ -178,15 +178,20 @@ class _BodyState extends ConsumerState<_Body> {
     final sorted = [...lists];
     switch (_sortOption) {
       case SortOption.alphabeticalAZ:
-        sorted.sort((a, b) => a.name.compareTo(b.name));
+        sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
       case SortOption.alphabeticalZA:
-        sorted.sort((a, b) => b.name.compareTo(a.name));
+        sorted.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
       case SortOption.recentlyUpdated:
         sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        break;
       case SortOption.mostItems:
         sorted.sort((a, b) => b.itemCount.compareTo(a.itemCount));
+        break;
       case SortOption.leastItems:
         sorted.sort((a, b) => a.itemCount.compareTo(b.itemCount));
+        break;
     }
     return sorted;
   }
@@ -301,7 +306,7 @@ class _ListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPrivate = list.members.length == 1;
-    final memberNames = isPrivate ? 'Private' : list.members.map((m) => m.name).join(', ');
+    final memberNames = isPrivate ? 'Private list' : list.members.map((m) => m.name).join(', ');
     final remaining = list.itemCount - list.boughtCount;
 
     return Padding(
