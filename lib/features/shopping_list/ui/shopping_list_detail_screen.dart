@@ -1006,7 +1006,13 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: ListView.separated(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(shoppingListItemsProvider(widget.listId));
+                  await ref.read(shoppingListItemsProvider(widget.listId).future);
+                },
+                child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 160),
                 itemCount: sorted.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -1030,6 +1036,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                     ),
                   );
                 },
+              ),
               ),
             ),
           ],

@@ -417,8 +417,6 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
     try {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${deal.title} added to list')));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to add item to shopping list')));
@@ -459,169 +457,182 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
             final gridMainAxisExtent = _estimateDealsCardMainAxisExtent(context, itemWidth);
             final storeChipRowHeight = (_lineHeight(context, Theme.of(context).textTheme.labelLarge) + 22).clamp(40, 60).toDouble();
 
-            return CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const MainTopBar(title: 'Deals'),
-                        TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                            hintText: 'Search products on sale',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            prefixIcon: const Icon(Icons.search_rounded),
-                            suffixIcon: _query.isEmpty
-                                ? null
-                                : IconButton(
-                                    onPressed: () {
-                                      _searchController.clear();
-                                    },
-                                    icon: const Icon(Icons.close_rounded),
-                                  ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
-                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35), width: 1.5),
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(allCatalogDealsProvider);
+                await ref.read(allCatalogDealsProvider.future);
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const MainTopBar(title: 'Deals'),
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                              hintText: 'Search products on sale',
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: _query.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      onPressed: () {
+                                        _searchController.clear();
+                                      },
+                                      icon: const Icon(Icons.close_rounded),
+                                    ),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35), width: 1.5),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: storeChipRowHeight,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _storeFilters.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: 8),
-                            itemBuilder: (context, index) {
-                              final store = _storeFilters[index];
-                              final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
-                              return Center(
-                                child: FilterChip(
-                                  label: Text(_storeDisplayLabel(store)),
-                                  selected: isSelected,
-                                  onSelected: (_) => _toggleStore(store),
-                                  showCheckmark: false,
-                                  visualDensity: const VisualDensity(horizontal: -2, vertical: -1),
-                                  selectedColor: Theme.of(context).colorScheme.primary,
-                                  labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: storeChipRowHeight,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _storeFilters.length,
+                              separatorBuilder: (_, _) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final store = _storeFilters[index];
+                                final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
+                                return Center(
+                                  child: FilterChip(
+                                    label: Text(_storeDisplayLabel(store)),
+                                    selected: isSelected,
+                                    onSelected: (_) => _toggleStore(store),
+                                    showCheckmark: false,
+                                    visualDensity: const VisualDensity(horizontal: -2, vertical: -1),
+                                    selectedColor: Theme.of(context).colorScheme.primary,
+                                    labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    ),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    ),
+                                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                   ),
-                                  side: BorderSide(
-                                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  ),
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _openPriceSheet(priceSliderMax),
+                                  icon: const Icon(Icons.euro_rounded),
+                                  label: const Text('Price', overflow: TextOverflow.ellipsis),
                                 ),
-                              );
-                            },
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _openSortSheet,
+                                  icon: const Icon(Icons.sort_rounded),
+                                  label: const Text('Sort', overflow: TextOverflow.ellipsis),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Price ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Showing $visibleCount of ${filteredDeals.length} deals',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (filteredDeals.isEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                      sliver: SliverToBoxAdapter(
+                        child: Center(
+                          child: Text(
+                            'No results found :(',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _openPriceSheet(priceSliderMax),
-                                icon: const Icon(Icons.euro_rounded),
-                                label: const Text('Price', overflow: TextOverflow.ellipsis),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _openSortSheet,
-                                icon: const Icon(Icons.sort_rounded),
-                                label: const Text('Sort', overflow: TextOverflow.ellipsis),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Price ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Showing $visibleCount of ${filteredDeals.length} deals',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ),
-                if (filteredDeals.isEmpty)
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: Text(
-                          'No results found :(',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final deal = visibleDeals[index];
+                          final dealKey = _dealAddKey(deal);
+                          final alreadyOnShoppingList = shoppingListKeys.contains(_normalizedShoppingListKey(deal.title));
+                          return DealsGridCard.fromCatalog(
+                            deal: deal,
+                            isAddingToShoppingList: _addingDealIds.contains(dealKey),
+                            isAlreadyOnShoppingList: alreadyOnShoppingList,
+                            onAddToShoppingList: () {
+                              if (alreadyOnShoppingList) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list')));
+                                return;
+                              }
+                              if (uid == null) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list')));
+                                return;
+                              }
+                              _addDealToShoppingList(deal: deal, uid: uid);
+                            },
+                          );
+                        }, childCount: visibleDeals.length),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: gridMainAxisExtent,
                         ),
                       ),
                     ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    sliver: SliverGrid(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final deal = visibleDeals[index];
-                        final dealKey = _dealAddKey(deal);
-                        final alreadyOnShoppingList = shoppingListKeys.contains(_normalizedShoppingListKey(deal.title));
-                        return DealsGridCard.fromCatalog(
-                          deal: deal,
-                          isAddingToShoppingList: _addingDealIds.contains(dealKey),
-                          isAlreadyOnShoppingList: alreadyOnShoppingList,
-                          onAddToShoppingList: () {
-                            if (alreadyOnShoppingList) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list')));
-                              return;
-                            }
-                            if (uid == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list')));
-                              return;
-                            }
-                            _addDealToShoppingList(deal: deal, uid: uid);
+                  if (hasMore)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                      sliver: SliverToBoxAdapter(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _visibleCount = (_visibleCount + _pageSize) < filteredDeals.length ? (_visibleCount + _pageSize) : filteredDeals.length;
+                            });
                           },
-                        );
-                      }, childCount: visibleDeals.length),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        mainAxisExtent: gridMainAxisExtent,
+                          icon: const Icon(Icons.expand_more_rounded),
+                          label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: const Text('Load more')),
+                          style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                        ),
                       ),
                     ),
-                  ),
-                if (hasMore)
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                    sliver: SliverToBoxAdapter(
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _visibleCount = (_visibleCount + _pageSize) < filteredDeals.length ? (_visibleCount + _pageSize) : filteredDeals.length;
-                          });
-                        },
-                        icon: const Icon(Icons.expand_more_rounded),
-                        label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: const Text('Load more')),
-                        style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                      ),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             );
           },
         ),
