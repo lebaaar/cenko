@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
@@ -52,6 +53,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final uid = authState.asData?.value?.uid;
     final listAsync = ref.watch(shoppingListProvider(widget.listId));
     final dealsAsync = ref.watch(allCatalogDealsProvider);
+    final currentUser = ref.watch(currentUserProvider).asData?.value;
 
     final list = listAsync.asData?.value;
     final pendingInviteCount = uid == null ? 0 : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
@@ -62,7 +64,15 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
           : Padding(
               padding: const EdgeInsets.only(bottom: 130),
               child: FloatingActionButton.extended(
-                onPressed: () => _showAddActions(context, uid),
+                onPressed: () {
+                  if (currentUser?.plan == freePlan && list != null && list.itemCount >= maxNumberOfItemsPerList) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('This list has reached the maximum of $maxNumberOfItemsPerList items')),
+                    );
+                    return;
+                  }
+                  _showAddActions(context, uid);
+                },
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Add item'),
                 foregroundColor: Colors.white,

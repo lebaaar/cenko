@@ -78,6 +78,14 @@ class SharedShoppingListRepository {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
+    if (await isFreePlan(_firestore, addedBy)) {
+      final listDoc = await _lists.doc(listId).get();
+      final itemCount = (listDoc.data()?['item_count'] as int?) ?? 0;
+      if (itemCount >= maxNumberOfItemsPerList) {
+        throw Exception('This list has reached the maximum of $maxNumberOfItemsPerList items');
+      }
+    }
+
     final trimmedUnit = unit?.trim();
 
     final batch = _firestore.batch();
@@ -229,8 +237,15 @@ class SharedShoppingListRepository {
       throw Exception('User is already a member of this list');
     }
 
-    if (members.length >= 5) {
-      throw Exception('This list has reached the maximum of 5 members');
+    if (members.length >= maxNumbberOfMembersPerSharedList) {
+      throw Exception('This list has reached the maximum of $maxNumbberOfMembersPerSharedList members');
+    }
+
+    final pendingInvitations = await getListPendingInvitations(listId);
+    if (members.length + pendingInvitations.length >= maxNumbberOfMembersPerSharedList) {
+      throw Exception(
+        'List has too many pending invitations - cancel some or wait for them to be accepted first (maximum is $maxNumbberOfMembersPerSharedList members per list)',
+      );
     }
 
     if (await isFreePlan(_firestore, invitedByUid)) {

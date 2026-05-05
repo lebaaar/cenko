@@ -961,7 +961,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       if (!mounted) {
         return;
       }
-      _showSnackBar(const SnackBar(content: Text('Failed to add product to shopping list. Please try again')));
+      final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'Failed to add product to shopping list. Please try again';
+      _showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -1062,7 +1063,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                     return;
                                   }
                                   setSheetState(() {
-                                    formError = 'Failed to save item. Please try again';
+                                    formError = error is Exception
+                                        ? error.toString().replaceFirst('Exception: ', '')
+                                        : 'Failed to save item. Please try again';
                                     saving = false;
                                   });
                                 }

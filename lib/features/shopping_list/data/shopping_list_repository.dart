@@ -1,3 +1,5 @@
+import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/core/utils/user_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'shopping_list_item.dart';
@@ -18,6 +20,13 @@ class ShoppingListRepository {
   Future<void> addItem({required String uid, required String name, String? brand, String? barcode}) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
+
+    if (await isFreePlan(_firestore, uid)) {
+      final countSnap = await _shoppingListItems(uid).count().get();
+      if ((countSnap.count ?? 0) >= maxNumberOfItemsPerList) {
+        throw Exception('You have reached the maximum of $maxNumberOfItemsPerList items in your shopping list');
+      }
+    }
 
     final trimmedBrand = brand?.trim();
     final trimmedBarcode = barcode?.trim();
