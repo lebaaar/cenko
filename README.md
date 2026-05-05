@@ -39,6 +39,11 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 - Release build: you will need `android/key.properties` file. Structure of this file can be found in `example-key.properties` file. To run the app in release mode run:<br>
 `flutter run --release`
 
+**Firebase stuff:**
+- Deploy Firestore rules and indexes:<br>
+`firebase deploy --only firestore:rules,firestore:indexes`
+- See [Firebase Functions](functions/README.md) for instructions on how to deploy and run functions locally
+
 **To setup the development environment for Android:**
 1. Install [Android Studio](https://developer.android.com/studio)
 2. Under Tools -> SDK Manager -> SDK Platforms install Android 16.0 ("Baklava")

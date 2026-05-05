@@ -255,14 +255,21 @@ class _ListCard extends StatelessWidget {
   }
 }
 
-class _InvitationCard extends ConsumerWidget {
+class _InvitationCard extends ConsumerStatefulWidget {
   const _InvitationCard({required this.invitation, required this.uid});
 
   final ShoppingListInvitation invitation;
   final String uid;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_InvitationCard> createState() => _InvitationCardState();
+}
+
+class _InvitationCardState extends ConsumerState<_InvitationCard> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
@@ -276,16 +283,16 @@ class _InvitationCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${invitation.invitedByName} invited you to join',
+              '${widget.invitation.invitedByName} invited you to join',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 2),
-            Text(invitation.listName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Text(widget.invitation.listName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(onPressed: () => _respond(context, ref, false), child: const Text('Decline')),
+                  child: OutlinedButton(onPressed: _loading ? null : () => _respond(false), child: const Text('Decline')),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -294,8 +301,10 @@ class _InvitationCard extends ConsumerWidget {
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onPressed: () => _respond(context, ref, true),
-                    child: const Text('Accept'),
+                    onPressed: _loading ? null : () => _respond(true),
+                    child: _loading
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Accept'),
                   ),
                 ),
               ],
@@ -306,28 +315,32 @@ class _InvitationCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _respond(BuildContext context, WidgetRef ref, bool accept) async {
+  Future<void> _respond(bool accept) async {
+    if (_loading) return;
+    setState(() => _loading = true);
+
     final repo = ref.read(sharedShoppingListRepositoryProvider);
     final currentUser = ref.read(currentUserProvider).asData?.value;
 
     try {
       if (accept) {
         await repo.acceptInvitation(
-          invitationId: invitation.id,
-          listId: invitation.listId,
-          listName: invitation.listName,
-          uid: uid,
+          invitationId: widget.invitation.id,
+          listId: widget.invitation.listId,
+          listName: widget.invitation.listName,
+          uid: widget.uid,
           userName: currentUser?.name ?? 'Unknown',
         );
-        if (context.mounted) {
-          context.push('/list/${invitation.listId}');
-        }
+        // Stream auto-updates via Firestore realtime listener — no manual refresh needed.
+        if (mounted) context.push('/list/${widget.invitation.listId}');
       } else {
-        await repo.declineInvitation(invitation.id);
+        await repo.declineInvitation(widget.invitation.id);
+        // Stream auto-updates — no manual invalidation needed.
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+        setState(() => _loading = false);
       }
     }
   }

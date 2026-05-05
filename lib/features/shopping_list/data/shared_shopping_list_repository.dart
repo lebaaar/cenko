@@ -58,64 +58,7 @@ class SharedShoppingListRepository {
   /// Streams all lists the user is a member of, in real-time.
   /// Internally merges the membership subcollection stream with individual list document streams.
   Stream<List<ShoppingList>> watchUserLists(String uid) {
-    final controller = StreamController<List<ShoppingList>>();
-    final Map<String, ShoppingList> listsById = {};
-    final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>> listSubs = {};
-    StreamSubscription? membershipSub;
-
-    void emit() {
-      if (!controller.isClosed) {
-        final sorted = listsById.values.toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        controller.add(sorted);
-      }
-    }
-
-    membershipSub = _memberships(uid).snapshots().listen(
-      (snapshot) {
-        final currentIds = snapshot.docs.map((d) => d.id).toSet();
-
-        for (final id in listSubs.keys.toList()) {
-          if (!currentIds.contains(id)) {
-            listSubs.remove(id)?.cancel();
-            listsById.remove(id);
-          }
-        }
-
-        for (final id in currentIds) {
-          if (!listSubs.containsKey(id)) {
-            listSubs[id] = _lists.doc(id).snapshots().listen((doc) {
-              if (doc.exists) {
-                listsById[id] = ShoppingList.fromDoc(doc);
-              } else {
-                listsById.remove(id);
-              }
-              emit();
-            }, onError: (_) {
-              // Ignore per-list errors (e.g. transient PERMISSION_DENIED during
-              // membership propagation) — omit the list rather than crashing the stream.
-              listSubs.remove(id)?.cancel();
-              listsById.remove(id);
-              emit();
-            });
-          }
-        }
-
-        emit();
-      },
-      onError: controller.addError,
-      onDone: controller.close,
-    );
-
-    controller.onCancel = () {
-      membershipSub?.cancel();
-      for (final sub in listSubs.values) {
-        sub.cancel();
-      }
-      listSubs.clear();
-      listsById.clear();
-    };
-
-    return controller.stream;
+    return _lists.where('member_uids', arrayContains: uid).snapshots().map((snap) => snap.docs.map(ShoppingList.fromDoc).toList());
   }
 
   Stream<ShoppingList?> watchList(String listId) {
@@ -227,7 +170,10 @@ class SharedShoppingListRepository {
     final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>().where((m) => m['user_id'] != uid).toList();
 
     final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {'members': members, 'member_uids': FieldValue.arrayRemove([uid])});
+    batch.update(_lists.doc(listId), {
+      'members': members,
+      'member_uids': FieldValue.arrayRemove([uid]),
+    });
     batch.delete(_memberships(uid).doc(listId));
     await batch.commit();
   }
@@ -240,7 +186,10 @@ class SharedShoppingListRepository {
         .toList();
 
     final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {'members': members, 'member_uids': FieldValue.arrayRemove([memberUid])});
+    batch.update(_lists.doc(listId), {
+      'members': members,
+      'member_uids': FieldValue.arrayRemove([memberUid]),
+    });
     batch.delete(_memberships(memberUid).doc(listId));
     await batch.commit();
   }
@@ -345,20 +294,14 @@ class SharedShoppingListRepository {
     }
 
     final now = Timestamp.now();
+    final memberEntry = {'user_id': uid, 'name': userName, 'joined_at': now, 'role': 'member'};
     final batch = _firestore.batch();
-
-    batch.delete(_invitations.doc(invitationId));
-
-    // arrayUnion appends the new member without needing to read the list first,
-    // which would fail because the accepting user is not yet a member.
     batch.update(_lists.doc(listId), {
-      'members': FieldValue.arrayUnion([
-        {'user_id': uid, 'name': userName, 'joined_at': now, 'role': 'member'},
-      ]),
+      'members': FieldValue.arrayUnion([memberEntry]),
       'member_uids': FieldValue.arrayUnion([uid]),
     });
-
     batch.set(_memberships(uid).doc(listId), {'list_id': listId, 'name': listName, 'joined_at': now});
+    batch.delete(_invitations.doc(invitationId));
 
     await batch.commit();
   }

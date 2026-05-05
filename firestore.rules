@@ -1,0 +1,115 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isMemberOf(listId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/shopping_lists_memberships/$(listId));
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || signedIn();
+      allow create, update, delete: if isOwner(userId);
+
+      match /receipts/{receiptId} {
+        allow read, create, update, delete: if isOwner(userId);
+
+        match /items/{itemId} {
+          allow read, create, update, delete: if isOwner(userId);
+        }
+      }
+
+      match /shopping_lists_memberships/{listId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          || (signedIn()
+              && userId == request.auth.uid
+              && request.resource.data.list_id == listId);
+        // List owner can rename members' membership docs (used when renaming the list)
+        allow update: if isOwner(userId)
+          || (isMemberOf(listId)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));
+        // Users can delete their own membership doc (when leaving), or list owner can remove any member
+        allow delete: if isOwner(userId)
+          || (signedIn() && get(/databases/$(database)/documents/shopping_lists/$(listId)).data.owner_id == request.auth.uid);
+      }
+
+      match /common_products/{itemId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /shopping_list/{itemId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+    }
+
+    match /shopping_lists/{listId} {
+      // member_uids check supports the arrayContains query in watchUserLists
+      allow read: if isMemberOf(listId)
+        || (signedIn() && request.auth.uid in resource.data.get('member_uids', []));
+
+      allow create: if signedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.item_count == 0
+        && request.resource.data.bought_count == 0
+        && request.resource.data.members.size() == 1
+        && request.resource.data.members[0].user_id == request.auth.uid
+        && request.resource.data.members[0].role == 'owner';
+
+      // Members updating list content (item counts, name, member roster changes)
+      allow update: if isMemberOf(listId)
+        && (resource.data.owner_id == request.auth.uid
+          || request.resource.data.members.size() >= resource.data.members.size()
+          || request.resource.data.members.size() == resource.data.members.size() - 1);
+
+      // Non-member joining by accepting an invitation (transaction-backed in the app)
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'member_uids'])
+        && request.resource.data.members.size() == resource.data.members.size() + 1
+        && request.resource.data.members[request.resource.data.members.size() - 1].user_id == request.auth.uid
+        && request.resource.data.members[request.resource.data.members.size() - 1].role == 'member';
+
+      allow delete: if signedIn() && resource.data.owner_id == request.auth.uid;
+
+      match /items/{itemId} {
+        // isMemberOf only — no get() call, avoids runtime errors when the parent list is missing
+        allow read, create, update, delete: if isMemberOf(listId);
+      }
+    }
+
+    match /shopping_list_invitations/{invitationId} {
+      allow read: if signedIn() && (
+        resource.data.invited_uid == request.auth.uid
+        || resource.data.invited_email == request.auth.token.email
+        || isMemberOf(resource.data.list_id)
+      );
+
+      allow create: if signedIn()
+        && isMemberOf(request.resource.data.list_id)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.invited_by_user_id == request.auth.uid;
+
+      allow delete: if signedIn() && (
+        resource.data.invited_uid == request.auth.uid
+        || resource.data.invited_email == request.auth.token.email
+        || isMemberOf(resource.data.list_id)
+      );
+    }
+
+    match /products/{productId} {
+      allow read, create, update, delete: if true;
+    }
+
+    match /catalog_products/{productId} {
+      allow read, create, update, delete: if true;
+    }
+  }
+}
