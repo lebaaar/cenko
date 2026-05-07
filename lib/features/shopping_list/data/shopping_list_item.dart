@@ -6,6 +6,7 @@ class ShoppingListItem {
     required this.name,
     required this.quantity,
     this.unit,
+    this.category,
     required this.isBought,
     required this.addedBy,
     required this.addedAt,
@@ -16,6 +17,7 @@ class ShoppingListItem {
   final String name;
   final int quantity;
   final String? unit;
+  final String? category;
   final bool isBought;
   final String addedBy;
   final DateTime addedAt;
@@ -25,6 +27,7 @@ class ShoppingListItem {
     final data = doc.data();
     final name = (data?['name'] as String?)?.trim();
     final unit = (data?['unit'] as String?)?.trim();
+    final category = (data?['category'] as String?)?.trim();
     final isBought = data?['is_bought'] as bool? ?? false;
     final addedAt = data?['added_at'] as Timestamp?;
     final boughtAt = data?['bought_at'] as Timestamp?;
@@ -34,6 +37,7 @@ class ShoppingListItem {
       name: (name == null || name.isEmpty) ? 'Unnamed item' : name,
       quantity: data?['quantity'] as int? ?? 1,
       unit: (unit == null || unit.isEmpty) ? null : unit,
+      category: (category == null || category.isEmpty) ? null : category,
       isBought: isBought,
       addedBy: data?['added_by'] as String? ?? '',
       addedAt: addedAt?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),

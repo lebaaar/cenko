@@ -36,6 +36,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   bool _saving = false;
   String? _formError;
   String? _editingItemId;
+  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -83,6 +84,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Add item'),
                 foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
             ),
       body: SafeArea(
@@ -197,11 +199,13 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     _nameCtrl.text = item?.name ?? '';
     _quantityCtrl.text = item != null && item.quantity > 1 ? item.quantity.toString() : '';
     _unitCtrl.text = item?.unit ?? '';
+    _selectedCategory = item?.category;
     _formError = null;
     _formKey.currentState?.reset();
 
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -209,7 +213,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
         return StatefulBuilder(
           builder: (context, setModalState) {
             return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.viewPaddingOf(context).bottom + 20),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -264,12 +268,27 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String?>(
+                      value: _selectedCategory,
+                      decoration: const InputDecoration(labelText: 'Category'),
+                      items: [
+                        const DropdownMenuItem<String?>(value: null, child: Text('No category')),
+                        ..._categoryIcons.keys.map(
+                          (c) => DropdownMenuItem<String?>(
+                            value: c,
+                            child: Row(children: [Icon(_categoryIcons[c], size: 16), const SizedBox(width: 8), Text(c)]),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) => setModalState(() => _selectedCategory = value),
+                    ),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                        onPressed: _saving ? null : () => _saveItemForm(uid: uid, setModalState: setModalState),
+                        onPressed: _saving ? null : () => _saveItemForm(uid: uid, setModalState: setModalState, sheetContext: context),
                         child: _saving
                             ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : Text(item == null ? 'Add item' : 'Save changes'),
@@ -285,7 +304,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     );
   }
 
-  Future<void> _saveItemForm({required String uid, required StateSetter setModalState}) async {
+  Future<void> _saveItemForm({required String uid, required StateSetter setModalState, required BuildContext sheetContext}) async {
     if (!_formKey.currentState!.validate()) return;
 
     setModalState(() {
@@ -300,12 +319,19 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       final unit = _unitCtrl.text.trim().isEmpty ? null : _unitCtrl.text.trim();
 
       if (_editingItemId != null) {
-        await repo.updateItem(listId: widget.listId, itemId: _editingItemId!, name: _nameCtrl.text, quantity: quantity, unit: unit);
+        await repo.updateItem(
+          listId: widget.listId,
+          itemId: _editingItemId!,
+          name: _nameCtrl.text,
+          quantity: quantity,
+          unit: unit,
+          category: _selectedCategory,
+        );
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit);
+        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, category: _selectedCategory);
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     } catch (e) {
       if (mounted) {
         setModalState(() {
@@ -1073,6 +1099,29 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
   }
 }
 
+const Map<String, IconData> _categoryIcons = {
+  'Fruits & Vegetables': Icons.eco_rounded,
+  'Meat': Icons.lunch_dining_rounded,
+  'Fish & Seafood': Icons.phishing_rounded,
+  'Dairy Products': Icons.local_drink_rounded,
+  'Eggs': Icons.egg_alt_rounded,
+  'Bakery': Icons.bakery_dining_rounded,
+  'Pantry Staples': Icons.rice_bowl_rounded,
+  'Cans & Jars': Icons.inventory_2_rounded,
+  'Seasonings, Sauces & Condiments': Icons.soup_kitchen_rounded,
+  'Frozen Foods': Icons.ac_unit_rounded,
+  'Snacks & Sweets': Icons.cookie_rounded,
+  'Drinks': Icons.local_cafe_rounded,
+  'Coffee & Tea': Icons.coffee_rounded,
+  'Baby Products': Icons.child_friendly_rounded,
+  'Pet Supplies': Icons.pets_rounded,
+  'Personal Care': Icons.spa_rounded,
+  'Household Supplies': Icons.home_rounded,
+  'Cleaning Supplies': Icons.clean_hands_rounded,
+  'Home & Garden': Icons.yard_rounded,
+  'Other': Icons.category_rounded,
+};
+
 class _ShoppingItemTile extends StatelessWidget {
   const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit});
 
@@ -1127,6 +1176,17 @@ class _ShoppingItemTile extends StatelessWidget {
                       ),
                     ),
                     if (_quantityUnitText() != null) ...[const SizedBox(height: 2), Text(_quantityUnitText()!, style: subtitleStyle)],
+                    if (item.category != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_categoryIcons[item.category] ?? Icons.category_rounded, size: 12, color: subtitleStyle?.color),
+                          const SizedBox(width: 4),
+                          Text(item.category!, style: subtitleStyle),
+                        ],
+                      ),
+                    ],
                     if (_subtitleText() != null) ...[const SizedBox(height: 2), Text(_subtitleText()!, style: subtitleStyle)],
                   ],
                 ),
@@ -1140,7 +1200,7 @@ class _ShoppingItemTile extends StatelessWidget {
 
   String? _subtitleText() {
     final deal = bestDeal;
-    if (deal == null) return 'No current deal';
+    if (deal == null) return null;
     final savings = deal.savingsCents;
     if (savings > 0) {
       return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)} (save ${formatCents(savings)})';
@@ -1153,7 +1213,7 @@ class _ShoppingItemTile extends StatelessWidget {
     final hasUnit = item.unit != null && item.unit!.isNotEmpty;
     if (!hasQty && !hasUnit) return null;
     if (hasQty && hasUnit) return '${item.quantity} ${item.unit}';
-    if (hasQty) return '× ${item.quantity}';
+    if (hasQty) return '${item.quantity}x';
     return item.unit;
   }
 }

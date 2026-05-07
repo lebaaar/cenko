@@ -74,7 +74,7 @@ class SharedShoppingListRepository {
     ).orderBy('added_at', descending: false).snapshots().map((snap) => snap.docs.map(ShoppingListItem.fromDoc).toList(growable: false));
   }
 
-  Future<void> addItem({required String listId, required String addedBy, required String name, int quantity = 1, String? unit}) async {
+  Future<void> addItem({required String listId, required String addedBy, required String name, int quantity = 1, String? unit, String? category}) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
@@ -87,6 +87,7 @@ class SharedShoppingListRepository {
     }
 
     final trimmedUnit = unit?.trim();
+    final trimmedCategory = category?.trim();
 
     final batch = _firestore.batch();
     final itemRef = _items(listId).doc();
@@ -95,6 +96,7 @@ class SharedShoppingListRepository {
       'name': trimmedName,
       'quantity': quantity,
       'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
+      'category': (trimmedCategory == null || trimmedCategory.isEmpty) ? null : trimmedCategory,
       'is_bought': false,
       'added_by': addedBy,
       'added_at': FieldValue.serverTimestamp(),
@@ -106,13 +108,18 @@ class SharedShoppingListRepository {
     await batch.commit();
   }
 
-  Future<void> updateItem({required String listId, required String itemId, required String name, int? quantity, String? unit}) async {
+  Future<void> updateItem({required String listId, required String itemId, required String name, int? quantity, String? unit, String? category}) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
     final trimmedUnit = unit?.trim();
+    final trimmedCategory = category?.trim();
 
-    final updates = <String, dynamic>{'name': trimmedName, 'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit};
+    final updates = <String, dynamic>{
+      'name': trimmedName,
+      'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
+      'category': (trimmedCategory == null || trimmedCategory.isEmpty) ? null : trimmedCategory,
+    };
     if (quantity != null) updates['quantity'] = quantity;
 
     await _items(listId).doc(itemId).update(updates);
