@@ -207,7 +207,7 @@ class _BodyState extends ConsumerState<_Body> {
   Widget build(BuildContext context) {
     final email = ref.watch(authStateProvider).asData?.value?.email ?? '';
     final listsAsync = ref.watch(userShoppingListsProvider(widget.uid));
-    final invitationsAsync = ref.watch(pendingInvitationsProvider(email));
+    final invitationsAsync = email.isEmpty ? const AsyncLoading<List<ShoppingListInvitation>>() : ref.watch(pendingInvitationsProvider(email));
 
     return Stack(
       children: [
@@ -215,78 +215,80 @@ class _BodyState extends ConsumerState<_Body> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Failed to load shopping lists: ${e.toString().replaceFirst('Exception: ', '')}')),
           data: (lists) {
-            return invitationsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Could not load invitations')),
-              data: (invitations) {
-                if (lists.isEmpty && invitations.isEmpty) {
-                  return const Center(
-                    child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
-                  );
-                }
+            final sortedLists = _sortLists(lists);
 
-                final sortedLists = _sortLists(lists);
-
-                return RefreshIndicator(
-                  onRefresh: _handleRefresh,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
-                    children: [
-                      if (invitations.isNotEmpty) ...[
-                        Text('Invitations'),
-                        const SizedBox(height: 8),
-                        ...invitations.map(
-                          (inv) => _InvitationCard(
-                            invitation: inv,
-                            uid: widget.uid,
-                            onAcceptingChanged: (accepting) => setState(() => _acceptingInvitation = accepting),
+            return RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
+                children: [
+                  invitationsAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (e, _) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('Could not load invitations')),
+                    data: (invitations) => invitations.isEmpty
+                        ? const SizedBox.shrink()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Invitations'),
+                              const SizedBox(height: 8),
+                              ...invitations.map(
+                                (inv) => _InvitationCard(
+                                  invitation: inv,
+                                  uid: widget.uid,
+                                  onAcceptingChanged: (accepting) => setState(() => _acceptingInvitation = accepting),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                  ),
+                  if (lists.isEmpty) ...[
+                    const SizedBox(height: 80),
+                    const Center(
+                      child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
+                    ),
+                  ] else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Your lists'),
+                        PopupMenuButton<SortOption>(
+                          onSelected: (option) => setState(() => _sortOption = option),
+                          itemBuilder: (context) => SortOption.values
+                              .map(
+                                (option) => PopupMenuItem(
+                                  value: option,
+                                  child: Row(
+                                    children: [
+                                      if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+                                      const SizedBox(width: 12),
+                                      Text(option.label),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          tooltip: 'Sort options',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Text(
+                                _sortOption.label.split('(')[0].trim(),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
                       ],
-                      if (lists.isNotEmpty) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Your lists'),
-                            PopupMenuButton<SortOption>(
-                              onSelected: (option) => setState(() => _sortOption = option),
-                              itemBuilder: (context) => SortOption.values
-                                  .map(
-                                    (option) => PopupMenuItem(
-                                      value: option,
-                                      child: Row(
-                                        children: [
-                                          if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
-                                          const SizedBox(width: 12),
-                                          Text(option.label),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              tooltip: 'Sort options',
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _sortOption.label.split('(')[0].trim(),
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ...sortedLists.map((list) => _ListCard(list: list)),
-                      ],
-                    ],
-                  ),
-                );
-              },
+                    ),
+                    const SizedBox(height: 8),
+                    ...sortedLists.map((list) => _ListCard(list: list)),
+                  ],
+                ],
+              ),
             );
           },
         ),

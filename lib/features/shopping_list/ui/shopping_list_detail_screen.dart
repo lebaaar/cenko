@@ -52,11 +52,14 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final authState = ref.watch(authStateProvider);
     final uid = authState.asData?.value?.uid;
     final listAsync = ref.watch(shoppingListProvider(widget.listId));
+    final itemsAsync = uid == null ? const AsyncLoading<List<ShoppingListItem>>() : ref.watch(shoppingListItemsProvider(widget.listId));
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final currentUser = ref.watch(currentUserProvider).asData?.value;
 
     final list = listAsync.asData?.value;
-    final pendingInviteCount = uid == null ? 0 : ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0;
+    final pendingInviteCount = uid != null && list != null && list.ownerId == uid && list.members.length <= 1
+        ? ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0
+        : 0;
 
     return Scaffold(
       floatingActionButton: uid == null
@@ -66,9 +69,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               child: FloatingActionButton.extended(
                 onPressed: () {
                   if (currentUser?.plan == freePlan && list != null && list.itemCount >= maxNumberOfItemsPerList) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('This list has reached the maximum of $maxNumberOfItemsPerList items')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('This list has reached the maximum of $maxNumberOfItemsPerList items')));
                     return;
                   }
                   _showAddActions(context, uid);
@@ -118,6 +121,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             listId: widget.listId,
                             uid: uid,
                             list: list,
+                            itemsAsync: itemsAsync,
                             deals: dealsAsync.asData?.value,
                             dealMatcher: _dealMatcher,
                             updatingBought: _updatingBought,
@@ -898,6 +902,7 @@ class _ItemsList extends ConsumerStatefulWidget {
     required this.listId,
     required this.uid,
     required this.list,
+    required this.itemsAsync,
     required this.deals,
     required this.dealMatcher,
     required this.updatingBought,
@@ -909,6 +914,7 @@ class _ItemsList extends ConsumerStatefulWidget {
   final String listId;
   final String uid;
   final ShoppingList list;
+  final AsyncValue<List<ShoppingListItem>> itemsAsync;
   final List<CatalogDealItem>? deals;
   final DealTextMatcherService dealMatcher;
   final bool updatingBought;
@@ -952,8 +958,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
 
   @override
   Widget build(BuildContext context) {
-    final itemsAsync = ref.watch(shoppingListItemsProvider(widget.listId));
-    return itemsAsync.when(
+    return widget.itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
       data: (items) {
@@ -1012,31 +1017,31 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                   await ref.read(shoppingListItemsProvider(widget.listId).future);
                 },
                 child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 160),
-                itemCount: sorted.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final item = sorted[index];
-                  return Dismissible(
-                    key: ValueKey(item.id),
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (_) => widget.onDelete(item),
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 18),
-                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
-                      child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
-                    ),
-                    child: _ShoppingItemTile(
-                      item: item,
-                      bestDeal: bestDealById[item.id],
-                      onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
-                      onEdit: () => widget.onEdit(item),
-                    ),
-                  );
-                },
-              ),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 160),
+                  itemCount: sorted.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final item = sorted[index];
+                    return Dismissible(
+                      key: ValueKey(item.id),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (_) => widget.onDelete(item),
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 18),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
+                        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                      ),
+                      child: _ShoppingItemTile(
+                        item: item,
+                        bestDeal: bestDealById[item.id],
+                        onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
+                        onEdit: () => widget.onEdit(item),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ],
