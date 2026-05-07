@@ -64,7 +64,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final bottomNavHeight = (88 * textScale.clamp(1.0, 1.2)).toDouble();
-    final fabBottomInset = MediaQuery.viewPaddingOf(context).bottom + bottomNavHeight + 40;
+    final fabBottomInset = MediaQuery.viewPaddingOf(context).bottom + bottomNavHeight + 30;
 
     return Scaffold(
       floatingActionButton: uid == null
@@ -1111,7 +1111,7 @@ const Map<String, IconData> _categoryIcons = {
   'Seasonings, Sauces & Condiments': Icons.soup_kitchen_rounded,
   'Frozen Foods': Icons.ac_unit_rounded,
   'Snacks & Sweets': Icons.cookie_rounded,
-  'Drinks': Icons.local_cafe_rounded,
+  'Drinks': Icons.water_drop_rounded,
   'Coffee & Tea': Icons.coffee_rounded,
   'Baby Products': Icons.child_friendly_rounded,
   'Pet Supplies': Icons.pets_rounded,
