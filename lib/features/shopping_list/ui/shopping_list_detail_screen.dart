@@ -61,11 +61,15 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
         ? ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0
         : 0;
 
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final bottomNavHeight = (88 * textScale.clamp(1.0, 1.2)).toDouble();
+    final fabBottomInset = MediaQuery.viewPaddingOf(context).bottom + bottomNavHeight + 40;
+
     return Scaffold(
       floatingActionButton: uid == null
           ? null
           : Padding(
-              padding: const EdgeInsets.only(bottom: 130),
+              padding: EdgeInsets.only(bottom: fabBottomInset),
               child: FloatingActionButton.extended(
                 onPressed: () {
                   if (currentUser?.plan == freePlan && list != null && list.itemCount >= maxNumberOfItemsPerList) {
