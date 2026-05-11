@@ -1798,7 +1798,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _processingHintDots = 1;
     });
     var tick = 0;
-    _processingHintTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
+    _processingHintTimer = Timer.periodic(const Duration(milliseconds: 450), (_) {
       if (!mounted || !_isAnyProcessingFlowActive()) {
         return;
       }
