@@ -18,6 +18,9 @@ if (keystorePropertiesFile.exists()) {
 dependencies {
   implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
   implementation("com.google.firebase:firebase-analytics")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta2")
 }
 
 android {
@@ -37,7 +40,7 @@ android {
     defaultConfig {
         // TODO: change applicationId
         applicationId = "com.lebaaar.cenko"
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

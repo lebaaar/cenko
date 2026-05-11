@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'dart:isolate';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -20,6 +20,7 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/features/scan/data/receipt_ocr/receipt_ai_service.dart';
 import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
     if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_io.dart'
     as image_enhancer;
@@ -50,6 +51,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final SharedShoppingListRepository _shoppingListRepository = SharedShoppingListRepository();
   final CatalogDealsRepository _catalogDealsRepository = CatalogDealsRepository();
   final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
+  final ReceiptAiService _receiptAiService = const ReceiptAiService();
   ScaffoldMessengerState? _scaffoldMessenger;
 
   CameraController? _receiptCamera;
@@ -1392,13 +1394,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         throw const _UserVisibleError('No readable text was found. Try again with a clearer receipt image');
       }
 
-      final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(ocrText: ocrText));
-
-      final rawText = response.text?.trim();
-      if (rawText == null || rawText.isEmpty) {
-        throw StateError('No JSON text returned');
-      }
-
+      final rawText = await _generateReceiptExtractionText(ocrText: ocrText);
       final decoded = await _decodeReceiptPayloadFromText(rawText: rawText, ocrText: ocrText);
 
       final decision = decoded['decision'] is Map<String, dynamic> ? decoded['decision'] as Map<String, dynamic> : const <String, dynamic>{};
@@ -1462,7 +1458,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final mimeType = _mimeTypeForPath(file.path);
 
       final response = await _receiptModel.generateContent(_buildReceiptImageExtractionPrompt(imageBytes: bytes, mimeType: mimeType));
-
       final rawText = response.text?.trim();
       if (rawText == null || rawText.isEmpty) {
         throw StateError('No JSON text returned');
@@ -1517,18 +1512,34 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
   }
 
-  static String _slovenianReceiptContext() {
-    final storeNames = slovenianGroceryStores.join(', ');
-    return 'This receipt is likely from Slovenia.'
-        'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones.'
-        'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) — DO NOT include these, even if present in the store name.'
-        'Key Slovenian receipt terms: SKUPAJ/ZA PLAČILO = total, DDV = VAT, ZNESEK = amount, BLAGAJNA = cashier/register, GOTOVINA = cash, KARTICA = card, DATUM = date, CENA = price, KOS/KOLIČINA/KOM = piece/unit, PLAČILO = payment';
+  Future<String> _generateReceiptExtractionText({required String ocrText}) async {
+    final prompt = _buildReceiptExtractionPrompt(ocrText: ocrText);
+
+    // Tier 1: Try Google Nano locally
+    try {
+      return await _receiptAiService.extractReceiptJsonFromOcr(prompt);
+    } on UnsupportedError catch (e) {
+      debugPrint('Nano unavailable: ${e.message}. Falling back to Cloud.');
+    } on PlatformException catch (e) {
+      debugPrint('Nano failed: ${e.message}. Falling back to Cloud.');
+    } on MissingPluginException catch (e) {
+      debugPrint('Nano missing plugin: ${e.message}. Falling back to Cloud.');
+    } catch (e) {
+      debugPrint('Nano error: $e. Falling back to Cloud.');
+    }
+
+    // Tier 2: Fall back to Cloud Inference
+    debugPrint('Using Cloud fallback (Gemini 2.5 Flash Lite).');
+    final response = await _receiptModel.generateContent([Content.text(prompt)]);
+    final rawText = response.text?.trim();
+    if (rawText == null || rawText.isEmpty) {
+      throw StateError('No JSON text returned');
+    }
+    return rawText;
   }
 
-  List<Content> _buildReceiptExtractionPrompt({required String ocrText}) {
-    return [
-      Content.text(
-        'You are given OCR text extracted locally from a receipt photo. '
+  String _buildReceiptExtractionPrompt({required String ocrText}) {
+    return 'You are given OCR text extracted locally from a receipt photo. '
         '${_slovenianReceiptContext()}'
         'Use the meaning of that OCR text to extract receipt data and return JSON only in this exact DB-ready structure: '
         '{"decision": {"is_receipt": boolean, "reason": string}, "receipt": {...}, "items": [...]} where fields are: '
@@ -1547,9 +1558,15 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'items[].total_price (integer cents). '
         'If the OCR text does not represent a receipt, set decision.is_receipt to false, explain briefly in decision.reason, and keep receipt/item values empty or zeroed rather than inventing data. '
         'All prices must be cents as integers. '
-        'OCR text:\n$ocrText',
-      ),
-    ];
+        'OCR text:\n$ocrText';
+  }
+
+  static String _slovenianReceiptContext() {
+    final storeNames = slovenianGroceryStores.join(', ');
+    return 'This receipt is likely from Slovenia.'
+        'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones.'
+        'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) — DO NOT include these, even if present in the store name.'
+        'Key Slovenian receipt terms: SKUPAJ/ZA PLAČILO = total, DDV = VAT, ZNESEK = amount, BLAGAJNA = cashier/register, GOTOVINA = cash, KARTICA = card, DATUM = date, CENA = price, KOS/KOLIČINA/KOM = piece/unit, PLAČILO = payment';
   }
 
   List<Content> _buildReceiptImageExtractionPrompt({required Uint8List imageBytes, required String mimeType}) {
@@ -1584,7 +1601,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Future<Map<String, dynamic>> _decodeReceiptPayloadFromText({required String rawText, required String ocrText}) async {
-    final direct = _tryParseJsonObject(rawText);
+    final direct = await _tryParseJsonObject(rawText);
     if (direct != null) {
       return direct;
     }
@@ -1607,7 +1624,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       throw const FormatException('AI returned empty text when repairing receipt JSON');
     }
 
-    final repaired = _tryParseJsonObject(repairedText);
+    final repaired = await _tryParseJsonObject(repairedText);
     if (repaired != null) {
       return repaired;
     }
@@ -1620,7 +1637,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     required Uint8List imageBytes,
     required String mimeType,
   }) async {
-    final direct = _tryParseJsonObject(rawText);
+    final direct = await _tryParseJsonObject(rawText);
     if (direct != null) {
       return direct;
     }
@@ -1644,7 +1661,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       throw const FormatException('AI returned empty text when repairing receipt JSON');
     }
 
-    final repaired = _tryParseJsonObject(repairedText);
+    final repaired = await _tryParseJsonObject(repairedText);
     if (repaired != null) {
       return repaired;
     }
@@ -1652,10 +1669,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     throw const FormatException('Unexpected end of input in AI JSON response');
   }
 
-  Map<String, dynamic>? _tryParseJsonObject(String input) {
-    Map<String, dynamic>? decode(String candidate) {
+  Future<Map<String, dynamic>?> _tryParseJsonObject(String input) async {
+    Future<Map<String, dynamic>?> decode(String candidate) async {
       try {
-        final decoded = jsonDecode(candidate);
+        final decoded = await Isolate.run(() => jsonDecode(candidate));
         if (decoded is Map<String, dynamic>) {
           return decoded;
         }
@@ -1663,26 +1680,26 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return null;
     }
 
-    final direct = decode(input);
+    final direct = await decode(input);
     if (direct != null) {
       return direct;
     }
 
     final withoutFence = _stripMarkdownCodeFence(input);
-    final fencedDecoded = decode(withoutFence);
+    final fencedDecoded = await decode(withoutFence);
     if (fencedDecoded != null) {
       return fencedDecoded;
     }
 
     final objectSlice = _extractFirstJsonObject(withoutFence);
     if (objectSlice.isNotEmpty) {
-      final sliceDecoded = decode(objectSlice);
+      final sliceDecoded = await decode(objectSlice);
       if (sliceDecoded != null) {
         return sliceDecoded;
       }
 
       final balancedSlice = _balanceObjectBraces(objectSlice);
-      final balancedDecoded = decode(balancedSlice);
+      final balancedDecoded = await decode(balancedSlice);
       if (balancedDecoded != null) {
         return balancedDecoded;
       }
@@ -1781,7 +1798,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _processingHintDots = 1;
     });
     var tick = 0;
-    _processingHintTimer = Timer.periodic(const Duration(milliseconds: 450), (_) {
+    _processingHintTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
       if (!mounted || !_isAnyProcessingFlowActive()) {
         return;
       }
