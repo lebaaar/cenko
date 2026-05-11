@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +20,14 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
+    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_io.dart'
+    as image_enhancer;
+import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stub.dart'
+    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
+    as receipt_ocr;
 
-const _processingHints = <String>['Scanning receipt', 'Extracting items', 'Validating totals', 'Finalizing'];
+const _processingHints = <String>['Reading receipt', 'Processing receipt', 'Extracting items and prices', 'Almost done'];
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
@@ -59,6 +66,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       responseMimeType: 'application/json',
       responseSchema: Schema.object(
         properties: {
+          'decision': Schema.object(
+            properties: {
+              'is_receipt': Schema.boolean(description: 'True when the OCR text represents a receipt'),
+              'reason': Schema.string(description: 'Short explanation when the text is not a receipt or extraction is not reliable'),
+            },
+            propertyOrdering: const ['is_receipt', 'reason'],
+          ),
           'receipt': Schema.object(
             properties: {
               'receipt_id': Schema.string(),
@@ -83,10 +97,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             ),
           ),
         },
-        propertyOrdering: const ['receipt', 'items'],
+        propertyOrdering: const ['decision', 'receipt', 'items'],
       ),
     ),
   );
+
+  late final receipt_ocr.ReceiptTextRecognizer _receiptTextRecognizer = receipt_ocr.createReceiptTextRecognizer();
 
   late _ScanMode _mode;
   bool _isHandlingDetection = false;
@@ -132,6 +148,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _scanBarController.dispose();
     _controller.dispose();
     _receiptCamera?.dispose();
+    _receiptTextRecognizer.close();
     _scaffoldMessenger = null;
     super.dispose();
   }
@@ -202,9 +219,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                                   color: Colors.white,
                                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4))],
                                 ),
-                                child: _isProcessingReceipt || _isCapturingReceipt
-                                    ? const Padding(padding: EdgeInsets.all(15), child: CircularProgressIndicator(strokeWidth: 2))
-                                    : const SizedBox.shrink(),
+                                child: const SizedBox.shrink(),
                               ),
                             ),
                           ),
@@ -286,7 +301,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     'Failed to save receipt',
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     _receiptFlowMessage ?? 'Please try again',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
@@ -312,7 +327,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Your spending data has been updated',
+                    'Receipt from ${_asString((_pendingReceiptPayload?['receipt'] as Map<String, dynamic>?)?['store_name'], fallback: 'store')} logged successfully',
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -326,7 +341,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       style: _primaryActionStyle(context),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -784,7 +799,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
       await _receiptCamera?.dispose();
 
-      final camera = CameraController(_cameras[targetIndex], ResolutionPreset.high, enableAudio: false, imageFormatGroup: ImageFormatGroup.jpeg);
+      final camera = CameraController(_cameras[targetIndex], ResolutionPreset.high, enableAudio: false, imageFormatGroup: ImageFormatGroup.yuv420);
 
       await camera.initialize();
       await camera.setFlashMode(FlashMode.off);
@@ -1344,6 +1359,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       setState(() {
         _receiptFlowMessage = 'Failed to capture receipt image. Please try again';
         _receiptFlowState = _ReceiptFlowState.failure;
+        _receiptPreviewLocked = false;
+        _frozenReceiptImageBytes = null;
       });
     } finally {
       if (mounted) {
@@ -1353,6 +1370,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _extractReceiptJson(XFile file, {bool autoStore = false, Uint8List? imageBytes}) async {
+    if (kIsWeb) {
+      await _extractReceiptJsonFromImage(file, autoStore: autoStore, imageBytes: imageBytes);
+      return;
+    }
+
     setState(() {
       _isProcessingReceipt = true;
       _receiptFlowMessage = null;
@@ -1362,17 +1384,28 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _startProcessingHints();
 
     try {
-      final bytes = imageBytes ?? await file.readAsBytes();
-      final mimeType = _mimeTypeForPath(file.path);
+      final rawBytes = imageBytes ?? await file.readAsBytes();
+      final ocrPath = await image_enhancer.enhancedPathForOcr(file.path, rawBytes);
+      final ocrText = await _extractReceiptText(XFile(ocrPath));
 
-      final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(imageBytes: bytes, mimeType: mimeType));
+      if (ocrText.trim().isEmpty) {
+        throw const _UserVisibleError('No readable text was found. Try again with a clearer receipt image');
+      }
+
+      final response = await _receiptModel.generateContent(_buildReceiptExtractionPrompt(ocrText: ocrText));
 
       final rawText = response.text?.trim();
       if (rawText == null || rawText.isEmpty) {
-        throw StateError('Gemini returned no JSON text');
+        throw StateError('No JSON text returned');
       }
 
-      final decoded = await _decodeReceiptPayload(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
+      final decoded = await _decodeReceiptPayloadFromText(rawText: rawText, ocrText: ocrText);
+
+      final decision = decoded['decision'] is Map<String, dynamic> ? decoded['decision'] as Map<String, dynamic> : const <String, dynamic>{};
+      if (decision['is_receipt'] != true) {
+        final reason = _asString(decision['reason'], fallback: 'The image text does not look like a receipt');
+        throw _UserVisibleError(reason);
+      }
 
       final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
       if (!_isReceiptDetected(dbReadyPayload)) {
@@ -1415,14 +1448,94 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
   }
 
-  /// Builds the prompt for cloud OCR + structured receipt extraction.
-  List<Content> _buildReceiptExtractionPrompt({required Uint8List imageBytes, required String mimeType}) {
+  Future<void> _extractReceiptJsonFromImage(XFile file, {bool autoStore = false, Uint8List? imageBytes}) async {
+    setState(() {
+      _isProcessingReceipt = true;
+      _receiptFlowMessage = null;
+      _receiptFlowState = _ReceiptFlowState.processing;
+      _pendingReceiptPayload = null;
+    });
+    _startProcessingHints();
+
+    try {
+      final bytes = imageBytes ?? await file.readAsBytes();
+      final mimeType = _mimeTypeForPath(file.path);
+
+      final response = await _receiptModel.generateContent(_buildReceiptImageExtractionPrompt(imageBytes: bytes, mimeType: mimeType));
+
+      final rawText = response.text?.trim();
+      if (rawText == null || rawText.isEmpty) {
+        throw StateError('No JSON text returned');
+      }
+
+      final decoded = await _decodeReceiptPayloadFromImage(rawText: rawText, imageBytes: bytes, mimeType: mimeType);
+
+      final decision = decoded['decision'] is Map<String, dynamic> ? decoded['decision'] as Map<String, dynamic> : const <String, dynamic>{};
+      if (decision['is_receipt'] != true) {
+        final reason = _asString(decision['reason'], fallback: 'The image text does not look like a receipt');
+        throw _UserVisibleError(reason);
+      }
+
+      final dbReadyPayload = _normalizeDbPayload(decoded, rawText);
+      if (!_isReceiptDetected(dbReadyPayload)) {
+        throw const _UserVisibleError('No receipt detected. Make sure a full receipt is visible and try again');
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _pendingReceiptPayload = dbReadyPayload;
+      });
+
+      if (autoStore) {
+        await _persistReceiptPayload(dbReadyPayload);
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _receiptFlowState = _ReceiptFlowState.success;
+        });
+      } else {
+        setState(() {
+          _receiptFlowState = _ReceiptFlowState.readyToSubmit;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
+        _receiptFlowState = _ReceiptFlowState.failure;
+      });
+    } finally {
+      _stopProcessingHints();
+      if (mounted) {
+        setState(() => _isProcessingReceipt = false);
+      }
+    }
+  }
+
+  static String _slovenianReceiptContext() {
+    final storeNames = slovenianGroceryStores.join(', ');
+    return 'This receipt is likely from Slovenia.'
+        'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones.'
+        'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) — DO NOT include these, even if present in the store name.'
+        'Key Slovenian receipt terms: SKUPAJ/ZA PLAČILO = total, DDV = VAT, ZNESEK = amount, BLAGAJNA = cashier/register, GOTOVINA = cash, KARTICA = card, DATUM = date, CENA = price, KOS/KOLIČINA/KOM = piece/unit, PLAČILO = payment';
+  }
+
+  List<Content> _buildReceiptExtractionPrompt({required String ocrText}) {
     return [
       Content.text(
-        'Extract receipt data from the provided receipt image and return JSON only in this exact DB-ready structure: '
-        '{"receipt": {...}, "items": [...]} where fields are: '
+        'You are given OCR text extracted locally from a receipt photo. '
+        '${_slovenianReceiptContext()}'
+        'Use the meaning of that OCR text to extract receipt data and return JSON only in this exact DB-ready structure: '
+        '{"decision": {"is_receipt": boolean, "reason": string}, "receipt": {...}, "items": [...]} where fields are: '
+        'decision.is_receipt (true only if the OCR text clearly represents a receipt), '
+        'decision.reason (short explanation when the OCR text is not a receipt or is too ambiguous), '
         'receipt.receipt_id (string placeholder like "__AUTO_ID__"), '
-        'receipt.store_name (string), '
+        'receipt.store_name (string, never include d.o.o./d.d. suffix (when visible)), '
         'receipt.total_price (integer cents), '
         'receipt.item_count (integer), '
         'receipt.raw_ocr (string full OCR text extracted from the image), '
@@ -1432,13 +1545,81 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'items[].unit_price (integer cents), '
         'items[].quantity (number), '
         'items[].total_price (integer cents). '
+        'If the OCR text does not represent a receipt, set decision.is_receipt to false, explain briefly in decision.reason, and keep receipt/item values empty or zeroed rather than inventing data. '
+        'All prices must be cents as integers. '
+        'OCR text:\n$ocrText',
+      ),
+    ];
+  }
+
+  List<Content> _buildReceiptImageExtractionPrompt({required Uint8List imageBytes, required String mimeType}) {
+    return [
+      Content.text(
+        'Extract receipt data from the provided receipt image and return JSON only in this exact DB-ready structure: '
+        '${_slovenianReceiptContext()}'
+        '{"decision": {"is_receipt": boolean, "reason": string}, "receipt": {...}, "items": [...]} where fields are: '
+        'decision.is_receipt (true only if the image clearly represents a receipt), '
+        'decision.reason (short explanation when the image is not a receipt or is too ambiguous), '
+        'receipt.receipt_id (string placeholder like "__AUTO_ID__"), '
+        'receipt.store_name (string, never include d.o.o./d.d. suffix (when visible)), '
+        'receipt.total_price (integer cents), '
+        'receipt.item_count (integer), '
+        'receipt.raw_ocr (string full OCR text extracted from the image), '
+        'receipt.date (ISO-8601 timestamp string), '
+        'items[].item_id (string placeholder like "__AUTO_ID__"), '
+        'items[].raw_name (string), '
+        'items[].unit_price (integer cents), '
+        'items[].quantity (number), '
+        'items[].total_price (integer cents). '
+        'If the image does not represent a receipt, set decision.is_receipt to false, explain briefly in decision.reason, and keep receipt/item values empty or zeroed rather than inventing data. '
         'All prices must be cents as integers',
       ),
       Content.inlineData(mimeType, imageBytes),
     ];
   }
 
-  Future<Map<String, dynamic>> _decodeReceiptPayload({required String rawText, required Uint8List imageBytes, required String mimeType}) async {
+  Future<String> _extractReceiptText(XFile file) async {
+    final text = await _receiptTextRecognizer.extractText(file.path);
+    return text.trim();
+  }
+
+  Future<Map<String, dynamic>> _decodeReceiptPayloadFromText({required String rawText, required String ocrText}) async {
+    final direct = _tryParseJsonObject(rawText);
+    if (direct != null) {
+      return direct;
+    }
+
+    final repairedResponse = await _receiptModel.generateContent([
+      Content.text(
+        'You previously returned malformed or truncated JSON for a receipt extraction task that was based on OCR text. '
+        'Return ONLY one valid JSON object and no markdown, no prose. '
+        'Required shape: '
+        '{"decision":{"is_receipt":bool,"reason":string},"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
+        '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
+        'All prices must be integer cents. ISO-8601 date. '
+        'Use the OCR text below and repair your output. '
+        'Previous malformed output:\n$rawText\n\nOCR text:\n$ocrText',
+      ),
+    ]);
+
+    final repairedText = repairedResponse.text?.trim();
+    if (repairedText == null || repairedText.isEmpty) {
+      throw const FormatException('AI returned empty text when repairing receipt JSON');
+    }
+
+    final repaired = _tryParseJsonObject(repairedText);
+    if (repaired != null) {
+      return repaired;
+    }
+
+    throw const FormatException('Unexpected end of input in AI JSON response');
+  }
+
+  Future<Map<String, dynamic>> _decodeReceiptPayloadFromImage({
+    required String rawText,
+    required Uint8List imageBytes,
+    required String mimeType,
+  }) async {
     final direct = _tryParseJsonObject(rawText);
     if (direct != null) {
       return direct;
@@ -1449,7 +1630,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'You previously returned malformed or truncated JSON for a receipt extraction task. '
         'Return ONLY one valid JSON object and no markdown, no prose. '
         'Required shape: '
-        '{"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
+        '{"decision":{"is_receipt":bool,"reason":string},"receipt":{"receipt_id":string,"store_name":string,"total_price":int,"item_count":int,"raw_ocr":string,"date":string},'
         '"items":[{"item_id":string,"raw_name":string,"unit_price":int,"quantity":number,"total_price":int}]}. '
         'All prices must be integer cents. ISO-8601 date. '
         'Use the provided image and repair your output. '
@@ -2033,7 +2214,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     final digitCount = RegExp(r'\d').allMatches(cleaned).length;
     final hasPricePattern = RegExp(r'\d+[\.,]\d{2}').hasMatch(cleaned);
-    final hasKeyword = RegExp(r'\b(total|subtotal|tax|vat|receipt|cash|card|change|qty)\b', caseSensitive: false).hasMatch(cleaned);
+    final lower = cleaned.toLowerCase();
+    final hasKeyword =
+        RegExp(r'\b(total|subtotal|tax|vat|receipt|cash|card|change|qty)\b', caseSensitive: false).hasMatch(cleaned) ||
+        ['skupaj', 'ddv', 'znesek', 'racun', 'račun', 'gotovina', 'kartica', 'blagajna', 'placilo', 'plačilo', 'račun'].any(lower.contains);
 
     return hasPricePattern || (hasKeyword && digitCount >= 4);
   }

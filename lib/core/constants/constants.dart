@@ -12,3 +12,22 @@ const int maxNumberOfSharedShoppingLists = 5;
 const int maxNumbberOfMembersPerSharedList = 5;
 const int maxNumberOfItemsPerList = 100;
 const int maxNumberOfReceipts = 100;
+
+const List<String> slovenianGroceryStores = [
+  'Mercator',
+  'Spar',
+  'Eurospar',
+  'Interspar',
+  'Hofer',
+  'Lidl',
+  'Tuš',
+  'Tuš drogerija',
+  'Engrotuš',
+  'Jager',
+  'DM drogerija',
+  'Müller',
+  'Petrol',
+  'Petrol',
+  'OMV',
+  'Mol',
+];
