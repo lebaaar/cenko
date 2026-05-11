@@ -3,7 +3,7 @@
   <h1 align="center">Cenko</h1>
 </div>
 
-Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Scan your receipts to automatically track your spending, and share shopping lists with family or friends to get personalized deal recommendations based on what you buy most.
+Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most.
 
 > Dragonhack 2026 - Best use of APIs reward
 
