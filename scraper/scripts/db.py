@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -115,6 +116,11 @@ def _parse_iso_datetime(value: Any) -> Any:
     return parsed.astimezone(UTC)
 
 
+def _log_event(event: str, **fields: Any) -> None:
+    payload = {"event": event, **fields}
+    print(json.dumps(payload, ensure_ascii=False), file=sys.stderr)
+
+
 def load_discounted_products(
     scripts_root: Path | None = None,
     script_paths: Iterable[Path] = DISCOUNT_SCRIPT_PATHS,
@@ -125,6 +131,12 @@ def load_discounted_products(
     for relative_script_path in script_paths:
         script_path = (root / relative_script_path).resolve()
         store_name = str(relative_script_path.parent.name)
+        started_at = time.monotonic()
+        _log_event(
+            "store_scrape_started",
+            store=store_name,
+            script=str(script_path),
+        )
         try:
             result = subprocess.run(
                 [sys.executable, str(script_path)],
@@ -134,11 +146,15 @@ def load_discounted_products(
                 check=True,
             )
         except subprocess.CalledProcessError as exc:
-            print(f"Failed to scrape discounted products for {store_name}.")
-            if exc.stdout:
-                print(f"stdout:\n{exc.stdout}")
-            if exc.stderr:
-                print(f"stderr:\n{exc.stderr}")
+            _log_event(
+                "store_scrape_failed",
+                store=store_name,
+                script=str(script_path),
+                exit_code=exc.returncode,
+                duration_seconds=round(time.monotonic() - started_at, 3),
+                stdout=exc.stdout,
+                stderr=exc.stderr,
+            )
             continue
 
         parsed = json.loads(result.stdout)
@@ -146,7 +162,13 @@ def load_discounted_products(
             raise ValueError(f"Expected a list of products from {script_path}, got: {type(parsed).__name__}")
 
         store_products = [item for item in parsed if isinstance(item, dict)]
-        print(f"Found {len(store_products)} discounted products for {store_name}.")
+        _log_event(
+            "store_scrape_succeeded",
+            store=store_name,
+            script=str(script_path),
+            product_count=len(store_products),
+            duration_seconds=round(time.monotonic() - started_at, 3),
+        )
         all_products.extend(store_products)
 
     return all_products
