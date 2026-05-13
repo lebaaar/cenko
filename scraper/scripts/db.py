@@ -124,19 +124,28 @@ def load_discounted_products(
 
     for relative_script_path in script_paths:
         script_path = (root / relative_script_path).resolve()
-        result = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=str(script_path.parent),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        store_name = str(relative_script_path.parent.name)
+        try:
+            result = subprocess.run(
+                [sys.executable, str(script_path)],
+                cwd=str(script_path.parent),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            print(f"Failed to scrape discounted products for {store_name}.")
+            if exc.stdout:
+                print(f"stdout:\n{exc.stdout}")
+            if exc.stderr:
+                print(f"stderr:\n{exc.stderr}")
+            continue
+
         parsed = json.loads(result.stdout)
         if not isinstance(parsed, list):
             raise ValueError(f"Expected a list of products from {script_path}, got: {type(parsed).__name__}")
 
         store_products = [item for item in parsed if isinstance(item, dict)]
-        store_name = str(relative_script_path.parent.name)
         print(f"Found {len(store_products)} discounted products for {store_name}.")
         all_products.extend(store_products)
 
