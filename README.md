@@ -8,7 +8,7 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 > Dragonhack 2026 - Best use of APIs reward
 
 <div align="center">
-    <img src="assets/images/cenko.gif" alt="Cenko app demo" height="600" />
+    <img src="assets/images/cenko.gif" alt="Cenko demo" height="600" />
 </div>
 
 
@@ -59,3 +59,6 @@ Check if emaultor is installed by running  `flutter emuators` and run it via `fl
     firebase login
     flutterfire configure
     ```
+
+**Secrets:**
+- Copy `.env.example` to `.env` and fill in the secrets. Get in touch with the developers if you need access to the secrets.

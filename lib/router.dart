@@ -1,4 +1,6 @@
 import 'package:cenko/app_theme.dart';
+import 'package:cenko/features/about/ui/about_screen.dart';
+import 'package:cenko/features/about/ui/contact_screen.dart';
 import 'package:cenko/features/auth/ui/forgot_password_screen.dart';
 import 'package:cenko/features/auth/ui/login_screen.dart';
 import 'package:cenko/features/auth/ui/register_screen.dart';
@@ -10,6 +12,7 @@ import 'package:cenko/features/settings/ui/settings_screen.dart';
 import 'package:cenko/features/shopping_list/ui/shopping_list_detail_screen.dart';
 import 'package:cenko/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -68,6 +71,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
+      GoRoute(
+        path: '/contact',
+        builder: (context, state) => ContactScreen(initialType: state.extra as ContactType?),
+      ),
     ],
   );
 });
