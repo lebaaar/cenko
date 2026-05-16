@@ -12,14 +12,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class _MonthReceiptQuery {
-  const _MonthReceiptQuery({required this.uid, required this.month});
+  const _MonthReceiptQuery({required this.uid, required this.month, this.limit = 20});
 
   final String uid;
   final DateTime month;
+  final int limit;
 
   @override
   bool operator ==(Object other) {
-    return other is _MonthReceiptQuery && other.uid == uid && other.month.year == month.year && other.month.month == month.month;
+    return other is _MonthReceiptQuery &&
+        other.uid == uid &&
+        other.month.year == month.year &&
+        other.month.month == month.month &&
+        other.limit == limit;
   }
 
   @override
@@ -73,6 +78,7 @@ final _monthReceiptsProvider = StreamProvider.family<QuerySnapshot<Map<String, d
       .where('date', isGreaterThanOrEqualTo: monthStart)
       .where('date', isLessThan: nextMonthStart)
       .orderBy('date', descending: true)
+      .limit(query.limit)
       .snapshots();
 });
 
@@ -105,7 +111,6 @@ _MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dy
 
 _MonthReceiptPage _monthReceiptPageFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot, int limit) {
   final receipts = snapshot.docs
-      .take(limit)
       .map((doc) {
         final data = doc.data();
         return _MonthReceiptItem(
@@ -297,7 +302,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth)));
+        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: 20)));
         final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
 
         final colorScheme = Theme.of(context).colorScheme;

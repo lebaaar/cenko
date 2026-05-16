@@ -124,6 +124,11 @@ class PersonalizedDealsRepository {
     return matches.take(limit).toList(growable: false);
   }
 
+  void dispose() {
+    _activeDealsSubscription?.cancel();
+    _activeDealsSubscription = null;
+  }
+
   PersonalizedDealCardItem _catalogToCardItem(CatalogDealItem deal) {
     return PersonalizedDealCardItem(
       id: deal.productId,

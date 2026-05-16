@@ -6,10 +6,12 @@ import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final personalizedDealsRepositoryProvider = Provider<PersonalizedDealsRepository>((ref) {
-  return PersonalizedDealsRepository(
+  final repository = PersonalizedDealsRepository(
     catalogDealsRepository: ref.watch(catalogDealsRepositoryProvider),
     dealTextMatcherService: ref.watch(dealTextMatcherServiceProvider),
   );
+  ref.onDispose(repository.dispose);
+  return repository;
 });
 
 final shoppingListOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {

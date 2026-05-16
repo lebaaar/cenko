@@ -76,7 +76,10 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    clearPlanCache();
+    final user = _auth.currentUser;
+    if (user != null) {
+      clearPlanCacheForUser(user.uid);
+    }
     await Future.wait([_auth.signOut(), GoogleSignIn.instance.signOut()]);
   }
 
@@ -86,7 +89,7 @@ class AuthNotifier extends ChangeNotifier {
 
     final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('deleteMyAccount');
     await callable.call();
-    clearPlanCache();
+    clearPlanCacheForUser(user.uid);
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
   }
