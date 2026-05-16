@@ -1,8 +1,7 @@
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/user_util.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'shopping_list_item.dart';
 
 class ShoppingListRepository {
   ShoppingListRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;

@@ -1,14 +1,13 @@
+import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:cenko/features/home/data/home_deal_card_item.dart';
 import 'package:cenko/features/home/data/personalized_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/widgets/deal_card.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
-import '../../../app_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -78,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
                     const SizedBox(height: 6),
-                    _SectionHeader(title: 'From your shopping lists'),
+                    const _SectionHeader(title: 'From your shopping lists'),
                     const SizedBox(height: 14),
                     _DealsList(
                       asyncDeals: shoppingListDealsAsync,
@@ -89,7 +88,7 @@ class HomeScreen extends ConsumerWidget {
                       emptyActionRoute: '/list',
                     ),
                     const SizedBox(height: 30),
-                    _SectionHeader(title: 'Based on your shopping habits'),
+                    const _SectionHeader(title: 'Based on your shopping habits'),
                     const SizedBox(height: 14),
                     _DealsList(
                       asyncDeals: commonBoughtProductsDealsAsync,

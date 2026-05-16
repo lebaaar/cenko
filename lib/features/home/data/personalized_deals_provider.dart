@@ -1,10 +1,9 @@
+import 'package:cenko/features/home/data/home_deal_card_item.dart';
+import 'package:cenko/features/home/data/personalized_deals_repository.dart';
+import 'package:cenko/shared/providers/catalog_deals_provider.dart';
+import 'package:cenko/shared/providers/deal_text_matcher_provider.dart';
+import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../shared/providers/catalog_deals_provider.dart';
-import '../../../shared/providers/deal_text_matcher_provider.dart';
-import '../../../shared/providers/internet_status_provider.dart';
-import 'home_deal_card_item.dart';
-import 'personalized_deals_repository.dart';
 
 final personalizedDealsRepositoryProvider = Provider<PersonalizedDealsRepository>((ref) {
   return PersonalizedDealsRepository(

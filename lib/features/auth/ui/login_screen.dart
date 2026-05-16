@@ -1,6 +1,7 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/auth_util.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
@@ -10,8 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-import '../../../shared/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

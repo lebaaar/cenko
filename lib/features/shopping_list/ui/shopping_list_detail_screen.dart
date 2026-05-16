@@ -1,8 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
@@ -14,6 +9,10 @@ import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 class SharedShoppingListScreen extends ConsumerStatefulWidget {
   const SharedShoppingListScreen({super.key, required this.listId});

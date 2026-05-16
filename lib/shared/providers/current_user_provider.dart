@@ -1,9 +1,8 @@
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'auth_provider.dart';
-import 'internet_status_provider.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository();

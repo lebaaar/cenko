@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
@@ -9,6 +5,9 @@ import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
   const ShoppingListScreen({super.key});
@@ -225,7 +224,7 @@ class _BodyState extends ConsumerState<_Body> {
                 children: [
                   invitationsAsync.when(
                     loading: () => const SizedBox.shrink(),
-                    error: (e, _) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('Could not load invitations')),
+                    error: (e, _) => const Padding(padding: EdgeInsets.only(bottom: 12), child: Text('Could not load invitations')),
                     data: (invitations) => invitations.isEmpty
                         ? const SizedBox.shrink()
                         : Column(

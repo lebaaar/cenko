@@ -1,4 +1,4 @@
-import 'receipt_ocr_observation.dart';
+import 'package:cenko/features/scan/data/receipt_ocr/receipt_ocr_observation.dart';
 
 class ReceiptTextRecognizer {
   Future<String> extractText(String imagePath) async {

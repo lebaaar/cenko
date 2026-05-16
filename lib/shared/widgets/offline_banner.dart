@@ -1,9 +1,8 @@
+import 'package:cenko/shared/providers/internet_status_provider.dart';
+import 'package:cenko/shared/widgets/animated_dots.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
-
-import '../providers/internet_status_provider.dart';
-import 'animated_dots.dart';
 
 class OfflineBanner extends ConsumerWidget {
   const OfflineBanner({super.key});

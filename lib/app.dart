@@ -1,16 +1,14 @@
+import 'package:cenko/app_theme.dart';
+import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/router.dart';
+import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/providers/internet_status_provider.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
+import 'package:cenko/shared/widgets/offline_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'app_theme.dart';
-import 'core/constants/constants.dart';
-import 'router.dart';
-import 'shared/providers/current_user_provider.dart';
-import 'shared/services/snack_bar_service.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
-
-import 'shared/providers/internet_status_provider.dart';
-import 'shared/widgets/offline_banner.dart';
 
 class CenkoApp extends ConsumerStatefulWidget {
   const CenkoApp({super.key});

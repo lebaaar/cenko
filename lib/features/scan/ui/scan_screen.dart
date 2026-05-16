@@ -2,33 +2,32 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'package:camera/camera.dart';
+import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/user_util.dart';
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
+    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_io.dart'
+    as image_enhancer;
+import 'package:cenko/features/scan/data/receipt_ocr/receipt_ai_service.dart';
+import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stub.dart'
+    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
+    as receipt_ocr;
+import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
+import 'package:cenko/shared/repository/catalog_deals_repository.dart';
+import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
+import 'package:cenko/shared/widgets/animated_dots.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-
-import 'package:cenko/core/constants/constants.dart';
-import 'package:cenko/core/utils/price_util.dart';
-import 'package:cenko/core/utils/user_util.dart';
-import 'package:cenko/features/deals/data/catalog_deal_item.dart';
-import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
-import 'package:cenko/shared/repository/catalog_deals_repository.dart';
-import 'package:cenko/shared/services/deal_text_matcher_service.dart';
-import 'package:cenko/features/scan/data/receipt_ocr/receipt_ai_service.dart';
-import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
-    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_io.dart'
-    as image_enhancer;
-import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stub.dart'
-    if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
-    as receipt_ocr;
-import 'package:cenko/shared/services/snack_bar_service.dart';
-import 'package:cenko/shared/widgets/animated_dots.dart';
 
 const _processingHints = <String>['Reading receipt', 'Processing receipt', 'Extracting items and prices', 'Almost done'];
 

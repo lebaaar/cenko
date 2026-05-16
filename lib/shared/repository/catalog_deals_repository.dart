@@ -1,6 +1,5 @@
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../features/deals/data/catalog_deal_item.dart';
 
 class CatalogDealsRepository {
   CatalogDealsRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;

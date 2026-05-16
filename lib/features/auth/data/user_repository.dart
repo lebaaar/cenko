@@ -1,5 +1,5 @@
+import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'user_model.dart';
 
 class UserRepository {
   final _users = FirebaseFirestore.instance.collection('users');

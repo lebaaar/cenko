@@ -1,8 +1,7 @@
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:flutter/material.dart';
-
-import '../data/catalog_deal_item.dart';
 
 class DealsGridCard extends StatelessWidget {
   // constructors

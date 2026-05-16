@@ -1,13 +1,12 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/auth_util.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../../shared/providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});

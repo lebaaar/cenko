@@ -1,7 +1,6 @@
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/features/home/data/home_deal_card_item.dart';
 import 'package:flutter/material.dart';
-
-import '../../features/home/data/home_deal_card_item.dart';
 
 class DealCard extends StatelessWidget {
   const DealCard({super.key, required this.item, this.onTap});

@@ -1,9 +1,8 @@
+import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/home/data/home_deal_card_item.dart';
+import 'package:cenko/shared/repository/catalog_deals_repository.dart';
+import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../deals/data/catalog_deal_item.dart';
-import '../../../shared/repository/catalog_deals_repository.dart';
-import '../../../shared/services/deal_text_matcher_service.dart';
-import 'home_deal_card_item.dart';
 
 class PersonalizedDealsRepository {
   PersonalizedDealsRepository({
@@ -27,9 +26,7 @@ class PersonalizedDealsRepository {
       final listIds = membershipSnap.docs.map((d) => d.id).toList();
       if (listIds.isEmpty) return <PersonalizedDealCardItem>[];
 
-      final snapshots = await Future.wait(
-        listIds.map((id) => _firestore.collection('shopping_lists').doc(id).collection('items').get()),
-      );
+      final snapshots = await Future.wait(listIds.map((id) => _firestore.collection('shopping_lists').doc(id).collection('items').get()));
 
       final texts = <String>{};
       for (final snap in snapshots) {

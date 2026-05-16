@@ -1,20 +1,19 @@
+import 'package:cenko/app_theme.dart';
+import 'package:cenko/features/auth/ui/forgot_password_screen.dart';
+import 'package:cenko/features/auth/ui/login_screen.dart';
+import 'package:cenko/features/auth/ui/register_screen.dart';
+import 'package:cenko/features/deals/ui/deals_screen.dart';
+import 'package:cenko/features/home/ui/home_screen.dart';
+import 'package:cenko/features/profile/ui/profile_screen.dart';
+import 'package:cenko/features/scan/ui/scan_screen.dart';
+import 'package:cenko/features/settings/ui/settings_screen.dart';
+import 'package:cenko/features/shopping_list/ui/shopping_list_detail_screen.dart';
+import 'package:cenko/features/shopping_list/ui/shopping_list_screen.dart';
+import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'app_theme.dart';
-
-import 'shared/providers/auth_provider.dart';
-import 'features/auth/ui/forgot_password_screen.dart';
-import 'features/auth/ui/login_screen.dart';
-import 'features/auth/ui/register_screen.dart';
-import 'features/home/ui/home_screen.dart';
-import 'features/profile/ui/profile_screen.dart';
-import 'features/deals/ui/deals_screen.dart';
-import 'features/scan/ui/scan_screen.dart';
-import 'features/settings/ui/settings_screen.dart';
-import 'features/shopping_list/ui/shopping_list_detail_screen.dart';
-import 'features/shopping_list/ui/shopping_list_screen.dart';
 
 const _authPaths = {'/login', '/register', '/forgot-password'};
 
@@ -193,13 +192,9 @@ class _BottomNavBar extends StatelessWidget {
                 child: Container(
                   width: scanButtonSize,
                   height: scanButtonSize,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDim],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: LinearGradient(colors: [AppColors.primary, AppColors.primaryDim], begin: Alignment.topLeft, end: Alignment.bottomRight),
                   ),
                   child: Center(
                     child: SvgPicture.asset('assets/icons/barcode_scanner.svg', width: scanIconSize, height: scanIconSize),

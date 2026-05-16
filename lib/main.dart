@@ -1,3 +1,5 @@
+import 'package:cenko/app.dart';
+import 'package:cenko/firebase_options.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -5,9 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-import 'app.dart';
-import 'firebase_options.dart';
 
 void _setSystemUIOverlayStyle(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
@@ -35,8 +34,8 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
-    providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
-    providerApple: kDebugMode ? AppleDebugProvider() : AppleAppAttestProvider(),
+    providerAndroid: kDebugMode ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
+    providerApple: kDebugMode ? const AppleDebugProvider() : const AppleAppAttestProvider(),
   );
   await GoogleSignIn.instance.initialize();
   runApp(const ProviderScope(child: CenkoApp()));

@@ -1,13 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/receipt_analytics_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class _MonthReceiptQuery {
@@ -262,12 +262,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final userAsync = ref.watch(currentUserProvider);
 
     return userAsync.when(
-      loading: () => Scaffold(
+      loading: () => const Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 120),
             child: Column(
-              children: const [
+              children: [
                 MainTopBar(title: 'Profile'),
                 Expanded(child: Center(child: CircularProgressIndicator())),
               ],
@@ -294,12 +294,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ref.read(authNotifierProvider).signOut();
             context.go('/auth');
           });
-          return Scaffold(
+          return const Scaffold(
             body: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: EdgeInsets.fromLTRB(20, 12, 20, 120),
                 child: Column(
-                  children: const [
+                  children: [
                     MainTopBar(title: 'Profile'),
                     Expanded(child: Center(child: CircularProgressIndicator())),
                   ],

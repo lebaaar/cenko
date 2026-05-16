@@ -1,10 +1,9 @@
+import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
+import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../shared/providers/internet_status_provider.dart';
-import 'shared_shopping_list_repository.dart';
-import 'shopping_list.dart';
-import 'shopping_list_invitation.dart';
-import 'shopping_list_item.dart';
 
 final sharedShoppingListRepositoryProvider = Provider<SharedShoppingListRepository>((ref) {
   return SharedShoppingListRepository();

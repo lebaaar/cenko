@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
-import 'package:cenko/shared/providers/catalog_deals_provider.dart';
-import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/shared/providers/catalog_deals_provider.dart';
+import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DealsScreen extends ConsumerStatefulWidget {
   const DealsScreen({super.key, this.initialQuery});
@@ -623,7 +622,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             });
                           },
                           icon: const Icon(Icons.expand_more_rounded),
-                          label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: const Text('Load more')),
+                          label: const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Load more')),
                           style: FilledButton.styleFrom(foregroundColor: Colors.white),
                         ),
                       ),
