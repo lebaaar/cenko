@@ -3,10 +3,8 @@ import 'package:cenko/core/utils/date_util.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/**
- * TODO - legal page content should be on the web and loaded in a webview or loaded from an API call
- * This is so we can update it without needing an app update
- */
+/// TODO - legal page content should be on the web and loaded in a webview or loaded from an API call
+/// This is so we can update it without needing an app update
 class LegalScreen extends StatelessWidget {
   const LegalScreen({super.key});
 

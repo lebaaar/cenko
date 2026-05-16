@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
@@ -172,6 +173,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _logoutCheckStarted = false;
   static const int _receiptPageSize = 5;
   static const double _monthSwipeDistanceThreshold = 44;
   static const double _monthSwipeVelocityThreshold = 340;
@@ -290,10 +292,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       data: (user) {
         if (user == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(authNotifierProvider).signOut();
-            context.go('/auth');
-          });
+          // The user document may take a short time to appear after registration.
+          // Start a one-time delayed check: show a loading spinner for a few
+          // seconds and then sign out if the user document is still missing.
+          if (!_logoutCheckStarted) {
+            _logoutCheckStarted = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Future.delayed(const Duration(seconds: 3), () {
+                if (!mounted) return;
+                final current = ref.read(currentUserProvider).asData?.value;
+                if (current == null) {
+                  ref.read(authNotifierProvider).signOut();
+                  if (mounted) {
+                    // ignore: use_build_context_synchronously
+                    context.go('/login');
+                  }
+                }
+              });
+            });
+          }
+
           return const Scaffold(
             body: SafeArea(
               child: Padding(
