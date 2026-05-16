@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:ui';
+
 import 'package:camera/camera.dart';
 import 'package:cenko/features/scan/data/receipt_ocr/receipt_ocr_observation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -40,18 +41,13 @@ class DiscordWebhookService {
             if (userId != null) {'name': 'User ID', 'value': userId, 'inline': false},
             {'name': 'Message', 'value': message, 'inline': false},
             if (bugInfo != null)
-              for (final entry in bugInfo.entries)
-                {'name': entry.key, 'value': entry.value, 'inline': true},
+              for (final entry in bugInfo.entries) {'name': entry.key, 'value': entry.value, 'inline': true},
           ],
         },
       ],
     };
 
-    final response = await http.post(
-      Uri.parse(type.webhookUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final response = await http.post(Uri.parse(type.webhookUrl), headers: {'Content-Type': 'application/json'}, body: jsonEncode(payload));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to send message (${response.statusCode})');

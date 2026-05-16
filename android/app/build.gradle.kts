@@ -38,7 +38,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: change applicationId
         applicationId = "com.lebaaar.cenko"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion

@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -105,9 +106,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 DropdownButtonFormField<ContactType>(
                   initialValue: _selectedType,
                   decoration: const InputDecoration(labelText: 'Type'),
-                  items: ContactType.values
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
-                      .toList(),
+                  items: ContactType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedType = v);
                   },
