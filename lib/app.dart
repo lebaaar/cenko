@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/router.dart';
@@ -17,8 +19,34 @@ class CenkoApp extends ConsumerStatefulWidget {
   ConsumerState<CenkoApp> createState() => _CenkoAppState();
 }
 
-class _CenkoAppState extends ConsumerState<CenkoApp> {
+class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver {
   bool? _lastOverlayDark;
+  bool _suppressOffline = false;
+  Timer? _suppressTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _suppressTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() => _suppressOffline = true);
+      _suppressTimer?.cancel();
+      _suppressTimer = Timer(const Duration(milliseconds: 7500), () {
+        if (mounted) setState(() => _suppressOffline = false);
+      });
+    }
+  }
 
   ThemeMode _themeModeFromSettings(String? mode) {
     switch (mode) {
@@ -46,6 +74,8 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
 
     _updateSystemUIOverlayIfNeeded(brightness);
 
+    final suppressOffline = _suppressOffline;
+
     return MaterialApp.router(
       title: kAppName,
       scaffoldMessengerKey: SnackBarService.scaffoldMessengerKey,
@@ -57,7 +87,8 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
       builder: (context, child) {
         return Consumer(
           builder: (context, ref, _) {
-            final isOffline = ref.watch(internetStatusProvider).maybeWhen(data: (v) => v == InternetStatus.disconnected, orElse: () => false);
+            final isOffline =
+                !suppressOffline && ref.watch(internetStatusProvider).maybeWhen(data: (v) => v == InternetStatus.disconnected, orElse: () => false);
             Widget childWidget = child ?? const SizedBox.shrink();
             if (isOffline) {
               final mq = MediaQuery.of(context);
@@ -69,7 +100,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
             return Column(
               mainAxisSize: MainAxisSize.max,
               children: [
-                const OfflineBanner(),
+                OfflineBanner(suppressOffline: suppressOffline),
                 Expanded(child: childWidget),
               ],
             );

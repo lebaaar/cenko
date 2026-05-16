@@ -6,13 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 class OfflineBanner extends ConsumerWidget {
-  const OfflineBanner({super.key});
+  const OfflineBanner({super.key, required this.suppressOffline});
+
+  final bool suppressOffline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(internetStatusProvider);
 
-    final isOffline = status.maybeWhen(data: (value) => value == InternetStatus.disconnected, orElse: () => false);
+    final isOffline = !suppressOffline && status.maybeWhen(data: (value) => value == InternetStatus.disconnected, orElse: () => false);
 
     if (!isOffline) {
       return const SizedBox.shrink();
@@ -31,7 +33,7 @@ class OfflineBanner extends ConsumerWidget {
               const Icon(Icons.wifi_off_rounded, color: AppColors.onError),
               const SizedBox(width: 10),
               Text(
-                'Waiting for connection',
+                'No internet connection',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onError, fontWeight: FontWeight.w600),
               ),
               AnimatedDots(
