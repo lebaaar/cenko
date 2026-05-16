@@ -23,8 +23,8 @@ class ShoppingListRepository {
 
     if (await isFreePlan(_firestore, uid)) {
       final countSnap = await _shoppingListItems(uid).count().get();
-      if ((countSnap.count ?? 0) >= maxNumberOfItemsPerList) {
-        throw Exception('You have reached the maximum of $maxNumberOfItemsPerList items in your shopping list');
+      if ((countSnap.count ?? 0) >= kMaxNumberOfItemsPerList) {
+        throw Exception('You have reached the maximum of $kMaxNumberOfItemsPerList items in your shopping list');
       }
     }
 

@@ -93,9 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 56),
 
                 // Hero
-                Text(appName, style: Theme.of(context).textTheme.displayMedium),
+                Text(kAppName, style: Theme.of(context).textTheme.displayMedium),
                 const SizedBox(height: 6),
-                Text(catchPhrase, style: Theme.of(context).textTheme.bodyMedium),
+                Text(kCatchPhrase, style: Theme.of(context).textTheme.bodyMedium),
 
                 const SizedBox(height: 52),
 

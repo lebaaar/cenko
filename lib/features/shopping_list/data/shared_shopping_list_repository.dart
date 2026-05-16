@@ -25,8 +25,8 @@ class SharedShoppingListRepository {
   Future<String> createList({required String ownerUid, required String ownerName, required String name}) async {
     if (await isFreePlan(_firestore, ownerUid)) {
       final existing = await getUserLists(ownerUid);
-      if (existing.length >= maxNumberOfShoppingLists) {
-        throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
+      if (existing.length >= kMaxNumberOfShoppingLists) {
+        throw Exception('You have reached the maximum of $kMaxNumberOfShoppingLists shopping lists');
       }
     }
 
@@ -74,15 +74,22 @@ class SharedShoppingListRepository {
     ).orderBy('added_at', descending: false).snapshots().map((snap) => snap.docs.map(ShoppingListItem.fromDoc).toList(growable: false));
   }
 
-  Future<void> addItem({required String listId, required String addedBy, required String name, int quantity = 1, String? unit, String? category}) async {
+  Future<void> addItem({
+    required String listId,
+    required String addedBy,
+    required String name,
+    int quantity = 1,
+    String? unit,
+    String? category,
+  }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
     if (await isFreePlan(_firestore, addedBy)) {
       final listDoc = await _lists.doc(listId).get();
       final itemCount = (listDoc.data()?['item_count'] as int?) ?? 0;
-      if (itemCount >= maxNumberOfItemsPerList) {
-        throw Exception('This list has reached the maximum of $maxNumberOfItemsPerList items');
+      if (itemCount >= kMaxNumberOfItemsPerList) {
+        throw Exception('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
       }
     }
 
@@ -108,7 +115,14 @@ class SharedShoppingListRepository {
     await batch.commit();
   }
 
-  Future<void> updateItem({required String listId, required String itemId, required String name, int? quantity, String? unit, String? category}) async {
+  Future<void> updateItem({
+    required String listId,
+    required String itemId,
+    required String name,
+    int? quantity,
+    String? unit,
+    String? category,
+  }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
@@ -244,22 +258,22 @@ class SharedShoppingListRepository {
       throw Exception('User is already a member of this list');
     }
 
-    if (members.length >= maxNumbberOfMembersPerSharedList) {
-      throw Exception('This list has reached the maximum of $maxNumbberOfMembersPerSharedList members');
+    if (members.length >= kMaxNumbberOfMembersPerSharedList) {
+      throw Exception('This list has reached the maximum of $kMaxNumbberOfMembersPerSharedList members');
     }
 
     final pendingInvitations = await getListPendingInvitations(listId);
-    if (members.length + pendingInvitations.length >= maxNumbberOfMembersPerSharedList) {
+    if (members.length + pendingInvitations.length >= kMaxNumbberOfMembersPerSharedList) {
       throw Exception(
-        'List has too many pending invitations - cancel some or wait for them to be accepted first (maximum is $maxNumbberOfMembersPerSharedList members per list)',
+        'List has too many pending invitations - cancel some or wait for them to be accepted first (maximum is $kMaxNumbberOfMembersPerSharedList members per list)',
       );
     }
 
     if (await isFreePlan(_firestore, invitedByUid)) {
       final invitorLists = await getUserLists(invitedByUid);
       final invitorSharedCount = invitorLists.where((l) => l.members.length > 1).length;
-      if (invitorSharedCount >= maxNumberOfSharedShoppingLists) {
-        throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+      if (invitorSharedCount >= kMaxNumberOfSharedShoppingLists) {
+        throw Exception('You have reached the maximum of $kMaxNumberOfSharedShoppingLists shared shopping lists');
       }
     }
 
@@ -306,12 +320,12 @@ class SharedShoppingListRepository {
   }) async {
     if (await isFreePlan(_firestore, uid)) {
       final userLists = await getUserLists(uid);
-      if (userLists.length >= maxNumberOfShoppingLists) {
-        throw Exception('You have reached the maximum of $maxNumberOfShoppingLists shopping lists');
+      if (userLists.length >= kMaxNumberOfShoppingLists) {
+        throw Exception('You have reached the maximum of $kMaxNumberOfShoppingLists shopping lists');
       }
       final sharedCount = userLists.where((l) => l.members.length > 1).length;
-      if (sharedCount >= maxNumberOfSharedShoppingLists) {
-        throw Exception('You have reached the maximum of $maxNumberOfSharedShoppingLists shared shopping lists');
+      if (sharedCount >= kMaxNumberOfSharedShoppingLists) {
+        throw Exception('You have reached the maximum of $kMaxNumberOfSharedShoppingLists shared shopping lists');
       }
     }
 

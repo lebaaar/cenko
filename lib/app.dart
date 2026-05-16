@@ -49,7 +49,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
     _updateSystemUIOverlayIfNeeded(brightness);
 
     return MaterialApp.router(
-      title: appName,
+      title: kAppName,
       scaffoldMessengerKey: SnackBarService.scaffoldMessengerKey,
       routerConfig: router,
       theme: AppTheme.light(),
@@ -59,10 +59,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
       builder: (context, child) {
         return Consumer(
           builder: (context, ref, _) {
-            final isOffline = ref.watch(internetStatusProvider).maybeWhen(
-              data: (v) => v == InternetStatus.disconnected,
-              orElse: () => false,
-            );
+            final isOffline = ref.watch(internetStatusProvider).maybeWhen(data: (v) => v == InternetStatus.disconnected, orElse: () => false);
             Widget childWidget = child ?? const SizedBox.shrink();
             if (isOffline) {
               final mq = MediaQuery.of(context);

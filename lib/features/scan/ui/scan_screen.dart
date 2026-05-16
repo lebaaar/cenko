@@ -126,7 +126,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   DateTime? _barcodeDetectionCooldownUntil;
   late final AnimationController _scanBarController;
 
-
   @override
   void initState() {
     super.initState();
@@ -137,7 +136,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _initializeMode();
     });
   }
-
 
   @override
   void dispose() {
@@ -281,10 +279,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _processingHint,
-                        style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
-                      ),
+                      Text(_processingHint, style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
                       AnimatedDots(style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
                     ],
                   ),
@@ -1558,7 +1553,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   static String _slovenianReceiptContext() {
-    final storeNames = slovenianGroceryStores.join(', ');
+    final storeNames = kSlovenianGroceryStores.join(', ');
     return 'This receipt is likely from Slovenia.'
         'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones.'
         'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) — DO NOT include these, even if present in the store name.'
@@ -1989,9 +1984,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     if (await isFreePlan(firestore, uid)) {
       final receiptCount = (await userRef.collection('receipts').count().get()).count ?? 0;
-      if (receiptCount >= maxNumberOfReceipts) {
+      if (receiptCount >= kMaxNumberOfReceipts) {
         throw Exception(
-          'You\'ve reached the limit of $maxNumberOfReceipts receipts. Please delete some old receipts in Profile page to add new ones.',
+          'You\'ve reached the limit of $kMaxNumberOfReceipts receipts. Please delete some old receipts in Profile page to add new ones.',
         );
       }
     }

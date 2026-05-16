@@ -59,7 +59,7 @@ class HomeScreen extends ConsumerWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const MainTopBar(title: appName),
+                    const MainTopBar(title: kAppName),
                     Text('${_greeting()}, $name', style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 12),
                     Text.rich(

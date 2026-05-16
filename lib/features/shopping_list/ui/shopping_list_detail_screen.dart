@@ -74,8 +74,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               padding: EdgeInsets.only(bottom: fabBottomInset),
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  if (currentUser?.plan == freePlan && list != null && list.itemCount >= maxNumberOfItemsPerList) {
-                    SnackBarService.show('This list has reached the maximum of $maxNumberOfItemsPerList items');
+                  if (currentUser?.plan == kFreePlanPlan && list != null && list.itemCount >= kMaxNumberOfItemsPerList) {
+                    SnackBarService.show('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
                     return;
                   }
                   _showAddActions(context, uid);
