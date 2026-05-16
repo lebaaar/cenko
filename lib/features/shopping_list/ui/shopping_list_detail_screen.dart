@@ -1049,6 +1049,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final item = sorted[index];
+                    Offset? pressPosition;
                     return Dismissible(
                       key: ValueKey(item.id),
                       direction: DismissDirection.endToStart,
@@ -1059,11 +1060,16 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                         decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
                         child: const Icon(Icons.delete_rounded, color: AppColors.onError),
                       ),
-                      child: _ShoppingItemTile(
-                        item: item,
-                        bestDeal: bestDealById[item.id],
-                        onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
-                        onEdit: () => widget.onEdit(item),
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (event) => pressPosition = event.position,
+                        child: _ShoppingItemTile(
+                          item: item,
+                          bestDeal: bestDealById[item.id],
+                          onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
+                          onEdit: () => widget.onEdit(item),
+                          onLongPress: () => _showItemContextMenu(context, item, pressPosition ?? Offset.zero),
+                        ),
                       ),
                     );
                   },
@@ -1093,6 +1099,38 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
     }
     return result;
   }
+
+  void _showItemContextMenu(BuildContext context, ShoppingListItem item, Offset globalPosition) {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final Size overlaySize = overlay?.size ?? MediaQuery.of(context).size;
+    final position = RelativeRect.fromLTRB(
+      globalPosition.dx,
+      globalPosition.dy,
+      overlaySize.width - globalPosition.dx,
+      overlaySize.height - globalPosition.dy,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<String>(
+          value: 'remove',
+          child: Row(
+            children: [
+              Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.error, size: 20),
+              const SizedBox(width: 12),
+              Text('Remove', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'remove') {
+        widget.onDelete(item);
+      }
+    });
+  }
 }
 
 const Map<String, IconData> _categoryIcons = {
@@ -1119,12 +1157,13 @@ const Map<String, IconData> _categoryIcons = {
 };
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit});
+  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit, this.onLongPress});
 
   final ShoppingListItem item;
   final CatalogDealItem? bestDeal;
   final ValueChanged<bool>? onToggleBought;
   final VoidCallback onEdit;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1132,32 +1171,38 @@ class _ShoppingItemTile extends StatelessWidget {
       context,
     ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.68));
 
-    return Container(
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onToggleBought == null ? null : () => onToggleBought!(!item.isBought),
-            child: Container(
-              width: 56,
-              height: 56,
-              alignment: Alignment.center,
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onEdit,
+        onLongPress: onLongPress,
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onToggleBought == null ? null : () => onToggleBought!(!item.isBought),
               child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  border: Border.all(color: item.isBought ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, width: 2),
-                  borderRadius: BorderRadius.circular(6),
-                  color: item.isBought ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                ),
+                width: 56,
+                height: 56,
                 alignment: Alignment.center,
-                child: item.isBought ? Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.onPrimary) : null,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: item.isBought ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    color: item.isBought ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                  ),
+                  alignment: Alignment.center,
+                  child: item.isBought ? Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.onPrimary) : null,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: onEdit,
+            Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Column(
@@ -1188,8 +1233,8 @@ class _ShoppingItemTile extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

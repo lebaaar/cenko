@@ -519,6 +519,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                   separatorBuilder: (_, _) => const SizedBox(height: 1),
                                                   itemBuilder: (context, index) {
                                                     final receipt = monthReceiptsPage.receipts[index];
+                                                    Offset? pressPosition;
                                                     return Dismissible(
                                                       key: ValueKey(receipt.id),
                                                       direction: DismissDirection.endToStart,
@@ -532,13 +533,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                         decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
                                                         child: const Icon(Icons.delete_rounded, color: AppColors.onError),
                                                       ),
-                                                      child: ClipRRect(
-                                                        borderRadius: BorderRadius.circular(16),
-                                                        child: _MonthReceiptTile(
-                                                          storeName: receipt.storeName,
-                                                          dateLabel: displayDate(receipt.date),
-                                                          totalLabel: formatCents(receipt.totalPriceCents),
-                                                          itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                      child: Listener(
+                                                        behavior: HitTestBehavior.translucent,
+                                                        onPointerDown: (event) => pressPosition = event.position,
+                                                        child: ClipRRect(
+                                                          borderRadius: BorderRadius.circular(16),
+                                                          child: _MonthReceiptTile(
+                                                            storeName: receipt.storeName,
+                                                            dateLabel: displayDate(receipt.date),
+                                                            totalLabel: formatCents(receipt.totalPriceCents),
+                                                            itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                            onLongPress: () =>
+                                                                _showReceiptContextMenu(context, user.userId, receipt, pressPosition ?? Offset.zero),
+                                                          ),
                                                         ),
                                                       ),
                                                     );
@@ -721,6 +728,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return shouldDelete == true;
   }
+
+  void _showReceiptContextMenu(BuildContext context, String uid, _MonthReceiptItem receipt, Offset globalPosition) {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final Size overlaySize = overlay?.size ?? MediaQuery.of(context).size;
+    final position = RelativeRect.fromLTRB(
+      globalPosition.dx,
+      globalPosition.dy,
+      overlaySize.width - globalPosition.dx,
+      overlaySize.height - globalPosition.dy,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<String>(
+          value: 'remove',
+          child: Row(
+            children: [
+              Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.error, size: 20),
+              const SizedBox(width: 12),
+              Text('Remove', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'remove') {
+        _confirmDeleteReceipt(context: context, uid: uid, receipt: receipt);
+      }
+    });
+  }
 }
 
 class _StoreSpendRow extends StatelessWidget {
@@ -774,66 +813,74 @@ class _StoreSpendRow extends StatelessWidget {
 }
 
 class _MonthReceiptTile extends StatelessWidget {
-  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel});
+  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel, this.onLongPress});
 
   final String storeName;
   final String dateLabel;
   final String totalLabel;
   final String itemLabel;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
-      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final trailingPriceWidth = (constraints.maxWidth * 0.26).clamp(78.0, 116.0);
+    return Material(
+      color: colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: onLongPress,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final trailingPriceWidth = (constraints.maxWidth * 0.26).clamp(78.0, 116.0);
 
-          return Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$dateLabel · $itemLabel',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: SizedBox(
-                  width: trailingPriceWidth,
-                  child: Text(
-                    totalLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              return Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
                   ),
-                ),
-              ),
-            ],
-          );
-        },
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(storeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$dateLabel · $itemLabel',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: SizedBox(
+                      width: trailingPriceWidth,
+                      child: Text(
+                        totalLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
