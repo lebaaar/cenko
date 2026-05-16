@@ -6,6 +6,10 @@ import 'app_theme.dart';
 import 'core/constants/constants.dart';
 import 'router.dart';
 import 'shared/providers/current_user_provider.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+
+import 'shared/providers/internet_status_provider.dart';
+import 'shared/widgets/offline_banner.dart';
 
 class CenkoApp extends ConsumerStatefulWidget {
   const CenkoApp({super.key});
@@ -50,6 +54,31 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final isOffline = ref.watch(internetStatusProvider).maybeWhen(
+              data: (v) => v == InternetStatus.disconnected,
+              orElse: () => false,
+            );
+            Widget childWidget = child ?? const SizedBox.shrink();
+            if (isOffline) {
+              final mq = MediaQuery.of(context);
+              childWidget = MediaQuery(
+                data: mq.copyWith(padding: mq.padding.copyWith(top: 0)),
+                child: childWidget,
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                const OfflineBanner(),
+                Expanded(child: childWidget),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

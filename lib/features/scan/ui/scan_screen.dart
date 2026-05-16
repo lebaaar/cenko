@@ -27,6 +27,7 @@ import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
 import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stub.dart'
     if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
     as receipt_ocr;
+import 'package:cenko/shared/widgets/animated_dots.dart';
 
 const _processingHints = <String>['Reading receipt', 'Processing receipt', 'Extracting items and prices', 'Almost done'];
 
@@ -125,7 +126,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Map<String, dynamic>? _barcodeProduct;
   DateTime? _barcodeDetectionCooldownUntil;
   late final AnimationController _scanBarController;
-  int _processingHintDots = 1;
+
 
   @override
   void initState() {
@@ -287,10 +288,16 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 if (_receiptFlowState == _ReceiptFlowState.processing) ...[
                   const SizedBox(width: 72, height: 72, child: CircularProgressIndicator(strokeWidth: 3)),
                   const SizedBox(height: 20),
-                  Text(
-                    _processingHintWithDots(),
-                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _processingHint,
+                        style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+                      ),
+                      AnimatedDots(style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+                    ],
                   ),
                 ],
                 if (_receiptFlowState == _ReceiptFlowState.failure) ...[
@@ -1795,7 +1802,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     setState(() {
       _processingHintIndex = 0;
       _processingHint = _processingHints[_processingHintIndex];
-      _processingHintDots = 1;
     });
     var tick = 0;
     _processingHintTimer = Timer.periodic(const Duration(milliseconds: 450), (_) {
@@ -1803,7 +1809,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
       setState(() {
-        _processingHintDots = _processingHintDots == 3 ? 1 : _processingHintDots + 1;
         tick += 1;
         if (tick % 7 == 0 && _processingHintIndex < _processingHints.length - 1) {
           _processingHintIndex += 1;
@@ -1811,11 +1816,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         }
       });
     });
-  }
-
-  String _processingHintWithDots() {
-    final base = _processingHint.replaceAll(RegExp(r'\.+$'), '');
-    return '$base${'.' * _processingHintDots}';
   }
 
   bool _isAnyProcessingFlowActive() {

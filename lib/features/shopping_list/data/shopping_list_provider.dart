@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/internet_status_provider.dart';
 import 'shared_shopping_list_repository.dart';
 import 'shopping_list.dart';
 import 'shopping_list_invitation.dart';
@@ -10,22 +11,27 @@ final sharedShoppingListRepositoryProvider = Provider<SharedShoppingListReposito
 });
 
 final userShoppingListsProvider = StreamProvider.family<List<ShoppingList>, String>((ref, uid) {
+  ref.watch(internetStatusProvider);
   return ref.watch(sharedShoppingListRepositoryProvider).watchUserLists(uid);
 });
 
 final shoppingListProvider = StreamProvider.family<ShoppingList?, String>((ref, listId) {
+  ref.watch(internetStatusProvider);
   return ref.watch(sharedShoppingListRepositoryProvider).watchList(listId);
 });
 
 final shoppingListItemsProvider = StreamProvider.family<List<ShoppingListItem>, String>((ref, listId) {
+  ref.watch(internetStatusProvider);
   return ref.watch(sharedShoppingListRepositoryProvider).watchItems(listId);
 });
 
 final pendingInvitationsProvider = StreamProvider.family<List<ShoppingListInvitation>, String>((ref, email) {
+  ref.watch(internetStatusProvider);
   return ref.watch(sharedShoppingListRepositoryProvider).watchPendingInvitations(email);
 });
 
 final listPendingInvitationsProvider = StreamProvider.family<List<ShoppingListInvitation>, String>((ref, listId) {
+  ref.watch(internetStatusProvider);
   return ref.watch(sharedShoppingListRepositoryProvider).watchListPendingInvitations(listId);
 });
 
