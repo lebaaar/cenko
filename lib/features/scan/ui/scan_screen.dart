@@ -1518,6 +1518,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   String _buildReceiptExtractionPrompt({required String ocrText}) {
     return 'You are given OCR text extracted locally from a receipt photo. '
         '${_slovenianReceiptContext()}'
+        'The OCR is local and not 100% accurate: characters may be misread (for example O/0, I/1, B/8, ]/I), spaces can be misplaced, and some letters can be missing. '
+        'Treat the OCR as noisy input and infer the most likely intended wording using line-level context, prices, quantities, and common receipt patterns. '
+        'The text is expected to be Slovenian around 90% of the time, so prefer Slovenian words and Slovenian store/item naming when resolving obvious OCR mistakes (for example "B]0 LIMONE" likely means "BIO LIMONE"). '
+        'Correct only when the intent is clear from context; if uncertain, keep the closest readable token and do not hallucinate. '
         'Use the meaning of that OCR text to extract receipt data and return JSON only in this exact DB-ready structure: '
         '{"decision": {"is_receipt": boolean, "reason": string}, "receipt": {...}, "items": [...]} where fields are: '
         'decision.is_receipt (true only if the OCR text clearly represents a receipt), '
@@ -1540,10 +1544,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   static String _slovenianReceiptContext() {
     final storeNames = kSlovenianGroceryStores.join(', ');
-    return 'This receipt is likely from Slovenia.'
-        'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones.'
-        'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) — DO NOT include these, even if present in the store name.'
-        'Key Slovenian receipt terms: SKUPAJ/ZA PLAČILO = total, DDV = VAT, ZNESEK = amount, BLAGAJNA = cashier/register, GOTOVINA = cash, KARTICA = card, DATUM = date, CENA = price, KOS/KOLIČINA/KOM = piece/unit, PLAČILO = payment';
+    return 'This receipt is likely from Slovenia. '
+        'Known Slovenian retail chains: $storeNames. This list does not include all stores but it does include the most common/big ones. '
+        'Slovenian company legal suffixes: d.o.o. (limited liability), d.d. (joint-stock) - DO NOT include these, even if present in the store name. '
+        'Key Slovenian receipt terms: SKUPAJ/ZA PLACILO = total, DDV = VAT, ZNESEK = amount, BLAGAJNA = cashier/register, GOTOVINA = cash, KARTICA = card, DATUM = date, CENA = price, KOS/KOLICINA/KOM = piece/unit, PLACILO = payment. ';
   }
 
   List<Content> _buildReceiptImageExtractionPrompt({required Uint8List imageBytes, required String mimeType}) {
@@ -1551,6 +1555,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       Content.text(
         'Extract receipt data from the provided receipt image and return JSON only in this exact DB-ready structure: '
         '${_slovenianReceiptContext()}'
+        'The text you extract from this image is local OCR and can be noisy or partially wrong. '
+        'Assume OCR errors are common and use receipt context to restore likely intended words and numbers. '
+        'The receipt language is expected to be Slovenian around 90% of the time, so prefer Slovenian corrections when text is ambiguous. '
+        'Correct only clear OCR mistakes; if uncertain, keep the closest readable token and avoid inventing values. '
         '{"decision": {"is_receipt": boolean, "reason": string}, "receipt": {...}, "items": [...]} where fields are: '
         'decision.is_receipt (true only if the image clearly represents a receipt), '
         'decision.reason (short explanation when the image is not a receipt or is too ambiguous), '
