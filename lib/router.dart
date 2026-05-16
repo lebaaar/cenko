@@ -8,6 +8,7 @@ import 'package:cenko/features/deals/ui/deals_screen.dart';
 import 'package:cenko/features/home/ui/home_screen.dart';
 import 'package:cenko/features/legal/ui/legal_screen.dart';
 import 'package:cenko/features/profile/ui/profile_screen.dart';
+import 'package:cenko/features/receipt/ui/receipt_detail_screen.dart';
 import 'package:cenko/features/scan/ui/scan_screen.dart';
 import 'package:cenko/features/settings/ui/settings_screen.dart';
 import 'package:cenko/features/shopping_list/ui/shopping_list_detail_screen.dart';
@@ -72,6 +73,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/receipt/:receiptId',
+        builder: (context, state) => ReceiptDetailScreen(receiptId: state.pathParameters['receiptId']!),
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),

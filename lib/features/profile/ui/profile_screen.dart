@@ -543,6 +543,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                             dateLabel: displayDate(receipt.date),
                                                             totalLabel: formatCents(receipt.totalPriceCents),
                                                             itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                            onTap: () => context.push('/receipt/${receipt.id}'),
                                                             onLongPress: () =>
                                                                 _showReceiptContextMenu(context, user.userId, receipt, pressPosition ?? Offset.zero),
                                                           ),
@@ -813,12 +814,13 @@ class _StoreSpendRow extends StatelessWidget {
 }
 
 class _MonthReceiptTile extends StatelessWidget {
-  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel, this.onLongPress});
+  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel, this.onTap, this.onLongPress});
 
   final String storeName;
   final String dateLabel;
   final String totalLabel;
   final String itemLabel;
+  final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
   @override
@@ -830,6 +832,7 @@ class _MonthReceiptTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
