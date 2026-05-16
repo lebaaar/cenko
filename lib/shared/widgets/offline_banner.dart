@@ -1,3 +1,4 @@
+import 'package:cenko/app_theme.dart';
 import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:cenko/shared/widgets/animated_dots.dart';
 import 'package:flutter/material.dart';
@@ -17,10 +18,8 @@ class OfflineBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Material(
-      color: colorScheme.errorContainer,
+      color: AppColors.error,
       child: SafeArea(
         bottom: false,
         child: Container(
@@ -29,14 +28,14 @@ class OfflineBanner extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off_rounded, color: colorScheme.onErrorContainer),
+              const Icon(Icons.wifi_off_rounded, color: AppColors.onError),
               const SizedBox(width: 10),
               Text(
                 'Waiting for connection',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onError, fontWeight: FontWeight.w600),
               ),
               AnimatedDots(
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onError, fontWeight: FontWeight.w600),
               ),
             ],
           ),
