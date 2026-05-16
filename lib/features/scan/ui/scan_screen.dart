@@ -1539,6 +1539,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'items[].total_price (integer cents). '
         'If the OCR text does not represent a receipt, set decision.is_receipt to false, explain briefly in decision.reason, and keep receipt/item values empty or zeroed rather than inventing data. '
         'All prices must be cents as integers. '
+        'IMPORTANT: receipt.total_price must equal the sum of all items[].total_price — verify this before returning. '
         'OCR text:\n$ocrText';
   }
 
@@ -1574,7 +1575,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         'items[].quantity (number), '
         'items[].total_price (integer cents). '
         'If the image does not represent a receipt, set decision.is_receipt to false, explain briefly in decision.reason, and keep receipt/item values empty or zeroed rather than inventing data. '
-        'All prices must be cents as integers',
+        'All prices must be cents as integers. '
+        'IMPORTANT: receipt.total_price must equal the sum of all items[].total_price — verify this before returning.',
       ),
       Content.inlineData(mimeType, imageBytes),
     ];
@@ -2165,10 +2167,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       });
     }
 
+    final itemsTotal = normalizedItems.fold<int>(0, (acc, item) => acc + _asInt(item['total_price']));
+
     final normalizedReceipt = <String, dynamic>{
       'receipt_id': _asString(receiptRaw['receipt_id'], fallback: '__AUTO_ID__'),
       'store_name': _asString(receiptRaw['store_name'], fallback: 'Unknown store'),
-      'total_price': _asInt(receiptRaw['total_price']),
+      'total_price': itemsTotal,
       'item_count': _asInt(receiptRaw['item_count'], fallback: normalizedItems.length),
       'raw_ocr': _asString(receiptRaw['raw_ocr'], fallback: fallbackRawOcr),
       'date': _asString(receiptRaw['date'], fallback: DateTime.now().toUtc().toIso8601String()),

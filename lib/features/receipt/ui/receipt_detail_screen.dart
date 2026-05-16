@@ -80,7 +80,7 @@ class ReceiptDetailScreen extends ConsumerWidget {
               children: [
                 _ReceiptHeaderCard(storeName: storeName, date: date, totalPriceCents: totalPriceCents),
                 const SizedBox(height: 12),
-                _ItemsCard(itemsAsync: itemsAsync),
+                _ItemsCard(itemsAsync: itemsAsync, uid: uid, receiptId: receiptId),
               ],
             ),
           ),
@@ -174,9 +174,11 @@ class _ReceiptHeaderCard extends StatelessWidget {
 }
 
 class _ItemsCard extends StatelessWidget {
-  const _ItemsCard({required this.itemsAsync});
+  const _ItemsCard({required this.itemsAsync, required this.uid, required this.receiptId});
 
   final AsyncValue<QuerySnapshot<Map<String, dynamic>>> itemsAsync;
+  final String uid;
+  final String receiptId;
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +214,12 @@ class _ItemsCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 for (int i = 0; i < items.length; i++) ...[
                   if (i > 0) Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.15), height: 1),
-                  _ItemRow(data: items[i].data()),
+                  _ItemRow(
+                    itemId: items[i].id,
+                    data: items[i].data(),
+                    uid: uid,
+                    receiptId: receiptId,
+                  ),
                 ],
               ],
             ],
@@ -224,9 +231,12 @@ class _ItemsCard extends StatelessWidget {
 }
 
 class _ItemRow extends StatelessWidget {
-  const _ItemRow({required this.data});
+  const _ItemRow({required this.itemId, required this.data, required this.uid, required this.receiptId});
 
+  final String itemId;
   final Map<String, dynamic> data;
+  final String uid;
+  final String receiptId;
 
   @override
   Widget build(BuildContext context) {
@@ -241,34 +251,222 @@ class _ItemRow extends StatelessWidget {
 
     final isWholeNumber = quantity == quantity.truncateToDouble();
     final qtyStr = isWholeNumber ? quantity.toInt().toString() : quantity.toStringAsFixed(2);
-    final showQtyLine = quantity != 1.0 || unitPriceCents != totalPriceCents;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 11),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.titleSmall),
-                if (showQtyLine) ...[
+    return InkWell(
+      onTap: () => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (_) => _EditItemSheet(
+          uid: uid,
+          receiptId: receiptId,
+          itemId: itemId,
+          name: name,
+          unitPriceCents: unitPriceCents,
+          quantity: quantity,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 2),
                   Text(
                     '$qtyStr × ${formatCents(unitPriceCents)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            formatCents(totalPriceCents),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Text(
+              formatCents(totalPriceCents),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditItemSheet extends StatefulWidget {
+  const _EditItemSheet({
+    required this.uid,
+    required this.receiptId,
+    required this.itemId,
+    required this.name,
+    required this.unitPriceCents,
+    required this.quantity,
+  });
+
+  final String uid;
+  final String receiptId;
+  final String itemId;
+  final String name;
+  final int unitPriceCents;
+  final double quantity;
+
+  @override
+  State<_EditItemSheet> createState() => _EditItemSheetState();
+}
+
+class _EditItemSheetState extends State<_EditItemSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _priceCtrl;
+  late final TextEditingController _qtyCtrl;
+  bool _saving = false;
+  String? _formError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.name);
+    _priceCtrl = TextEditingController(text: _centsToString(widget.unitPriceCents));
+    _qtyCtrl = TextEditingController(text: _qtyToString(widget.quantity));
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
+
+  String _centsToString(int cents) => (cents / 100).toStringAsFixed(2);
+
+  String _qtyToString(double qty) => qty == qty.truncateToDouble() ? qty.toInt().toString() : qty.toStringAsFixed(2);
+
+  int _parseCents(String s) {
+    final v = double.tryParse(s.replaceAll(',', '.')) ?? 0;
+    return (v * 100).round();
+  }
+
+  double _parseQty(String s) => double.tryParse(s.replaceAll(',', '.')) ?? widget.quantity;
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _saving = true;
+      _formError = null;
+    });
+
+    final name = _nameCtrl.text.trim();
+    final unitPriceCents = _parseCents(_priceCtrl.text);
+    final quantity = widget.quantity > 1 ? _parseQty(_qtyCtrl.text) : widget.quantity;
+    final totalPriceCents = (quantity * unitPriceCents).round();
+
+    final itemRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.uid)
+        .collection('receipts')
+        .doc(widget.receiptId)
+        .collection('items')
+        .doc(widget.itemId);
+
+    final receiptRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.uid)
+        .collection('receipts')
+        .doc(widget.receiptId);
+
+    try {
+      await itemRef.update({'name': name, 'unit_price': unitPriceCents, 'quantity': quantity, 'total_price': totalPriceCents});
+
+      final itemsSnap = await receiptRef.collection('items').get();
+      final newReceiptTotal = itemsSnap.docs.fold<int>(0, (acc, doc) {
+        final price = doc.data()['total_price'];
+        return acc + (price is int ? price : 0);
+      });
+      await receiptRef.update({'total_price': newReceiptTotal});
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _formError = 'Failed to save: ${e.toString().replaceFirst('Exception: ', '')}';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.viewPaddingOf(context).bottom + 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Edit item', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text('Update item details', style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            if (_formError != null) ...[
+              Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              const SizedBox(height: 12),
+            ],
+            TextFormField(
+              controller: _nameCtrl,
+              autofocus: true,
+              textInputAction: TextInputAction.next,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Item name'),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Item name is required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _priceCtrl,
+              textInputAction: widget.quantity > 1 ? TextInputAction.next : TextInputAction.done,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Unit price (€)'),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Price is required';
+                if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Invalid price';
+                return null;
+              },
+            ),
+            if (widget.quantity > 1) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _qtyCtrl,
+                textInputAction: TextInputAction.done,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Quantity'),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Quantity is required';
+                  if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Invalid quantity';
+                  return null;
+                },
+              ),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Save changes'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
