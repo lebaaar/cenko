@@ -26,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmCtrl = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _agreedToTerms = false;
   bool _loading = false;
   String? _error;
 
@@ -60,6 +61,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_agreedToTerms) {
+      setState(() => _error = 'You must agree to the terms and conditions before creating an account.');
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -156,6 +161,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       validator: (v) => v != _passwordCtrl.text ? 'Passwords do not match' : null,
                     ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Checkbox(value: _agreedToTerms, onChanged: (value) => setState(() => _agreedToTerms = value ?? false)),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text('I agree to the ', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
+                                  GestureDetector(
+                                    onTap: () => context.push('/legal'),
+                                    child: Text(
+                                      'terms and conditions',
+                                      style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -167,7 +201,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 32),
 
               // CTA
-              LargeButton(label: 'Create account', onPressed: _loading ? null : _submit, loading: _loading),
+              LargeButton(label: 'Create account', onPressed: _loading || !_agreedToTerms ? null : _submit, loading: _loading),
               const SizedBox(height: 16),
               const OrDivider(),
               const SizedBox(height: 16),

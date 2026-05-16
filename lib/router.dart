@@ -6,6 +6,7 @@ import 'package:cenko/features/auth/ui/login_screen.dart';
 import 'package:cenko/features/auth/ui/register_screen.dart';
 import 'package:cenko/features/deals/ui/deals_screen.dart';
 import 'package:cenko/features/home/ui/home_screen.dart';
+import 'package:cenko/features/legal/ui/legal_screen.dart';
 import 'package:cenko/features/profile/ui/profile_screen.dart';
 import 'package:cenko/features/scan/ui/scan_screen.dart';
 import 'package:cenko/features/settings/ui/settings_screen.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 const _authPaths = {'/login', '/register', '/forgot-password'};
+const _publicPaths = {'/login', '/register', '/forgot-password', '/legal', '/contact'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider);
@@ -32,8 +34,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = authState.value != null;
       final isOnAuth = _authPaths.contains(state.matchedLocation);
+      final isOnPublic = _publicPaths.contains(state.matchedLocation);
 
-      if (!isAuthenticated && !isOnAuth) return '/login';
+      if (!isAuthenticated && !isOnAuth && !isOnPublic) return '/login';
       if (isAuthenticated && isOnAuth) return '/home';
       return null;
     },
@@ -72,6 +75,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
+      GoRoute(path: '/legal', builder: (context, state) => const LegalScreen()),
       GoRoute(
         path: '/contact',
         builder: (context, state) => ContactScreen(initialType: state.extra as ContactType?),

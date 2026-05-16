@@ -79,13 +79,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final colors = Theme.of(context).colorScheme;
+    final minHeight = (size.height - 80).clamp(0.0, double.infinity);
     return Scaffold(
       backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: size.height - 80),
+            constraints: BoxConstraints(minHeight: minHeight),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
