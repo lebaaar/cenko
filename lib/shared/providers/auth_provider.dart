@@ -1,3 +1,4 @@
+import 'package:cenko/core/utils/user_util.dart';
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
@@ -40,21 +41,10 @@ class AuthNotifier extends ChangeNotifier {
     final userName = name?.trim().isNotEmpty == true ? name!.trim() : _fallbackName(user);
 
     await _userRepo.saveUser(
-      UserModel(
-        userId: user.uid,
-        name: userName,
-        email: user.email ?? '',
-        createdAt: DateTime.now(),
-        authProvider: authProvider,
-        googleId: googleId,
-      ),
+      UserModel(userId: user.uid, name: userName, email: user.email ?? '', createdAt: DateTime.now(), authProvider: authProvider, googleId: googleId),
     );
 
-    await _shoppingListRepo.createList(
-      ownerUid: user.uid,
-      ownerName: userName,
-      name: 'My Shopping List',
-    );
+    await _shoppingListRepo.createList(ownerUid: user.uid, ownerName: userName, name: 'My Shopping List');
   }
 
   Future<void> signInWithEmail(String email, String password) async {
@@ -86,6 +76,7 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    clearPlanCache();
     await Future.wait([_auth.signOut(), GoogleSignIn.instance.signOut()]);
   }
 
@@ -95,6 +86,7 @@ class AuthNotifier extends ChangeNotifier {
 
     final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('deleteMyAccount');
     await callable.call();
+    clearPlanCache();
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
   }
