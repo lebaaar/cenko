@@ -27,6 +27,7 @@ import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
 import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stub.dart'
     if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
     as receipt_ocr;
+import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/animated_dots.dart';
 
 const _processingHints = <String>['Reading receipt', 'Processing receipt', 'Extracting items and prices', 'Almost done'];
@@ -53,8 +54,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final CatalogDealsRepository _catalogDealsRepository = CatalogDealsRepository();
   final DealTextMatcherService _dealTextMatcherService = const DealTextMatcherService();
   final ReceiptAiService _receiptAiService = const ReceiptAiService();
-  ScaffoldMessengerState? _scaffoldMessenger;
-
   CameraController? _receiptCamera;
   List<CameraDescription> _cameras = <CameraDescription>[];
   int _receiptCameraIndex = 0;
@@ -139,11 +138,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-  }
 
   @override
   void dispose() {
@@ -152,12 +146,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _controller.dispose();
     _receiptCamera?.dispose();
     _receiptTextRecognizer.close();
-    _scaffoldMessenger = null;
     super.dispose();
-  }
-
-  void _showSnackBar(SnackBar snackBar) {
-    _scaffoldMessenger?.showSnackBar(snackBar);
   }
 
   @override
@@ -901,7 +890,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     final lists = await _shoppingListRepository.getUserLists(uid);
     if (lists.isEmpty) {
       if (mounted) {
-        _showSnackBar(const SnackBar(content: Text('No shopping lists found. Create one first.')));
+        SnackBarService.show('No shopping lists found. Create one first.');
       }
       return null;
     }
@@ -986,7 +975,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
       final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'Failed to add product to shopping list. Please try again';
-      _showSnackBar(SnackBar(content: Text(msg)));
+      SnackBarService.show(msg);
     }
   }
 
@@ -1218,7 +1207,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     if (_mode == _ScanMode.barcode) {
       _handleBarcodeDetection(capture);
     } else {
-      _showSnackBar(const SnackBar(content: Text('Receipt captured. Cloud parsing is next')));
+      SnackBarService.show('Receipt captured. Cloud parsing is next');
       Future<void>.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) {
           return;
@@ -1329,7 +1318,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     }
 
     if (capture == null || capture.barcodes.isEmpty) {
-      _showSnackBar(const SnackBar(content: Text('No barcode detected in selected image')));
+      SnackBarService.show('No barcode detected in selected image');
       return;
     }
 

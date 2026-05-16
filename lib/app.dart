@@ -6,6 +6,7 @@ import 'app_theme.dart';
 import 'core/constants/constants.dart';
 import 'router.dart';
 import 'shared/providers/current_user_provider.dart';
+import 'shared/services/snack_bar_service.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 import 'shared/providers/internet_status_provider.dart';
@@ -49,6 +50,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> {
 
     return MaterialApp.router(
       title: appName,
+      scaffoldMessengerKey: SnackBarService.scaffoldMessengerKey,
       routerConfig: router,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

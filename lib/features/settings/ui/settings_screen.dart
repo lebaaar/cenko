@@ -9,6 +9,7 @@ import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -190,11 +191,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
       setState(() => _error = null);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 5),
-          content: Text('Password reset email has been sent to $email. Check your inbox and spam folder'),
-        ),
+      SnackBarService.show(
+        'Password reset email has been sent to $email. Check your inbox and spam folder',
+        duration: const Duration(seconds: 5),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;

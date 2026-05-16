@@ -7,6 +7,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart'
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
@@ -444,7 +445,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+        SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       widget.onAcceptingChanged(false);

@@ -31,3 +31,6 @@ const List<String> slovenianGroceryStores = [
   'OMV',
   'Mol',
 ];
+
+// UI
+const int kSnackBarDurationSeconds = 4;

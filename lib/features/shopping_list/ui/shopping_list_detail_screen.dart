@@ -13,6 +13,7 @@ import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
 
 class SharedShoppingListScreen extends ConsumerStatefulWidget {
   const SharedShoppingListScreen({super.key, required this.listId});
@@ -64,7 +65,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final bottomNavHeight = (88 * textScale.clamp(1.0, 1.2)).toDouble();
-    final fabBottomInset = MediaQuery.viewPaddingOf(context).bottom + bottomNavHeight + 30;
+    final fabBottomInset = MediaQuery.viewPaddingOf(context).bottom + bottomNavHeight + 45;
 
     return Scaffold(
       floatingActionButton: uid == null
@@ -74,9 +75,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               child: FloatingActionButton.extended(
                 onPressed: () {
                   if (currentUser?.plan == freePlan && list != null && list.itemCount >= maxNumberOfItemsPerList) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('This list has reached the maximum of $maxNumberOfItemsPerList items')));
+                    SnackBarService.show('This list has reached the maximum of $maxNumberOfItemsPerList items');
                     return;
                   }
                   _showAddActions(context, uid);
@@ -407,9 +406,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to delete item: ${e.toString().replaceFirst('Exception: ', '')}')),
-                                        );
+                                        SnackBarService.show('Failed to delete item: ${e.toString().replaceFirst('Exception: ', '')}');
                                       }
                                     },
                               child: deleting
@@ -437,7 +434,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}')));
+      SnackBarService.show('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => _updatingBought = false);
     }
@@ -560,7 +557,6 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 inviting = true;
                 error = null;
               });
-              final messenger = ScaffoldMessenger.of(context);
               ref
                   .read(sharedShoppingListRepositoryProvider)
                   .inviteByEmail(
@@ -572,7 +568,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   )
                   .then((_) {
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                    messenger.showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
+                    SnackBarService.show('Invitation sent to $email');
                   })
                   .catchError((e) {
                     if (mounted) {
@@ -691,7 +687,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
                                 }
                               }
                             },
@@ -701,7 +697,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
                                 }
                               }
                             },
@@ -724,7 +720,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 setDialogState(() => pendingInvitations.remove(inv));
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
                                 }
                               }
                             },
@@ -840,7 +836,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       context.go('/list');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to $action list: ${e.toString().replaceFirst('Exception: ', '')}')));
+      SnackBarService.show('Failed to $action list: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
 }

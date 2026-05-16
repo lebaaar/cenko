@@ -7,6 +7,7 @@ import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 
 class DealsScreen extends ConsumerStatefulWidget {
@@ -361,7 +362,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
     final lists = ref.read(userShoppingListsProvider(uid)).asData?.value ?? [];
     if (lists.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No shopping lists found. Create one first.')));
+      SnackBarService.show('No shopping lists found. Create one first.');
       return;
     }
 
@@ -419,7 +420,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to add item to shopping list')));
+      SnackBarService.show('Failed to add item to shopping list');
     } finally {
       if (mounted) setState(() => _addingDealIds.remove(key));
     }
@@ -592,15 +593,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             isAlreadyOnShoppingList: alreadyOnShoppingList,
                             onAddToShoppingList: () {
                               if (alreadyOnShoppingList) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(const SnackBar(content: Text('This item is already on your shopping list')));
+                                SnackBarService.show('This item is already on your shopping list');
                                 return;
                               }
                               if (uid == null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(const SnackBar(content: Text('Sign in to add items to your shopping list')));
+                                SnackBarService.show('Sign in to add items to your shopping list');
                                 return;
                               }
                               _addDealToShoppingList(deal: deal, uid: uid);

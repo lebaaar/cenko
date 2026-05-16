@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/receipt_analytics_service.dart';
+import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:go_router/go_router.dart';
 
@@ -724,16 +725,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           return;
                                         }
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt deleted')));
+                                          SnackBarService.show('Receipt deleted');
                                         }
                                       } catch (error) {
                                         if (!dialogContext.mounted) {
                                           return;
                                         }
                                         setDialogState(() => deleting = false);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to delete receipt: ${error.toString().replaceFirst('Exception: ', '')}')),
-                                        );
+                                        SnackBarService.show('Failed to delete receipt: ${error.toString().replaceFirst('Exception: ', '')}');
                                       }
                                     },
                               child: deleting
