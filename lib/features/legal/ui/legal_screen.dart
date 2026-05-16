@@ -192,7 +192,11 @@ class LegalScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.tonal(onPressed: () => context.push('/contact'), child: const Text('Contact us')),
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/contact'),
+                      style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                      label: const Text('Contact us'),
+                    ),
                   ),
                 ],
               ),
