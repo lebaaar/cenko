@@ -40,6 +40,11 @@ const String kKofiUrl = 'https://ko-fi.com/lebaaar';
 const String kGitHubUrl = 'https://github.com/lebaaar/cenko';
 const String kGooglePlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.lebaaar.cenko';
 
+// barcode lookup endpoints
+const String kOpenFoodFactsProductUrl = 'https://world.openfoodfacts.net/api/v2/product/';
+const String kUpcItemDbLookupUrl = 'https://api.upcitemdb.com/prod/trial/lookup?upc=';
+const String kGtinSearchItemUrl = 'https://www.gtinsearch.org/api/items/';
+
 // legal
 final DateTime kLegalLastUpdated = DateTime(2026, 5, 16);
 const String kContactEmail = 'lanlebar6@gmail.com';

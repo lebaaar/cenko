@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
+
 import 'package:camera/camera.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/user_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/scan/data/barcode_service.dart';
 import 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_stub.dart'
     if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/image_enhancer_io.dart'
     as image_enhancer;
@@ -25,7 +27,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -1226,7 +1227,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         _barcodeFlowState = _BarcodeFlowState.processing;
       });
       HapticFeedback.lightImpact();
-      final lookup = await _lookupBarcodeProduct(detectedCode);
+      final lookup = await BarcodeService.lookupBarcodeProduct(detectedCode);
       if (!mounted) {
         return;
       }
@@ -1275,21 +1276,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     return null;
   }
 
-  Future<Map<String, dynamic>> _lookupBarcodeProduct(String barcode) async {
-    final uri = Uri.parse('https://world.openfoodfacts.net/api/v2/product/$barcode.json');
-    final response = await http.get(uri);
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Unexpected product response format');
-    }
-
-    if (response.statusCode != 200 && response.statusCode != 404) {
-      throw StateError('Open Food Facts request failed (${response.statusCode})');
-    }
-
-    return decoded;
-  }
+  // Barcode lookup moved to BarcodeService in lib/features/scan/data/barcode_service.dart
 
   Future<void> _pickFromGallery() async {
     if (_receiptFlowState == _ReceiptFlowState.processing) {
