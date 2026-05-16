@@ -12,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class _MonthReceiptQuery {
-  const _MonthReceiptQuery({required this.uid, required this.month, required this.limit});
+  const _MonthReceiptQuery({required this.uid, required this.month, this.limit = 20});
 
   final String uid;
   final DateTime month;
@@ -28,7 +28,7 @@ class _MonthReceiptQuery {
   }
 
   @override
-  int get hashCode => Object.hash(uid, month.year, month.month, limit);
+  int get hashCode => Object.hash(uid, month.year, month.month);
 }
 
 class _StoreMonthSpend {
@@ -64,50 +64,7 @@ class _MonthReceiptPage {
   final bool hasMore;
 }
 
-final _monthSpendingStatsProvider = StreamProvider.family<_MonthSpendingStats, _MonthReceiptQuery>((ref, query) {
-  final monthStartLocal = DateTime(query.month.year, query.month.month);
-  final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
-
-  final monthStart = Timestamp.fromDate(monthStartLocal.toUtc());
-  final nextMonthStart = Timestamp.fromDate(nextMonthStartLocal.toUtc());
-
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(query.uid)
-      .collection('receipts')
-      .where('date', isGreaterThanOrEqualTo: monthStart)
-      .where('date', isLessThan: nextMonthStart)
-      .snapshots()
-      .map((snapshot) {
-        var spentCents = 0;
-        final byStore = <String, _StoreMonthSpend>{};
-
-        for (final doc in snapshot.docs) {
-          final data = doc.data();
-          final storeName = (data['store_name'] as String?)?.trim().isNotEmpty == true ? (data['store_name'] as String).trim() : 'Unknown store';
-          final totalPrice = data['total_price'] is int ? data['total_price'] as int : 0;
-
-          spentCents += totalPrice;
-
-          final existing = byStore[storeName];
-          if (existing == null) {
-            byStore[storeName] = _StoreMonthSpend(storeName: storeName, spentCents: totalPrice, receiptCount: 1);
-          } else {
-            byStore[storeName] = _StoreMonthSpend(
-              storeName: existing.storeName,
-              spentCents: existing.spentCents + totalPrice,
-              receiptCount: existing.receiptCount + 1,
-            );
-          }
-        }
-
-        final stores = byStore.values.toList()..sort((a, b) => b.spentCents.compareTo(a.spentCents));
-
-        return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: snapshot.size, stores: stores);
-      });
-});
-
-final _monthReceiptsProvider = StreamProvider.family<_MonthReceiptPage, _MonthReceiptQuery>((ref, query) {
+final _monthReceiptsProvider = StreamProvider.family<QuerySnapshot<Map<String, dynamic>>, _MonthReceiptQuery>((ref, query) {
   final monthStartLocal = DateTime(query.month.year, query.month.month);
   final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
 
@@ -122,34 +79,52 @@ final _monthReceiptsProvider = StreamProvider.family<_MonthReceiptPage, _MonthRe
       .where('date', isLessThan: nextMonthStart)
       .orderBy('date', descending: true)
       .limit(query.limit)
-      .snapshots()
-      .map((snapshot) {
-        final receipts = snapshot.docs
-            .map((doc) {
-              final data = doc.data();
-              return _MonthReceiptItem(
-                id: doc.id,
-                storeName: _monthReceiptStoreName(data),
-                totalPriceCents: data['total_price'] is int ? data['total_price'] as int : 0,
-                itemCount: data['item_count'] is int ? data['item_count'] as int : 0,
-                date: _monthReceiptDate(data['date']),
-              );
-            })
-            .toList(growable: false);
-
-        return _MonthReceiptPage(receipts: receipts, hasMore: snapshot.docs.length == query.limit);
-      });
+      .snapshots();
 });
 
-final _hasAnyReceiptsProvider = StreamProvider.family<bool, String>((ref, uid) {
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .collection('receipts')
-      .limit(1)
-      .snapshots()
-      .map((snapshot) => snapshot.docs.isNotEmpty);
-});
+_MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot) {
+  var spentCents = 0;
+  final byStore = <String, _StoreMonthSpend>{};
+
+  for (final doc in snapshot.docs) {
+    final data = doc.data();
+    final storeName = (data['store_name'] as String?)?.trim().isNotEmpty == true ? (data['store_name'] as String).trim() : 'Unknown store';
+    final totalPrice = data['total_price'] is int ? data['total_price'] as int : 0;
+
+    spentCents += totalPrice;
+
+    final existing = byStore[storeName];
+    if (existing == null) {
+      byStore[storeName] = _StoreMonthSpend(storeName: storeName, spentCents: totalPrice, receiptCount: 1);
+    } else {
+      byStore[storeName] = _StoreMonthSpend(
+        storeName: existing.storeName,
+        spentCents: existing.spentCents + totalPrice,
+        receiptCount: existing.receiptCount + 1,
+      );
+    }
+  }
+
+  final stores = byStore.values.toList()..sort((a, b) => b.spentCents.compareTo(a.spentCents));
+  return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: snapshot.size, stores: stores);
+}
+
+_MonthReceiptPage _monthReceiptPageFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot, int limit) {
+  final receipts = snapshot.docs
+      .map((doc) {
+        final data = doc.data();
+        return _MonthReceiptItem(
+          id: doc.id,
+          storeName: _monthReceiptStoreName(data),
+          totalPriceCents: data['total_price'] is int ? data['total_price'] as int : 0,
+          itemCount: data['item_count'] is int ? data['item_count'] as int : 0,
+          date: _monthReceiptDate(data['date']),
+        );
+      })
+      .toList(growable: false);
+
+  return _MonthReceiptPage(receipts: receipts, hasMore: snapshot.docs.length > limit);
+}
 
 String _monthReceiptStoreName(Map<String, dynamic> data) {
   final storeName = (data['store_name'] as String?)?.trim();
@@ -327,10 +302,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final monthStatsAsync = ref.watch(
-          _monthSpendingStatsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: _receiptPageSize)),
-        );
-        final hasAnyReceiptsAsync = ref.watch(_hasAnyReceiptsProvider(user.userId));
+        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: 20)));
         final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
 
         final colorScheme = Theme.of(context).colorScheme;
@@ -439,7 +411,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               key: ValueKey(_monthKey(_selectedMonth)),
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                monthStatsAsync.when(
+                                monthReceiptsSnapshotAsync.when(
                                   loading: () => const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 18),
                                     child: Center(child: CircularProgressIndicator()),
@@ -451,18 +423,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  data: (monthStats) {
+                                  data: (monthSnapshot) {
+                                    final monthStats = _monthSpendingStatsFromSnapshot(monthSnapshot);
+                                    final monthReceiptsPage = _monthReceiptPageFromSnapshot(monthSnapshot, visibleReceiptCount);
                                     final stores = monthStats.stores;
                                     final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
                                     final hasReceiptScans = monthStats.receiptsScanned > 0;
-                                    final shouldShowFirstScanButton = !hasReceiptScans && hasAnyReceiptsAsync.asData?.value == false;
-                                    final monthReceiptsAsync = hasReceiptScans
-                                        ? ref.watch(
-                                            _monthReceiptsProvider(
-                                              _MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: visibleReceiptCount),
-                                            ),
-                                          )
-                                        : null;
+                                    final shouldShowFirstScanButton = !hasReceiptScans && user.stats.receiptsScanned == 0;
 
                                     return Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,75 +504,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           const SizedBox(height: 10),
                                           Text('Recent receipts', style: Theme.of(context).textTheme.titleMedium),
                                           const SizedBox(height: 8),
-                                          if (monthReceiptsAsync != null)
-                                            monthReceiptsAsync.when(
-                                              loading: () => const Padding(
-                                                padding: EdgeInsets.symmetric(vertical: 10),
-                                                child: Center(child: CircularProgressIndicator()),
-                                              ),
-                                              error: (error, _) => Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                                child: Text(
-                                                  'Failed to load receipts: ${error.toString().replaceFirst('Exception: ', '')}',
-                                                  style: Theme.of(context).textTheme.bodyMedium,
-                                                ),
-                                              ),
-                                              data: (page) {
-                                                if (page.receipts.isEmpty) {
-                                                  return Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium);
-                                                }
-
-                                                return Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    ListView.separated(
-                                                      itemCount: page.receipts.length,
-                                                      shrinkWrap: true,
-                                                      physics: const NeverScrollableScrollPhysics(),
-                                                      separatorBuilder: (_, _) => const SizedBox(height: 1),
-                                                      itemBuilder: (context, index) {
-                                                        final receipt = page.receipts[index];
-                                                        return Dismissible(
-                                                          key: ValueKey(receipt.id),
-                                                          direction: DismissDirection.endToStart,
-                                                          movementDuration: const Duration(milliseconds: 180),
-                                                          resizeDuration: const Duration(milliseconds: 180),
-                                                          confirmDismiss: (_) =>
-                                                              _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
-                                                          background: Container(
-                                                            alignment: Alignment.centerRight,
-                                                            padding: const EdgeInsets.only(right: 18),
-                                                            decoration: BoxDecoration(
-                                                              color: Theme.of(context).colorScheme.errorContainer,
-                                                              borderRadius: BorderRadius.circular(16),
-                                                            ),
-                                                            child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
-                                                          ),
-                                                          child: ClipRRect(
-                                                            borderRadius: BorderRadius.circular(16),
-                                                            child: _MonthReceiptTile(
-                                                              storeName: receipt.storeName,
-                                                              dateLabel: displayDate(receipt.date),
-                                                              totalLabel: formatCents(receipt.totalPriceCents),
-                                                              itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                    if (page.hasMore) ...[
-                                                      const SizedBox(height: 12),
-                                                      SizedBox(
-                                                        width: double.infinity,
-                                                        child: OutlinedButton(
-                                                          onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
-                                                          child: const Text('Load more'),
+                                          if (monthReceiptsPage.receipts.isEmpty)
+                                            Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium)
+                                          else
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                ListView.separated(
+                                                  itemCount: monthReceiptsPage.receipts.length,
+                                                  shrinkWrap: true,
+                                                  physics: const NeverScrollableScrollPhysics(),
+                                                  separatorBuilder: (_, _) => const SizedBox(height: 1),
+                                                  itemBuilder: (context, index) {
+                                                    final receipt = monthReceiptsPage.receipts[index];
+                                                    return Dismissible(
+                                                      key: ValueKey(receipt.id),
+                                                      direction: DismissDirection.endToStart,
+                                                      movementDuration: const Duration(milliseconds: 180),
+                                                      resizeDuration: const Duration(milliseconds: 180),
+                                                      confirmDismiss: (_) =>
+                                                          _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
+                                                      background: Container(
+                                                        alignment: Alignment.centerRight,
+                                                        padding: const EdgeInsets.only(right: 18),
+                                                        decoration: BoxDecoration(
+                                                          color: Theme.of(context).colorScheme.errorContainer,
+                                                          borderRadius: BorderRadius.circular(16),
+                                                        ),
+                                                        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                                                      ),
+                                                      child: ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: _MonthReceiptTile(
+                                                          storeName: receipt.storeName,
+                                                          dateLabel: displayDate(receipt.date),
+                                                          totalLabel: formatCents(receipt.totalPriceCents),
+                                                          itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
                                                         ),
                                                       ),
-                                                    ],
-                                                  ],
-                                                );
-                                              },
+                                                    );
+                                                  },
+                                                ),
+                                                if (monthReceiptsPage.hasMore) ...[
+                                                  const SizedBox(height: 12),
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: OutlinedButton(
+                                                      onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
+                                                      child: const Text('Load more'),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
                                         ],
                                       ],

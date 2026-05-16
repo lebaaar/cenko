@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/home/data/home_deal_card_item.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
@@ -16,12 +18,49 @@ class PersonalizedDealsRepository {
   final FirebaseFirestore _firestore;
   final CatalogDealsRepository _catalogDealsRepository;
   final DealTextMatcherService _dealTextMatcherService;
+  StreamSubscription<List<CatalogDealItem>>? _activeDealsSubscription;
+  final Completer<void> _activeDealsReady = Completer<void>();
+  List<CatalogDealItem> _activeDealsCache = const <CatalogDealItem>[];
 
   CollectionReference<Map<String, dynamic>> _memberships(String uid) =>
       _firestore.collection('users').doc(uid).collection('shopping_lists_memberships');
   CollectionReference<Map<String, dynamic>> _commonProducts(String uid) => _firestore.collection('users').doc(uid).collection('common_products');
 
+  void _ensureActiveDealsSubscription() {
+    if (_activeDealsSubscription != null) {
+      return;
+    }
+
+    _activeDealsSubscription = _catalogDealsRepository
+        .watchActiveCatalogDeals(fetchLimit: 400)
+        .listen(
+          (deals) {
+            _activeDealsCache = deals;
+            if (!_activeDealsReady.isCompleted) {
+              _activeDealsReady.complete();
+            }
+          },
+          onError: (_) {
+            if (!_activeDealsReady.isCompleted) {
+              _activeDealsReady.complete();
+            }
+          },
+        );
+  }
+
+  Future<List<CatalogDealItem>> _getActiveDeals() async {
+    _ensureActiveDealsSubscription();
+
+    if (_activeDealsCache.isNotEmpty) {
+      return _activeDealsCache;
+    }
+
+    await _activeDealsReady.future;
+    return _activeDealsCache;
+  }
+
   Stream<List<PersonalizedDealCardItem>> watchShoppingListOnSale(String uid, {int limit = 10}) {
+    _ensureActiveDealsSubscription();
     return _memberships(uid).snapshots().asyncMap((membershipSnap) async {
       final listIds = membershipSnap.docs.map((d) => d.id).toList();
       if (listIds.isEmpty) return <PersonalizedDealCardItem>[];
@@ -43,6 +82,7 @@ class PersonalizedDealsRepository {
   }
 
   Stream<List<PersonalizedDealCardItem>> watchCommonBoughtProductsOnSale(String uid, {int limit = 10}) {
+    _ensureActiveDealsSubscription();
     return _commonProducts(uid).snapshots().asyncMap((snapshot) async {
       final commonProductTexts = _extractCommonProductTexts(snapshot);
       return _matchDealsForTexts(commonProductTexts, limit: limit);
@@ -76,12 +116,17 @@ class PersonalizedDealsRepository {
   Future<List<PersonalizedDealCardItem>> _matchDealsForTexts(Set<String> sourceTexts, {required int limit}) async {
     if (sourceTexts.isEmpty) return const <PersonalizedDealCardItem>[];
 
-    final activeDeals = await _catalogDealsRepository.watchActiveCatalogDeals(fetchLimit: 400).first;
+    final activeDeals = await _getActiveDeals();
     final matchedDeals = _dealTextMatcherService.matchDeals(shoppingListTexts: sourceTexts, deals: activeDeals);
     final matches = matchedDeals.map(_catalogToCardItem).toList(growable: false);
 
     if (matches.length <= limit) return matches;
     return matches.take(limit).toList(growable: false);
+  }
+
+  void dispose() {
+    _activeDealsSubscription?.cancel();
+    _activeDealsSubscription = null;
   }
 
   PersonalizedDealCardItem _catalogToCardItem(CatalogDealItem deal) {
