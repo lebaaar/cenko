@@ -20,7 +20,7 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 
 ## Tech stack
 - Flutter for cross-platform mobile development. State management with [Riverpod](https://pub.dev/packages/flutter_riverpod) and navigation with [GoRouter](https://pub.dev/packages/go_router)
-- Firebase for backend - authentication, Firestore and AI logic
+- Firebase backend - authentication (with Google or email/password), Firestore database and AI logic
 - OCR with Gemini for structured data extraction
 - Scraping store deals with a custom Python scraper
 
