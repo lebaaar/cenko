@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
@@ -528,11 +529,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                       background: Container(
                                                         alignment: Alignment.centerRight,
                                                         padding: const EdgeInsets.only(right: 18),
-                                                        decoration: BoxDecoration(
-                                                          color: Theme.of(context).colorScheme.errorContainer,
-                                                          borderRadius: BorderRadius.circular(16),
-                                                        ),
-                                                        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                                                        decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
+                                                        child: const Icon(Icons.delete_rounded, color: AppColors.onError),
                                                       ),
                                                       child: ClipRRect(
                                                         borderRadius: BorderRadius.circular(16),
@@ -820,14 +818,17 @@ class _MonthReceiptTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              SizedBox(
-                width: trailingPriceWidth,
-                child: Text(
-                  totalLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: SizedBox(
+                  width: trailingPriceWidth,
+                  child: Text(
+                    totalLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],

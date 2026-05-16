@@ -1,3 +1,4 @@
+import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
@@ -1055,8 +1056,8 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 18),
-                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(16)),
-                        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer),
+                        decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
+                        child: const Icon(Icons.delete_rounded, color: AppColors.onError),
                       ),
                       child: _ShoppingItemTile(
                         item: item,
