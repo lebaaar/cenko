@@ -8,7 +8,7 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 > Dragonhack 2026 - Best use of APIs reward
 
 <div align="center">
-    <img src="assets/images/cenko.gif" alt="Cenko demo" height="600" />
+    <img src="assets/images/demo.gif" alt="Cenko demo" height="600" />
 </div>
 
 
