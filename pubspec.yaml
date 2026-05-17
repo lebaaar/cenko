@@ -62,13 +62,13 @@ flutter:
     - .env
     - assets/icons/barcode_scanner.svg
     - assets/images/logo.png
-    - assets/images/spar.png
-    - assets/images/mercator.webp
-    - assets/images/tus.png
-    - assets/images/tus-drogerija.jpg
-    - assets/images/hofer.png
-    - assets/images/lidl.png
-    - assets/images/eurospin.png
+    - assets/stores/spar.png
+    - assets/stores/mercator.webp
+    - assets/stores/tus.png
+    - assets/stores/tus-drogerija.jpg
+    - assets/stores/hofer.png
+    - assets/stores/lidl.png
+    - assets/stores/eurospin.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

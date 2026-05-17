@@ -22,12 +22,12 @@ String storeDisplayName(String storeName) {
 
 String? storeLogoAsset(String storeName) {
   final s = storeName.toLowerCase();
-  if (s.contains('tus') && s.contains('droger')) return 'assets/images/tus-drogerija.jpg';
-  if (s.contains('tus') || s.contains('tuš')) return 'assets/images/tus.png';
-  if (s.contains('spar')) return 'assets/images/spar.png';
-  if (s.contains('mercator')) return 'assets/images/mercator.webp';
-  if (s.contains('hofer')) return 'assets/images/hofer.png';
-  if (s.contains('lidl')) return 'assets/images/lidl.png';
-  if (s.contains('eurospin')) return 'assets/images/eurospin.png';
+  if (s.contains('tus') && s.contains('droger')) return 'assets/stores/tus-drogerija.jpg';
+  if (s.contains('tus') || s.contains('tuš')) return 'assets/stores/tus.png';
+  if (s.contains('spar')) return 'assets/stores/spar.png';
+  if (s.contains('mercator')) return 'assets/stores/mercator.webp';
+  if (s.contains('hofer')) return 'assets/stores/hofer.png';
+  if (s.contains('lidl')) return 'assets/stores/lidl.png';
+  if (s.contains('eurospin')) return 'assets/stores/eurospin.png';
   return null;
 }
