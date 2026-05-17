@@ -1,5 +1,6 @@
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
@@ -165,7 +166,9 @@ class _ProductDetailView extends StatelessWidget {
               ),
             ),
             flexibleSpace: hasImage
-                ? FlexibleSpaceBar(background: _HeroImage(imageUrl: deal.imageUrl!, storeName: deal.storeName))
+                ? FlexibleSpaceBar(
+                    background: _HeroImage(imageUrl: deal.imageUrl!, storeName: deal.storeName),
+                  )
                 : null,
           ),
           SliverPadding(
@@ -185,7 +188,7 @@ class _ProductDetailView extends StatelessWidget {
                   const SizedBox(height: 12),
                   _InfoTile(icon: Icons.category_rounded, label: 'Category', value: deal.category!),
                 ],
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -197,6 +200,7 @@ class _ProductDetailView extends StatelessWidget {
                     style: FilledButton.styleFrom(foregroundColor: Colors.white),
                   ),
                 ),
+                const SizedBox(height: 12),
               ]),
             ),
           ),
@@ -211,43 +215,11 @@ class _StorePriceCard extends StatelessWidget {
 
   final CatalogDealItem deal;
 
-  String? _logoAsset(String storeName) {
-    final s = storeName.toLowerCase();
-    if (s.contains('tus') && s.contains('droger')) return 'assets/images/tus-drogerija.jpg';
-    if (s.contains('tus') || s.contains('tuš')) return 'assets/images/tus.png';
-    if (s.contains('spar')) return 'assets/images/spar.png';
-    if (s.contains('mercator')) return 'assets/images/mercator.webp';
-    if (s.contains('hofer')) return 'assets/images/hofer.png';
-    if (s.contains('lidl')) return 'assets/images/lidl.png';
-    if (s.contains('eurospin')) return 'assets/images/eurospin.png';
-    return null;
-  }
-
-  String _displayStoreName(String storeName) {
-    switch (storeName) {
-      case 'spar':
-        return 'Spar';
-      case 'tus_drogerija':
-      case 'tus_drogrija':
-        return 'Tuš drogerija';
-      case 'tus':
-        return 'Tuš';
-      case 'mercator':
-        return 'Mercator';
-      case 'lidl':
-        return 'Lidl';
-      case 'hofer':
-        return 'Hofer';
-      default:
-        return storeName;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final discount = deal.discountPercent ?? 0;
-    final logo = _logoAsset(deal.storeName);
+    final logo = storeLogoAsset(deal.storeName);
 
     return Container(
       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
@@ -269,7 +241,7 @@ class _StorePriceCard extends StatelessWidget {
                   Icon(Icons.storefront_rounded, size: 24, color: colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
                 ],
-                Text(_displayStoreName(deal.storeName), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text(storeDisplayName(deal.storeName), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -280,8 +252,6 @@ class _StorePriceCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PRICE', style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -310,9 +280,7 @@ class _StorePriceCard extends StatelessWidget {
                     children: [
                       Text(
                         'Was ${formatCents(deal.originalPrice)}',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(decoration: TextDecoration.lineThrough, color: colorScheme.onSurfaceVariant),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -334,34 +302,14 @@ class _ValidityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final now = DateTime.now();
-    final isActive = deal.isActive;
-    final isUpcoming = deal.validFrom != null && now.isBefore(deal.validFrom!);
-    final status = isUpcoming ? 'Upcoming' : (isActive ? 'Active' : 'Expired');
-    final statusColor = isUpcoming ? colorScheme.secondary : (isActive ? colorScheme.primary : colorScheme.error);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('DEAL VALIDITY', style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
-                child: Text(
-                  status,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: statusColor, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
           if (deal.validFrom != null || deal.validUntil != null) ...[
-            const SizedBox(height: 14),
             if (deal.validFrom != null) _ValidityRow(label: 'Valid from', date: deal.validFrom!),
             if (deal.validFrom != null && deal.validUntil != null) const SizedBox(height: 10),
             if (deal.validUntil != null) _ValidityRow(label: 'Valid until', date: deal.validUntil!),
@@ -485,22 +433,10 @@ class _StoreFallbackImage extends StatelessWidget {
 
   final String storeName;
 
-  String? _logoAsset() {
-    final s = storeName.toLowerCase();
-    if (s.contains('tus') && s.contains('droger')) return 'assets/images/tus-drogerija.jpg';
-    if (s.contains('tus') || s.contains('tuš')) return 'assets/images/tus.png';
-    if (s.contains('spar')) return 'assets/images/spar.png';
-    if (s.contains('mercator')) return 'assets/images/mercator.webp';
-    if (s.contains('hofer')) return 'assets/images/hofer.png';
-    if (s.contains('lidl')) return 'assets/images/lidl.png';
-    if (s.contains('eurospin')) return 'assets/images/eurospin.png';
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final logo = _logoAsset();
+    final logo = storeLogoAsset(storeName);
     return Container(
       color: colorScheme.surfaceContainer,
       child: Center(
@@ -552,8 +488,8 @@ class _FullscreenImageViewer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                     onTap: () => Navigator.of(context).pop(),
                     child: const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.close_rounded, color: Colors.white),
                     ),
                   ),
                 ),

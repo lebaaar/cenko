@@ -1,5 +1,6 @@
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -102,18 +103,6 @@ DateTime _parseDate(dynamic value) {
   return parsed?.toLocal() ?? DateTime.now();
 }
 
-String? _storeLogoAsset(String storeName) {
-  final s = storeName.toLowerCase();
-  if (s.contains('tus drogerija') || s.contains('tuš drogerija')) return 'assets/images/tus-drogerija.jpg';
-  if (s.contains('lidl')) return 'assets/images/lidl.png';
-  if (s.contains('hofer')) return 'assets/images/hofer.png';
-  if (s.contains('spar')) return 'assets/images/spar.png';
-  if (s.contains('mercator')) return 'assets/images/mercator.webp';
-  if (s.contains('tus') || s.contains('tuš')) return 'assets/images/tus.png';
-  if (s.contains('eurospin')) return 'assets/images/eurospin.png';
-  return null;
-}
-
 String _timeLabel(DateTime date) {
   final h = date.hour.toString().padLeft(2, '0');
   final m = date.minute.toString().padLeft(2, '0');
@@ -131,7 +120,7 @@ class _ReceiptHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final logoAsset = _storeLogoAsset(storeName);
+    final logoAsset = storeLogoAsset(storeName);
 
     return Container(
       width: double.infinity,

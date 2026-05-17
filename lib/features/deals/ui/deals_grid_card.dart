@@ -1,5 +1,6 @@
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:flutter/material.dart';
 
@@ -49,7 +50,7 @@ class DealsGridCard extends StatelessWidget {
                             Text(deal.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
                             const SizedBox(height: 3),
                             Text(
-                              _displayStoreName(deal.storeName),
+                              storeDisplayName(deal.storeName),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodySmall,
@@ -141,60 +142,14 @@ class DealsGridCard extends StatelessWidget {
   }
 }
 
-String _displayStoreName(String storeName) {
-  switch (storeName) {
-    case 'spar':
-      return 'Spar';
-    case 'tus_drogerija':
-    case 'tus_drogrija':
-      return 'Tuš drogerija';
-    case 'tus':
-      return 'Tuš';
-    case 'mercator':
-      return 'Mercator';
-    case 'lidl':
-      return 'Lidl';
-    case 'hofer':
-      return 'Hofer';
-    default:
-      return storeName;
-  }
-}
-
 class _DealsImage extends StatelessWidget {
   const _DealsImage({this.imageUrl, required this.storeName});
 
   final String? imageUrl;
   final String storeName;
 
-  String? _fallbackAssetForStore() {
-    final normalized = storeName.toLowerCase();
-    final hasTus = normalized.contains('tus') || normalized.contains('tuš');
-    final hasDrogerija = normalized.contains('droger');
-
-    if (hasTus && hasDrogerija) {
-      return 'assets/images/tus-drogerija.jpg';
-    }
-    if (hasTus) {
-      return 'assets/images/tus.png';
-    }
-    if (normalized.contains('spar')) {
-      return 'assets/images/spar.png';
-    }
-    if (normalized.contains('mercator')) {
-      return 'assets/images/mercator.webp';
-    }
-    if (normalized.contains('hofer')) {
-      return 'assets/images/hofer.png';
-    }
-    if (normalized.contains('lidl')) {
-      return 'assets/images/lidl.png';
-    }
-    return null;
-  }
-
   Widget _fallbackWidget(ColorScheme colorScheme) {
-    final fallbackAsset = _fallbackAssetForStore();
+    final fallbackAsset = storeLogoAsset(storeName);
     if (fallbackAsset != null) {
       return Image.asset(
         fallbackAsset,

@@ -1,3 +1,4 @@
+import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
@@ -85,27 +86,6 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
         _selectedStores.add(store);
       }
     });
-  }
-
-  String _storeDisplayLabel(String value) {
-    switch (value) {
-      case 'All':
-        return 'All';
-      case 'spar':
-        return 'Spar';
-      case 'tus_drogerija':
-        return 'Tuš drogerija';
-      case 'tus':
-        return 'Tuš';
-      case 'mercator':
-        return 'Mercator';
-      case 'lidl':
-        return 'Lidl';
-      case 'hofer':
-        return 'Hofer';
-      default:
-        return value;
-    }
   }
 
   String _normalizeStoreValue(String value) {
@@ -509,7 +489,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                 final isSelected = store == 'All' ? _selectedStores.contains('All') : _selectedStores.contains(store);
                                 return Center(
                                   child: FilterChip(
-                                    label: Text(_storeDisplayLabel(store)),
+                                    label: Text(storeDisplayName(store)),
                                     selected: isSelected,
                                     onSelected: (_) => _toggleStore(store),
                                     showCheckmark: false,
