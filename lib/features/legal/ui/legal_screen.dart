@@ -80,6 +80,12 @@ class LegalScreen extends StatelessWidget {
                 _BulletPoint('Account details such as your email address and profile information.'),
                 _BulletPoint('Content you add to the app, including shopping lists, receipts, favorites, and similar records.'),
                 _BulletPoint('Technical information such as app version, device details, and diagnostic data when needed to keep the app working.'),
+                _BulletPoint(
+                  'Usage and analytics data such as screen views and feature interactions, collected via Firebase Analytics to understand how the app is used.',
+                ),
+                _BulletPoint(
+                  'Crash reports and performance metrics collected via Firebase Crashlytics and Firebase Performance Monitoring to diagnose issues and improve stability.',
+                ),
               ],
             ),
             const _SectionCard(
@@ -99,6 +105,21 @@ class LegalScreen extends StatelessWidget {
                 _BulletPoint('To provide core features like authentication, shopping lists, deal discovery, receipt scanning, and support.'),
                 _BulletPoint('To maintain, secure, troubleshoot, and improve the app.'),
                 _BulletPoint('To meet legal, regulatory, and operational requirements.'),
+              ],
+            ),
+            const _SectionCard(
+              title: 'Legal basis for processing (GDPR Article 6)',
+              icon: Icons.balance_rounded,
+              children: [
+                _BulletPoint(
+                  'Account data (email address, profile information, app content): processed on the legal basis of performance of a contract (GDPR Article 6(1)(b)) — necessary to provide the service you have signed up for.',
+                ),
+                _BulletPoint(
+                  'Diagnostic and technical data (crash reports, performance metrics, device details): processed on the legal basis of legitimate interests (GDPR Article 6(1)(f)) — to maintain, secure, and improve the app.',
+                ),
+                _BulletPoint(
+                  'Marketing communications and promotional notifications: processed on the legal basis of your consent (GDPR Article 6(1)(a)). You may withdraw consent at any time via app settings or by contacting us.',
+                ),
               ],
             ),
             const _SectionCard(
@@ -122,6 +143,9 @@ class LegalScreen extends StatelessWidget {
                 ),
                 _BulletPoint(
                   'If you choose to connect other services or submit content through an integrated feature, that information may be processed by the relevant provider as part of the feature you use.',
+                ),
+                _BulletPoint(
+                  'Firebase and other Google services used by this app may transfer your personal data to servers located in the United States. Such international transfers are governed by Google\'s Standard Contractual Clauses (SCCs) as approved by the European Commission, ensuring an adequate level of data protection.',
                 ),
               ],
             ),
@@ -159,6 +183,30 @@ class LegalScreen extends StatelessWidget {
                 _BulletPoint('We do not guarantee uninterrupted availability, accuracy, or error-free operation of all features.'),
                 _BulletPoint(
                   'To the maximum extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from use of the app.',
+                ),
+              ],
+            ),
+            const _SectionCard(
+              title: 'Data breach notification',
+              icon: Icons.warning_amber_rounded,
+              children: [
+                _BulletPoint(
+                  'In the event of a personal data breach, we will notify the competent supervisory authority as soon as possible of becoming aware of the breach, where required by GDPR Article 33.',
+                ),
+                _BulletPoint(
+                  'If a breach is likely to result in a high risk to your rights and freedoms, we will also notify you directly without undue delay, as required by GDPR Article 34.',
+                ),
+              ],
+            ),
+            const _SectionCard(
+              title: 'Governing law',
+              icon: Icons.account_balance_rounded,
+              children: [
+                _BulletPoint(
+                  'This page and our data processing practices are governed by the laws of the Republic of Slovenia and applicable European Union regulations, including the General Data Protection Regulation (GDPR — Regulation (EU) 2016/679).',
+                ),
+                _BulletPoint(
+                  'You have the right to lodge a complaint with the Information Commissioner of the Republic of Slovenia (Informacijski pooblaščenec, www.ip-rs.si) if you believe your personal data is being processed unlawfully.',
                 ),
               ],
             ),
@@ -232,7 +280,9 @@ class _SectionCard extends StatelessWidget {
               children: [
                 Icon(icon, color: colorScheme.primary, size: 22),
                 const SizedBox(width: 10),
-                Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                ),
               ],
             ),
             const SizedBox(height: 12),
