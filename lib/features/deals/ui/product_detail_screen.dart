@@ -2,6 +2,7 @@ import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -28,17 +29,13 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   bool _addingToList = false;
 
-  Future<void> _addToShoppingList(CatalogDealItem deal) async {
+  Future<void> _addToShoppingList({
+    required CatalogDealItem deal,
+    required String uid,
+    required List<ShoppingList> lists,
+  }) async {
     if (_addingToList) return;
 
-    final user = ref.read(currentUserProvider).asData?.value;
-    if (user == null) {
-      SnackBarService.show('Sign in to add items to your shopping list');
-      return;
-    }
-
-    final uid = user.userId;
-    final lists = ref.read(userShoppingListsProvider(uid)).asData?.value ?? [];
     if (lists.isEmpty) {
       SnackBarService.show('No shopping lists found. Create one first.');
       return;
@@ -109,6 +106,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final dealAsync = ref.watch(_dealByIdProvider(widget.dealId));
+    final user = ref.watch(currentUserProvider).asData?.value;
+    final uid = user?.userId;
+    final lists = uid != null ? (ref.watch(userShoppingListsProvider(uid)).asData?.value ?? const []) : const <ShoppingList>[];
 
     return dealAsync.when(
       loading: () => Scaffold(
@@ -126,7 +126,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             body: const Center(child: Text('Deal not found')),
           );
         }
-        return _ProductDetailView(deal: deal, onAddToList: () => _addToShoppingList(deal), isAddingToList: _addingToList);
+        return _ProductDetailView(
+          deal: deal,
+          onAddToList: uid == null
+              ? () => SnackBarService.show('Sign in to add items to your shopping list')
+              : () => _addToShoppingList(deal: deal, uid: uid, lists: lists),
+          isAddingToList: _addingToList,
+        );
       },
     );
   }
@@ -478,18 +484,18 @@ class _FullscreenImageViewer extends StatelessWidget {
           ),
           SafeArea(
             child: Align(
-              alignment: Alignment.topRight,
+              alignment: Alignment.topLeft,
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Material(
-                  color: Colors.black45,
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
                   borderRadius: BorderRadius.circular(99),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(99),
                     onTap: () => Navigator.of(context).pop(),
                     child: const Padding(
                       padding: EdgeInsets.all(6),
-                      child: Icon(Icons.close_rounded, color: Colors.white),
+                      child: Icon(Icons.close_rounded),
                     ),
                   ),
                 ),
