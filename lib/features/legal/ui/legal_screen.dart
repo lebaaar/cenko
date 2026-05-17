@@ -1,267 +1,180 @@
+import 'dart:convert';
+
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 
-/// TODO - legal page content should be on the web and loaded in a webview or loaded from an API call
-/// This is so we can update it without needing an app update
-class LegalScreen extends StatelessWidget {
+class LegalScreen extends StatefulWidget {
   const LegalScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  State<LegalScreen> createState() => _LegalScreenState();
+}
 
+class _LegalScreenState extends State<LegalScreen> {
+  late Future<Map<String, dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _fetchLegal();
+  }
+
+  Future<Map<String, dynamic>> _fetchLegal() async {
+    final response = await http.get(Uri.parse(kLegalContentUrl));
+    if (response.statusCode != 200) throw Exception('HTTP ${response.statusCode}');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Legal')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colorScheme.primaryContainer, colorScheme.secondaryContainer],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(color: colorScheme.surface.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(16)),
-                        child: Icon(Icons.gavel_rounded, color: colorScheme.onSurface, size: 26),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Legal information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Last updated: ${displayWordedDate(kLegalLastUpdated)}',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const _SectionCard(
-              title: 'Using Cenko',
-              icon: Icons.check_circle_outline_rounded,
-              children: [
-                _BulletPoint('Use the app only in a lawful way and respect the rights of other people and businesses.'),
-                _BulletPoint(
-                  'Do not try to interfere with the app, reverse engineer it, or use it in a way that could harm the service or other users.',
-                ),
-                _BulletPoint(
-                  'If you create an account, you are responsible for keeping your access secure and for activity that happens under your account.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Information we handle',
-              icon: Icons.data_usage_rounded,
-              children: [
-                _BulletPoint('Account details such as your email address and profile information.'),
-                _BulletPoint('Content you add to the app, including shopping lists, receipts, favorites, and similar records.'),
-                _BulletPoint('Technical information such as app version, device details, and diagnostic data when needed to keep the app working.'),
-                _BulletPoint(
-                  'Usage and analytics data such as screen views and feature interactions, collected via Firebase Analytics to understand how the app is used.',
-                ),
-                _BulletPoint(
-                  'Crash reports and performance metrics collected via Firebase Crashlytics and Firebase Performance Monitoring to diagnose issues and improve stability.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Your rights',
-              icon: Icons.tune_rounded,
-              children: [
-                _BulletPoint('You may request access to, correction of, or deletion of your personal information.'),
-                _BulletPoint('You may object to certain types of processing or request restriction where applicable.'),
-                _BulletPoint('You may delete your account and data associated with it at any time.'),
-                _BulletPoint('You may contact us if you have questions about your privacy rights or data handling practices.'),
-              ],
-            ),
-            const _SectionCard(
-              title: 'How information is used',
-              icon: Icons.tune_rounded,
-              children: [
-                _BulletPoint('To provide core features like authentication, shopping lists, deal discovery, receipt scanning, and support.'),
-                _BulletPoint('To maintain, secure, troubleshoot, and improve the app.'),
-                _BulletPoint('To meet legal, regulatory, and operational requirements.'),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Legal basis for processing (GDPR Article 6)',
-              icon: Icons.balance_rounded,
-              children: [
-                _BulletPoint(
-                  'Account data (email address, profile information, app content): processed on the legal basis of performance of a contract (GDPR Article 6(1)(b)) — necessary to provide the service you have signed up for.',
-                ),
-                _BulletPoint(
-                  'Diagnostic and technical data (crash reports, performance metrics, device details): processed on the legal basis of legitimate interests (GDPR Article 6(1)(f)) — to maintain, secure, and improve the app.',
-                ),
-                _BulletPoint(
-                  'Marketing communications and promotional notifications: processed on the legal basis of your consent (GDPR Article 6(1)(a)). You may withdraw consent at any time via app settings or by contacting us.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Data retention',
-              icon: Icons.history_rounded,
-              children: [
-                _BulletPoint(
-                  'We keep personal information only for as long as needed to provide the app, fulfill the purposes described here, or meet legal and operational requirements.',
-                ),
-                _BulletPoint('When you delete your account, we remove all associated data immediately.'),
-                _BulletPoint('Some records may remain in backups or logs for a limited time before they are overwritten or deleted.'),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Sharing and transfers',
-              icon: Icons.share_outlined,
-              children: [
-                _BulletPoint('We may share information with service providers who help us operate the app and deliver its features.'),
-                _BulletPoint(
-                  'We may disclose information when required by law, to protect rights and safety, or in connection with a merger, acquisition, or similar business transaction.',
-                ),
-                _BulletPoint(
-                  'If you choose to connect other services or submit content through an integrated feature, that information may be processed by the relevant provider as part of the feature you use.',
-                ),
-                _BulletPoint(
-                  'Firebase and other Google services used by this app may transfer your personal data to servers located in the United States. Such international transfers are governed by Google\'s Standard Contractual Clauses (SCCs) as approved by the European Commission, ensuring an adequate level of data protection.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Children',
-              icon: Icons.child_care_rounded,
-              children: [
-                _BulletPoint(
-                  'The app is not intended for children under the minimum age required by applicable law in their country. We do not knowingly collect personal information from them.',
-                ),
-                _BulletPoint('If you believe a child has provided personal information, contact us so we can review and address it.'),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Third-party services',
-              icon: Icons.link_rounded,
-              children: [
-                _BulletPoint('The app uses Google Sign-In and Firebase Authentication for sign-in and account access.'),
-                _BulletPoint(
-                  'The app uses Firebase Firestore, Firebase Functions, Firebase Storage, Firebase App Check, and Firebase AI to store data, run backend features, protect the service, and support AI-assisted functions.',
-                ),
-                _BulletPoint(
-                  'The app uses Google ML Kit Text Recognition, Camera, Mobile Scanner, and Image Picker for receipt and barcode-related features.',
-                ),
-                _BulletPoint(
-                  'The app uses Connectivity Plus, Device Info Plus, Package Info Plus, In-App Update, and URL Launcher for connectivity checks, device diagnostics, app version checks, updates, and opening external links.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Liability and warranty',
-              icon: Icons.gpp_maybe_rounded,
-              children: [
-                _BulletPoint('The app is provided on an "as is" and "as available" basis without warranties of any kind.'),
-                _BulletPoint('We do not guarantee uninterrupted availability, accuracy, or error-free operation of all features.'),
-                _BulletPoint(
-                  'To the maximum extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from use of the app.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Data breach notification',
-              icon: Icons.warning_amber_rounded,
-              children: [
-                _BulletPoint(
-                  'In the event of a personal data breach, we will notify the competent supervisory authority as soon as possible of becoming aware of the breach, where required by GDPR Article 33.',
-                ),
-                _BulletPoint(
-                  'If a breach is likely to result in a high risk to your rights and freedoms, we will also notify you directly without undue delay, as required by GDPR Article 34.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Governing law',
-              icon: Icons.account_balance_rounded,
-              children: [
-                _BulletPoint(
-                  'This page and our data processing practices are governed by the laws of the Republic of Slovenia and applicable European Union regulations, including the General Data Protection Regulation (GDPR — Regulation (EU) 2016/679).',
-                ),
-                _BulletPoint(
-                  'You have the right to lodge a complaint with the Information Commissioner of the Republic of Slovenia (Informacijski pooblaščenec, www.ip-rs.si) if you believe your personal data is being processed unlawfully.',
-                ),
-              ],
-            ),
-            const _SectionCard(
-              title: 'Updates to this page',
-              icon: Icons.update_rounded,
-              children: [
-                _BulletPoint(
-                  'We may update this page at any time, and a revised version becomes effective immediately when it is posted unless stated otherwise.',
-                ),
-                _BulletPoint('The date above shows when this page was last changed.'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(18)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Questions?', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 6),
-                  Text(
-                    'If you want to ask about this page or how data is handled, send a message through support.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                  ),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-                  const SizedBox(height: 10),
-                  Text('Email: $kContactEmail', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => context.push('/contact'),
-                      style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                      label: const Text('Contact us'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            final data = snapshot.data!;
+            final lastEdited = data['lastEdited'] as String? ?? '';
+            final contactEmail = data['contactEmail'] as String? ?? kContactEmail;
+            final documents = (data['documents'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+            final legalDoc = documents.isEmpty ? null : documents.first;
+            final sections = (legalDoc?['sections'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+
+            DateTime? lastEditedDate;
+            if (lastEdited.isNotEmpty) {
+              lastEditedDate = DateTime.tryParse(lastEdited);
+            }
+
+            return _LegalContent(lastEditedDate: lastEditedDate, contactEmail: contactEmail, sections: sections);
+          },
         ),
       ),
     );
   }
 }
 
+class _LegalContent extends StatelessWidget {
+  const _LegalContent({required this.lastEditedDate, required this.contactEmail, required this.sections});
+
+  final DateTime? lastEditedDate;
+  final String contactEmail;
+  final List<Map<String, dynamic>> sections;
+
+  static IconData _iconFor(String title) => switch (title) {
+    'Using Cenko' => Icons.check_circle_outline_rounded,
+    'Information we handle' => Icons.data_usage_rounded,
+    'Your rights' => Icons.tune_rounded,
+    'How information is used' => Icons.tune_rounded,
+    'Legal basis for processing (GDPR Article 6)' => Icons.balance_rounded,
+    'Data retention' => Icons.history_rounded,
+    'Sharing and transfers' => Icons.share_outlined,
+    'Children' => Icons.child_care_rounded,
+    'Third-party services' => Icons.link_rounded,
+    'Liability and warranty' => Icons.gpp_maybe_rounded,
+    'Data breach notification' => Icons.warning_amber_rounded,
+    'Governing law' => Icons.account_balance_rounded,
+    'Updates to this page' => Icons.update_rounded,
+    _ => Icons.info_outline_rounded,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [colorScheme.primaryContainer, colorScheme.secondaryContainer],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: colorScheme.surface.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(16)),
+                child: Icon(Icons.gavel_rounded, color: colorScheme.onSurface, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Legal information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                    if (lastEditedDate != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Last updated: ${displayWordedDate(lastEditedDate!)}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        for (final section in sections)
+          _SectionCard(
+            title: section['title'] as String? ?? '',
+            icon: _iconFor(section['title'] as String? ?? ''),
+            bullets: (section['bullets'] as List<dynamic>? ?? []).cast<String>(),
+          ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(18)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Questions?', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(
+                'If you want to ask about this page or how data is handled, send a message through support.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 10),
+              Text('Email: $contactEmail', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/contact'),
+                  style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                  label: const Text('Contact us'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.icon, required this.children});
+  const _SectionCard({required this.title, required this.icon, required this.bullets});
 
   final String title;
   final IconData icon;
-  final List<Widget> children;
+  final List<String> bullets;
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +199,7 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...children,
+            for (final bullet in bullets) _BulletPoint(bullet),
           ],
         ),
       ),
