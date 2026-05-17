@@ -46,14 +46,14 @@ dev_dependencies:
 flutter_native_splash:
   color: "#005b54"
   color_dark: "#005b54"
-  image: assets/images/logo.png
+  image: assets/cenko/logo.png
   android: true
   ios: true
   web: true
   android_12:
     color: "#005b54"
     color_dark: "#005b54"
-    image: assets/images/logo.png
+    image: assets/cenko/logo.png
 
 flutter:
   uses-material-design: true
@@ -61,7 +61,7 @@ flutter:
   assets:
     - .env
     - assets/icons/barcode_scanner.svg
-    - assets/images/logo.png
+    - assets/cenko/logo.png
     - assets/stores/spar.png
     - assets/stores/mercator.webp
     - assets/stores/tus.png
