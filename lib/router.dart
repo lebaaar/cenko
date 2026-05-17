@@ -5,6 +5,7 @@ import 'package:cenko/features/auth/ui/forgot_password_screen.dart';
 import 'package:cenko/features/auth/ui/login_screen.dart';
 import 'package:cenko/features/auth/ui/register_screen.dart';
 import 'package:cenko/features/deals/ui/deals_screen.dart';
+import 'package:cenko/features/deals/ui/product_detail_screen.dart';
 import 'package:cenko/features/home/ui/home_screen.dart';
 import 'package:cenko/features/legal/ui/legal_screen.dart';
 import 'package:cenko/features/profile/ui/profile_screen.dart';
@@ -77,6 +78,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/receipt/:receiptId',
         builder: (context, state) => ReceiptDetailScreen(receiptId: state.pathParameters['receiptId']!),
+      ),
+      GoRoute(
+        path: '/deal/:dealId',
+        builder: (context, state) => ProductDetailScreen(dealId: state.pathParameters['dealId']!),
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),

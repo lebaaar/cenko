@@ -86,6 +86,7 @@ class HomeScreen extends ConsumerWidget {
                       emptyActionLabel: 'Go to shopping lists',
                       emptyActionIcon: Icons.checklist_rounded,
                       emptyActionRoute: '/list',
+                      onDealTap: (item) => context.push('/deal/${item.dealId}'),
                     ),
                     const SizedBox(height: 30),
                     const _SectionHeader(title: 'Based on your shopping habits'),
@@ -97,6 +98,7 @@ class HomeScreen extends ConsumerWidget {
                       emptyActionLabel: 'Scan a receipt',
                       emptyActionIcon: Icons.document_scanner_rounded,
                       emptyActionRoute: '/scan',
+                      onDealTap: (item) => context.push('/deal/${item.dealId}'),
                     ),
                     const SizedBox(height: 14),
                     Center(
@@ -141,6 +143,7 @@ class _DealsList extends StatefulWidget {
     this.emptyActionLabel,
     this.emptyActionIcon,
     this.emptyActionRoute,
+    this.onDealTap,
   });
 
   final AsyncValue<List<PersonalizedDealCardItem>> asyncDeals;
@@ -149,6 +152,7 @@ class _DealsList extends StatefulWidget {
   final String? emptyActionLabel;
   final IconData? emptyActionIcon;
   final String? emptyActionRoute;
+  final ValueChanged<PersonalizedDealCardItem>? onDealTap;
 
   @override
   State<_DealsList> createState() => _DealsListState();
@@ -207,7 +211,10 @@ class _DealsListState extends State<_DealsList> {
 
         return Column(
           children: [
-            for (final item in visibleItems) ...[DealCard(item: item), const SizedBox(height: 10)],
+            for (final item in visibleItems) ...[
+              DealCard(item: item, onTap: widget.onDealTap != null ? () => widget.onDealTap!(item) : null),
+              const SizedBox(height: 10),
+            ],
             if (hasMore)
               Align(
                 alignment: Alignment.centerRight,

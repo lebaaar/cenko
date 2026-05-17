@@ -1,5 +1,6 @@
 class PersonalizedDealCardItem {
   final String id;
+  final String dealId;
   final String title;
   final String storeName;
   final int currentPriceCents;
@@ -10,6 +11,7 @@ class PersonalizedDealCardItem {
 
   const PersonalizedDealCardItem({
     required this.id,
+    required this.dealId,
     required this.title,
     required this.storeName,
     required this.currentPriceCents,

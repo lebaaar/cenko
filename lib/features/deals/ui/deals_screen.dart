@@ -8,6 +8,7 @@ import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class DealsScreen extends ConsumerStatefulWidget {
   const DealsScreen({super.key, this.initialQuery});
@@ -588,6 +589,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           final alreadyOnShoppingList = shoppingListKeys.contains(_normalizedShoppingListKey(deal.title));
                           return DealsGridCard.fromCatalog(
                             deal: deal,
+                            onTap: () => context.push('/deal/${deal.id}'),
                             isAddingToShoppingList: _addingDealIds.contains(dealKey),
                             isAlreadyOnShoppingList: alreadyOnShoppingList,
                             onAddToShoppingList: () {

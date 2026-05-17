@@ -132,6 +132,7 @@ class PersonalizedDealsRepository {
   PersonalizedDealCardItem _catalogToCardItem(CatalogDealItem deal) {
     return PersonalizedDealCardItem(
       id: deal.productId,
+      dealId: deal.id,
       title: deal.title,
       storeName: deal.storeName,
       currentPriceCents: deal.salePriceCents,

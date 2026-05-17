@@ -63,6 +63,7 @@ class ReceiptDetailScreen extends ConsumerWidget {
         final data = receiptDoc.data()!;
         final storeName = _parseStoreName(data);
         final date = _parseDate(data['date']);
+        final scannedAt = _parseDate(data['created_at']);
         final totalPriceCents = data['total_price'] is int ? data['total_price'] as int : 0;
 
         final colorScheme = Theme.of(context).colorScheme;
@@ -78,7 +79,7 @@ class ReceiptDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ReceiptHeaderCard(storeName: storeName, date: date, totalPriceCents: totalPriceCents),
+                _ReceiptHeaderCard(storeName: storeName, date: date, scannedAt: scannedAt, totalPriceCents: totalPriceCents),
                 const SizedBox(height: 12),
                 _ItemsCard(itemsAsync: itemsAsync, uid: uid, receiptId: receiptId),
               ],
@@ -120,10 +121,11 @@ String _timeLabel(DateTime date) {
 }
 
 class _ReceiptHeaderCard extends StatelessWidget {
-  const _ReceiptHeaderCard({required this.storeName, required this.date, required this.totalPriceCents});
+  const _ReceiptHeaderCard({required this.storeName, required this.date, required this.scannedAt, required this.totalPriceCents});
 
   final String storeName;
   final DateTime date;
+  final DateTime scannedAt;
   final int totalPriceCents;
 
   @override
@@ -158,6 +160,11 @@ class _ReceiptHeaderCard extends StatelessWidget {
                 Text(
                   '${displayWordedDate(date)} · ${_timeLabel(date)}',
                   style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Scanned ${displayWordedDate(scannedAt)} · ${_timeLabel(scannedAt)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
