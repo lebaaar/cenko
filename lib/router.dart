@@ -14,6 +14,7 @@ import 'package:cenko/features/scan/ui/scan_screen.dart';
 import 'package:cenko/features/settings/ui/settings_screen.dart';
 import 'package:cenko/features/shopping_list/ui/shopping_list_detail_screen.dart';
 import 'package:cenko/features/shopping_list/ui/shopping_list_screen.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:flutter/material.dart';
@@ -149,6 +150,8 @@ class _BottomNavBar extends StatelessWidget {
     final centerGap = (scanButtonSize - 2).clamp(60.0, 82.0).toDouble();
     final scanIconSize = (32 * textScale.clamp(1.0, 1.15)).toDouble();
 
+    final l10n = AppLocalizations.of(context)!;
+
     return SafeArea(
       top: false,
       child: SizedBox(
@@ -165,7 +168,7 @@ class _BottomNavBar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _NavItem(
-                      label: 'Home',
+                      label: l10n.navHome,
                       icon: Icons.home_rounded,
                       selected: _isSelected('/home'),
                       selectedColor: selectedColor,
@@ -175,7 +178,7 @@ class _BottomNavBar extends StatelessWidget {
                   ),
                   Expanded(
                     child: _NavItem(
-                      label: 'Deals',
+                      label: l10n.navDeals,
                       icon: Icons.percent_rounded,
                       selected: _isSelected('/deals'),
                       selectedColor: selectedColor,
@@ -186,7 +189,7 @@ class _BottomNavBar extends StatelessWidget {
                   SizedBox(width: centerGap),
                   Expanded(
                     child: _NavItem(
-                      label: 'List',
+                      label: l10n.navList,
                       icon: Icons.checklist_rounded,
                       selected: _isSelected('/list'),
                       selectedColor: selectedColor,
@@ -196,7 +199,7 @@ class _BottomNavBar extends StatelessWidget {
                   ),
                   Expanded(
                     child: _NavItem(
-                      label: 'Profile',
+                      label: l10n.navProfile,
                       icon: Icons.person_rounded,
                       selected: _isSelected('/profile'),
                       selectedColor: selectedColor,

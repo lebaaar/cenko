@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/router.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/internet_status_provider.dart';
@@ -59,11 +60,21 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
     }
   }
 
+  Locale _localeFromSettings(String? lang) {
+    switch (lang) {
+      case 'sl':
+        return const Locale('sl');
+      default:
+        return const Locale('en');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
     final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.settings.theme), orElse: () => ThemeMode.system);
+    final locale = userAsync.maybeWhen(data: (user) => _localeFromSettings(user?.settings.language), orElse: () => const Locale('en'));
 
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
     final brightness = themeMode == ThemeMode.system
@@ -83,6 +94,9 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         return Consumer(

@@ -38,6 +38,38 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 `flutter run --debug`
 - Release build: you will need `android/key.properties` file. Structure of this file can be found in `example-key.properties` file. To run the app in release mode run:<br>
 `flutter run --release`
+- To generate localization files after updating ARB files run:<br>
+`flutter gen-l10n` or simply `flutter run` since it's included in the build process
+
+**Internationalization (i18n):**
+
+Supported locales: English (`en`), Slovenian (`sl`)
+
+ARB translation files live in `lib/l10n/`:
+| File | Role |
+|------|------|
+| `app_en.arb` | Template — English strings + `@key` metadata |
+| `app_sl.arb` | Slovenian translations (no `@` metadata needed) |
+
+**To add a new translatable string:**
+1. Add the key + English value to `app_en.arb`:
+    ```json
+    "myKey": "Hello world",
+    "@myKey": { "description": "What this string is for" }
+    ```
+2. Add the Slovenian translation to `app_sl.arb`:
+    ```json
+    "myKey": "Pozdravljen svet"
+    ```
+3. Regenerate: `flutter gen-l10n` (or just `flutter run`)
+4. Use in any widget:
+    ```dart
+    import 'package:cenko/l10n/app_localizations.dart';
+    // ...
+    Text(AppLocalizations.of(context)!.myKey)
+    ```
+
+Generated `app_localizations*.dart` files in `lib/l10n/. These are auto-created, don't edit them manually.
 
 **Firebase stuff:**
 - Deploy Firestore rules and indexes:<br>

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -217,6 +218,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       data: (user) {
         final hasPasswordProvider = FirebaseAuth.instance.currentUser?.providerData.any((provider) => provider.providerId == 'password') ?? false;
+        final l10n = AppLocalizations.of(context)!;
 
         if (!_initialized && user != null) {
           _nameCtrl.text = user.name;
@@ -230,7 +232,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return Stack(
           children: [
             Scaffold(
-              appBar: AppBar(title: const Text('Settings')),
+              appBar: AppBar(title: Text(l10n.settingsTitle)),
               body: SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -248,9 +250,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Account', style: Theme.of(context).textTheme.titleLarge),
+                            Text(l10n.settingsAccountSection, style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 8),
-                            Text('Manage your account settings and preferences', style: Theme.of(context).textTheme.bodyMedium),
+                            Text(l10n.settingsAccountSubtitle, style: Theme.of(context).textTheme.bodyMedium),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _nameCtrl,
@@ -281,6 +283,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 if (user != null) {
                                   _savePreferences(user.userId);
                                 }
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            DropdownButtonFormField<String>(
+                              initialValue: _language,
+                              decoration: InputDecoration(labelText: l10n.settingsLanguageLabel),
+                              items: [
+                                DropdownMenuItem(value: 'en', child: Text(l10n.languageEnglish)),
+                                DropdownMenuItem(value: 'sl', child: Text(l10n.languageSlovenian)),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _language = value);
+                                if (user != null) _savePreferences(user.userId);
                               },
                             ),
                             const SizedBox(height: 20),

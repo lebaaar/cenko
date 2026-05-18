@@ -1,0 +1,39 @@
+{
+  "@@locale": "en",
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Settings screen title"
+  },
+  "settingsAccountSection": "Account",
+  "@settingsAccountSection": {
+    "description": "Account section heading"
+  },
+  "settingsAccountSubtitle": "Manage your account settings and preferences",
+  "@settingsAccountSubtitle": {
+    "description": "Account section subtitle"
+  },
+  "settingsLanguageLabel": "Language",
+  "@settingsLanguageLabel": {
+    "description": "Language dropdown label"
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "English language option"
+  },
+  "languageSlovenian": "Slovenian",
+  "@languageSlovenian": {
+    "description": "Slovenian language option"
+  },
+
+  "navHome": "Home",
+  "@navHome": { "description": "Bottom nav: home tab" },
+
+  "navDeals": "Deals",
+  "@navDeals": { "description": "Bottom nav: deals tab" },
+
+  "navList": "List",
+  "@navList": { "description": "Bottom nav: shopping list tab" },
+
+  "navProfile": "Profile",
+  "@navProfile": { "description": "Bottom nav: profile tab" }
+}

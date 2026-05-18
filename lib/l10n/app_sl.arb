@@ -1,0 +1,14 @@
+{
+  "@@locale": "sl",
+  "settingsTitle": "Nastavitve",
+  "settingsAccountSection": "Račun",
+  "settingsAccountSubtitle": "Upravljajte nastavitve in preference računa",
+  "settingsLanguageLabel": "Jezik",
+  "languageEnglish": "Angleščina",
+  "languageSlovenian": "Slovenščina",
+
+  "navHome": "Domov",
+  "navDeals": "Akcije",
+  "navList": "Seznam",
+  "navProfile": "Profil"
+}
