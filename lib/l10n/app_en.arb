@@ -716,5 +716,46 @@
     "description": "Snackbar when item limit hit",
     "placeholders": { "max": { "type": "int" } }
   },
-  "listQuantityInvalid": "Invalid quantity"
+  "listQuantityInvalid": "Invalid quantity",
+  "@listQuantityInvalid": {
+    "description": "Snackbar when invalid quantity entered"
+  },
+  "onboardingSkip": "Skip",
+  "@onboardingSkip": { "description": "Skip onboarding button" },
+  "onboardingGetStarted": "Create account",
+  "@onboardingGetStarted": { "description": "Create account CTA on last onboarding slide" },
+  "onboardingSignIn": "Already have an account? Sign in",
+  "@onboardingSignIn": { "description": "Sign in link on last onboarding slide" },
+  "onboardingSlide1Title": "All deals in one place",
+  "@onboardingSlide1Title": { "description": "Onboarding slide 1 title" },
+  "onboardingSlide1Body": "Browse sales from Spar, Mercator, Hofer, Lidl, Eurospin and more",
+  "@onboardingSlide1Body": { "description": "Onboarding slide 1 body" },
+  "onboardingSlide2Title": "Scan & add to list",
+  "@onboardingSlide2Title": { "description": "Onboarding slide 2 title" },
+  "onboardingSlide2Body": "Scan barcodes to instantly add items to your shopping list",
+  "@onboardingSlide2Body": { "description": "Onboarding slide 2 body" },
+  "onboardingSlide3Title": "Track your spending",
+  "@onboardingSlide3Title": { "description": "Onboarding slide 3 title" },
+  "onboardingSlide3Body": "Scan receipts to automatically log purchases and see where your money goes",
+  "@onboardingSlide3Body": { "description": "Onboarding slide 3 body" },
+  "onboardingSlide4Title": "Shop together",
+  "@onboardingSlide4Title": { "description": "Onboarding slide 4 title" },
+  "onboardingSlide4Body": "Create shared shopping lists and invite family or friends to collaborate",
+  "@onboardingSlide4Body": { "description": "Onboarding slide 4 body" },
+  "onboardingSlide5Title": "Ready to start?",
+  "@onboardingSlide5Title": { "description": "Onboarding slide 5 title" },
+  "onboardingSlide5Body": "Create an account to unlock personalized deals and spending insights",
+  "@onboardingSlide5Body": { "description": "Onboarding slide 5 body" },
+
+  "legalLastUpdated": "Last updated: {date}",
+  "@legalLastUpdated": {
+    "description": "Legal page last updated label",
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "legalQuestions": "Questions?",
+  "@legalQuestions": { "description": "Legal page questions section title" },
+  "legalQuestionsBody": "If you want to ask about this page or how data is handled, send a message through support.",
+  "@legalQuestionsBody": { "description": "Legal page questions section body" },
+  "legalContactUs": "Contact us",
+  "@legalContactUs": { "description": "Legal page contact us button" }
 }

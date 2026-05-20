@@ -114,6 +114,7 @@
   "dealsSortHighestPrice": "Najvišja cena",
   "dealItemAlreadyOnList": "Ta artikel je že na vašem nakupovalnem seznamu",
   "dealSignInToAdd": "Za dodajanje artiklov na nakupovalni seznam se prijavite",
+  "dealOnList": "Na seznamu",
 
   "productAddToShoppingList": "Dodaj na seznam",
   "productDealNotFound": "Akcija ni bila najdena",
@@ -326,5 +327,24 @@
   "errorGeneric": "Prišlo je do napake. Poskusite znova",
 
   "listItemLimitReached": "Seznam je dosegel največje število {max} artiklov",
-  "listQuantityInvalid": "Neveljavna vrednost"
+  "listQuantityInvalid": "Neveljavna vrednost",
+
+  "onboardingSkip": "Preskoči",
+  "onboardingGetStarted": "Ustvari račun",
+  "onboardingSignIn": "Že imaš račun? Prijavi se",
+  "onboardingSlide1Title": "Vse akcije na enem mestu",
+  "onboardingSlide1Body": "Brskaj med ponudbami Spara, Mercatorja, Hoferja, Lidla, Eurospina in več",
+  "onboardingSlide2Title": "Skeniraj in dodaj na seznam",
+  "onboardingSlide2Body": "Skeniraj črtne kode in takoj dodaj artikle na nakupovalni seznam",
+  "onboardingSlide3Title": "Sledi svoji porabi",
+  "onboardingSlide3Body": "Skeniraj račune za samodejno beleženje nakupov in vpogled v porabo",
+  "onboardingSlide4Title": "Nakupuj skupaj",
+  "onboardingSlide4Body": "Ustvari skupne nakupovalne sezname in povabi družino ali prijatelje",
+  "onboardingSlide5Title": "Pripravljeni za začetek?",
+  "onboardingSlide5Body": "Ustvari račun za prilagojena priporočila in vpogled v svojo porabo",
+
+  "legalLastUpdated": "Zadnja posodobitev: {date}",
+  "legalQuestions": "Vprašanja?",
+  "legalQuestionsBody": "Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore.",
+  "legalContactUs": "Kontaktirajte nas"
 }

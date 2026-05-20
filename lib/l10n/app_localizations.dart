@@ -1928,11 +1928,113 @@ abstract class AppLocalizations {
   /// **'This list has reached the maximum of {max} items'**
   String listItemLimitReached(int max);
 
-  /// No description provided for @listQuantityInvalid.
+  /// Snackbar when invalid quantity entered
   ///
   /// In en, this message translates to:
   /// **'Invalid quantity'**
   String get listQuantityInvalid;
+
+  /// Skip onboarding button
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// Create account CTA on last onboarding slide
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get onboardingGetStarted;
+
+  /// Sign in link on last onboarding slide
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign in'**
+  String get onboardingSignIn;
+
+  /// Onboarding slide 1 title
+  ///
+  /// In en, this message translates to:
+  /// **'All deals in one place'**
+  String get onboardingSlide1Title;
+
+  /// Onboarding slide 1 body
+  ///
+  /// In en, this message translates to:
+  /// **'Browse sales from Spar, Mercator, Hofer, Lidl, Eurospin and more'**
+  String get onboardingSlide1Body;
+
+  /// Onboarding slide 2 title
+  ///
+  /// In en, this message translates to:
+  /// **'Scan & add to list'**
+  String get onboardingSlide2Title;
+
+  /// Onboarding slide 2 body
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcodes to instantly add items to your shopping list'**
+  String get onboardingSlide2Body;
+
+  /// Onboarding slide 3 title
+  ///
+  /// In en, this message translates to:
+  /// **'Track your spending'**
+  String get onboardingSlide3Title;
+
+  /// Onboarding slide 3 body
+  ///
+  /// In en, this message translates to:
+  /// **'Scan receipts to automatically log purchases and see where your money goes'**
+  String get onboardingSlide3Body;
+
+  /// Onboarding slide 4 title
+  ///
+  /// In en, this message translates to:
+  /// **'Shop together'**
+  String get onboardingSlide4Title;
+
+  /// Onboarding slide 4 body
+  ///
+  /// In en, this message translates to:
+  /// **'Create shared shopping lists and invite family or friends to collaborate'**
+  String get onboardingSlide4Body;
+
+  /// Onboarding slide 5 title
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to start?'**
+  String get onboardingSlide5Title;
+
+  /// Onboarding slide 5 body
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account to unlock personalized deals and spending insights'**
+  String get onboardingSlide5Body;
+
+  /// Legal page last updated label
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String legalLastUpdated(String date);
+
+  /// Legal page questions section title
+  ///
+  /// In en, this message translates to:
+  /// **'Questions?'**
+  String get legalQuestions;
+
+  /// Legal page questions section body
+  ///
+  /// In en, this message translates to:
+  /// **'If you want to ask about this page or how data is handled, send a message through support.'**
+  String get legalQuestionsBody;
+
+  /// Legal page contact us button
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get legalContactUs;
 }
 
 class _AppLocalizationsDelegate

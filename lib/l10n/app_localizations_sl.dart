@@ -352,7 +352,7 @@ class AppLocalizationsSl extends AppLocalizations {
       'Za dodajanje artiklov na nakupovalni seznam se prijavite';
 
   @override
-  String get dealOnList => 'On list';
+  String get dealOnList => 'Na seznamu';
 
   @override
   String get productAddToShoppingList => 'Dodaj na seznam';
@@ -1018,4 +1018,63 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get listQuantityInvalid => 'Neveljavna vrednost';
+
+  @override
+  String get onboardingSkip => 'Preskoči';
+
+  @override
+  String get onboardingGetStarted => 'Ustvari račun';
+
+  @override
+  String get onboardingSignIn => 'Že imaš račun? Prijavi se';
+
+  @override
+  String get onboardingSlide1Title => 'Vse akcije na enem mestu';
+
+  @override
+  String get onboardingSlide1Body =>
+      'Brskaj med ponudbami Spara, Mercatorja, Hoferja, Lidla, Eurospina in več';
+
+  @override
+  String get onboardingSlide2Title => 'Skeniraj in dodaj na seznam';
+
+  @override
+  String get onboardingSlide2Body =>
+      'Skeniraj črtne kode in takoj dodaj artikle na nakupovalni seznam';
+
+  @override
+  String get onboardingSlide3Title => 'Sledi svoji porabi';
+
+  @override
+  String get onboardingSlide3Body =>
+      'Skeniraj račune za samodejno beleženje nakupov in vpogled v porabo';
+
+  @override
+  String get onboardingSlide4Title => 'Nakupuj skupaj';
+
+  @override
+  String get onboardingSlide4Body =>
+      'Ustvari skupne nakupovalne sezname in povabi družino ali prijatelje';
+
+  @override
+  String get onboardingSlide5Title => 'Pripravljeni za začetek?';
+
+  @override
+  String get onboardingSlide5Body =>
+      'Ustvari račun za prilagojena priporočila in vpogled v svojo porabo';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'Zadnja posodobitev: $date';
+  }
+
+  @override
+  String get legalQuestions => 'Vprašanja?';
+
+  @override
+  String get legalQuestionsBody =>
+      'Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore.';
+
+  @override
+  String get legalContactUs => 'Kontaktirajte nas';
 }

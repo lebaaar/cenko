@@ -1012,4 +1012,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listQuantityInvalid => 'Invalid quantity';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingGetStarted => 'Create account';
+
+  @override
+  String get onboardingSignIn => 'Already have an account? Sign in';
+
+  @override
+  String get onboardingSlide1Title => 'All deals in one place';
+
+  @override
+  String get onboardingSlide1Body =>
+      'Browse sales from Spar, Mercator, Hofer, Lidl, Eurospin and more';
+
+  @override
+  String get onboardingSlide2Title => 'Scan & add to list';
+
+  @override
+  String get onboardingSlide2Body =>
+      'Scan barcodes to instantly add items to your shopping list';
+
+  @override
+  String get onboardingSlide3Title => 'Track your spending';
+
+  @override
+  String get onboardingSlide3Body =>
+      'Scan receipts to automatically log purchases and see where your money goes';
+
+  @override
+  String get onboardingSlide4Title => 'Shop together';
+
+  @override
+  String get onboardingSlide4Body =>
+      'Create shared shopping lists and invite family or friends to collaborate';
+
+  @override
+  String get onboardingSlide5Title => 'Ready to start?';
+
+  @override
+  String get onboardingSlide5Body =>
+      'Create an account to unlock personalized deals and spending insights';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
+  String get legalQuestions => 'Questions?';
+
+  @override
+  String get legalQuestionsBody =>
+      'If you want to ask about this page or how data is handled, send a message through support.';
+
+  @override
+  String get legalContactUs => 'Contact us';
 }
