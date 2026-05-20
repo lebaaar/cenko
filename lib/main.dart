@@ -1,5 +1,6 @@
 import 'package:cenko/app.dart';
 import 'package:cenko/firebase_options.dart';
+import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -40,5 +41,13 @@ void main() async {
     providerApple: kDebugMode ? const AppleDebugProvider() : const AppleAppAttestProvider(),
   );
   await GoogleSignIn.instance.initialize();
-  runApp(const ProviderScope(child: CenkoApp()));
+  final introductionShown = await getIntroductionShown();
+  runApp(
+    ProviderScope(
+      overrides: [
+        introductionShownProvider.overrideWith((ref) => introductionShown),
+      ],
+      child: const CenkoApp(),
+    ),
+  );
 }

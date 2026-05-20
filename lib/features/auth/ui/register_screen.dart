@@ -86,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colors.surface,
-      appBar: AppBar(leading: const BackButton(), backgroundColor: colors.surface),
+      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login')), backgroundColor: colors.surface),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -214,7 +214,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     Text(l10n.authAlreadyHaveAccount, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                     GestureDetector(
-                      onTap: () => context.pop(),
+                      onTap: () => context.go('/login'),
                       child: Text(
                         l10n.signIn,
                         style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),

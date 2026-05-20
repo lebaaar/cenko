@@ -3,15 +3,18 @@ import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/auth_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -93,13 +96,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 56),
-
                 Text(kAppName, style: Theme.of(context).textTheme.displayMedium),
                 const SizedBox(height: 6),
                 Text(l10n.catchPhrase, style: Theme.of(context).textTheme.bodyMedium),
-
                 const SizedBox(height: 52),
-
                 Form(
                   key: _formKey,
                   child: Column(
@@ -136,7 +136,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ),
-
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -148,22 +147,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Text(l10n.authForgotPassword, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                   ),
                 ),
-
                 if (_error != null) ...[
                   const SizedBox(height: 4),
                   Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: Theme.of(context).colorScheme.error)),
                 ],
-
                 const SizedBox(height: 20),
-
                 LargeButton(label: l10n.signIn, onPressed: _loading ? null : _submit, loading: _loading),
                 const SizedBox(height: 24),
                 const OrDivider(),
                 const SizedBox(height: 24),
                 GoogleButton(onPressed: _loading ? null : _googleSignIn, loading: _loading),
-
                 const SizedBox(height: 32),
-
                 Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -180,7 +174,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ),
-
+                const SizedBox(height: 32),
+                if (kDebugMode)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final router = GoRouter.of(context);
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.clear();
+                        if (!mounted) return;
+                        ref.read(introductionShownProvider.notifier).state = false;
+                        router.go('/onboarding');
+                      },
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: const Text('[DEV] Reset onboarding'),
+                      style: TextButton.styleFrom(foregroundColor: colors.error),
+                    ),
+                  ),
                 const SizedBox(height: 32),
               ],
             ),

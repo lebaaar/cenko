@@ -8,6 +8,7 @@ import 'package:cenko/features/deals/ui/deals_screen.dart';
 import 'package:cenko/features/deals/ui/product_detail_screen.dart';
 import 'package:cenko/features/home/ui/home_screen.dart';
 import 'package:cenko/features/legal/ui/legal_screen.dart';
+import 'package:cenko/features/onboarding/ui/onboarding_screen.dart';
 import 'package:cenko/features/profile/ui/profile_screen.dart';
 import 'package:cenko/features/receipt/ui/receipt_detail_screen.dart';
 import 'package:cenko/features/scan/ui/scan_screen.dart';
@@ -16,6 +17,7 @@ import 'package:cenko/features/shopping_list/ui/shopping_list_detail_screen.dart
 import 'package:cenko/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +25,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 const _authPaths = {'/login', '/register', '/forgot-password'};
-const _publicPaths = {'/login', '/register', '/forgot-password', '/legal', '/contact'};
+const _publicPaths = {'/login', '/register', '/forgot-password', '/legal', '/contact', '/onboarding'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider);
@@ -32,6 +34,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/home',
     refreshListenable: authNotifier,
     redirect: (context, state) {
+      final introShown = ref.read(introductionShownProvider);
+      if (!introShown && state.matchedLocation != '/onboarding') return '/onboarding';
+
       final authState = ref.read(authStateProvider);
       if (authState.isLoading) return null;
 
@@ -44,6 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),

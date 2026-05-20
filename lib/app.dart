@@ -8,6 +8,7 @@ import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/offline_banner.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,7 +100,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: kDebugMode,
       builder: (context, child) {
         return Consumer(
           builder: (context, ref, _) {

@@ -74,7 +74,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get noShoppingListsCreate =>
-      'Ni nakupovalnih seznamov. Najprej ustvari enega.';
+      'Ni nakupovalnih seznamov. Za nadaljevanje, ustvarite nov seznam.';
 
   @override
   String get continueWithGoogle => 'Nadaljuj z Googlom';
@@ -190,16 +190,16 @@ class AppLocalizationsSl extends AppLocalizations {
   String get authForgotPassword => 'Pozabljeno geslo?';
 
   @override
-  String get authDontHaveAccount => 'Nimaš računa? ';
+  String get authDontHaveAccount => 'Še nimate računa? ';
 
   @override
-  String get authCreateOne => 'Ustvari ga';
+  String get authCreateOne => 'Ustvarite ga';
 
   @override
-  String get authAlreadyHaveAccount => 'Že imaš račun? ';
+  String get authAlreadyHaveAccount => 'Že imate račun? ';
 
   @override
-  String get registerTitle => 'Ustvari račun';
+  String get registerTitle => 'Ustvarite račun';
 
   @override
   String get registerSubtitle => 'Začni slediti porabi';
@@ -214,11 +214,11 @@ class AppLocalizationsSl extends AppLocalizations {
   String get iAgreeToThe => 'Strinjam se s ';
 
   @override
-  String get termsAndConditions => 'pogoji in določili';
+  String get termsAndConditions => 'pogoji uporabe in politiko zasebnosti';
 
   @override
   String get mustAgreeToTerms =>
-      'Pred ustvarjanjem računa se morate strinjati s pogoji in določili.';
+      'Pred ustvarjanjem računa se morate strinjati s pogoji uporabe in politiko zasebnosti.';
 
   @override
   String get passwordMin6Chars => 'Vsaj 6 znakov';
@@ -1017,45 +1017,45 @@ class AppLocalizationsSl extends AppLocalizations {
   String get onboardingSkip => 'Preskoči';
 
   @override
-  String get onboardingGetStarted => 'Ustvari račun';
+  String get onboardingGetStarted => 'Ustvarite račun';
 
   @override
-  String get onboardingSignIn => 'Že imaš račun? Prijavi se';
+  String get onboardingSignIn => 'Že imate račun? Prijavite se';
 
   @override
   String get onboardingSlide1Title => 'Vse akcije na enem mestu';
 
   @override
   String get onboardingSlide1Body =>
-      'Brskaj med ponudbami Spara, Mercatorja, Hoferja, Lidla, Eurospina in več';
+      'Brskajte med ponudbami Spara, Mercatorja, Hoferja, Lidla, Eurospina in več, vse na enem mestu';
 
   @override
-  String get onboardingSlide2Title => 'Skeniraj in dodaj na seznam';
+  String get onboardingSlide2Title => 'Skeniraj in dodaj';
 
   @override
   String get onboardingSlide2Body =>
-      'Skeniraj črtne kode in takoj dodaj artikle na nakupovalni seznam';
+      'Skenirajte črtne kode za enostavno dodajanje artiklov na nakupovalni seznam';
 
   @override
-  String get onboardingSlide3Title => 'Sledi svoji porabi';
+  String get onboardingSlide3Title => 'Sledite svoji porabi';
 
   @override
   String get onboardingSlide3Body =>
-      'Skeniraj račune za samodejno beleženje nakupov in vpogled v porabo';
+      'Skenirajte račune za samodejno beleženje nakupov in vpogled v porabo';
 
   @override
-  String get onboardingSlide4Title => 'Nakupuj skupaj';
+  String get onboardingSlide4Title => 'Nakupujte skupaj';
 
   @override
   String get onboardingSlide4Body =>
-      'Ustvari skupne nakupovalne sezname in povabi družino ali prijatelje';
+      'Ustvarite deljene nakupovalne sezname in povabite družino ali prijatelje';
 
   @override
-  String get onboardingSlide5Title => 'Pripravljeni za začetek?';
+  String get onboardingSlide5Title => 'Pripravljeni?';
 
   @override
   String get onboardingSlide5Body =>
-      'Ustvari račun za prilagojena priporočila in vpogled v svojo porabo';
+      'Ustvarite račun za prilagojena priporočila in vpogled v svojo porabo';
 
   @override
   String legalLastUpdated(String date) {

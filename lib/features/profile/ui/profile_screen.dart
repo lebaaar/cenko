@@ -607,14 +607,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                          child: Text(
-                            l10n.profileSettingsSection,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
-                          ),
-                        ),
-                        _SettingsRow(label: l10n.settingsAccountSection, onTap: () => context.push('/settings')),
+                        _SettingsRow(label: l10n.settingsTitle, onTap: () => context.push('/settings')),
                         _SettingsRow(label: l10n.profileAbout, onTap: () => context.push('/about')),
                         _SettingsRow(label: l10n.profileLegal, onTap: () => context.push('/legal')),
                       ],
@@ -820,7 +813,14 @@ class _StoreSpendRow extends StatelessWidget {
 }
 
 class _MonthReceiptTile extends StatelessWidget {
-  const _MonthReceiptTile({required this.storeName, required this.dateLabel, required this.totalLabel, required this.itemLabel, this.onTap, this.onLongPress});
+  const _MonthReceiptTile({
+    required this.storeName,
+    required this.dateLabel,
+    required this.totalLabel,
+    required this.itemLabel,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final String storeName;
   final String dateLabel;
