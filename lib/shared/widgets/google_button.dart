@@ -1,3 +1,4 @@
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class GoogleButton extends StatelessWidget {
@@ -36,7 +37,7 @@ class GoogleButton extends StatelessWidget {
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
-                      'Continue with Google',
+                      AppLocalizations.of(context)!.continueWithGoogle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: labelStyle?.copyWith(color: colors.onSurface),

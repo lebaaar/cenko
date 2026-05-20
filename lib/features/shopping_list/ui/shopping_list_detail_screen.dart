@@ -5,6 +5,7 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
@@ -81,7 +82,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   _showAddActions(context, uid);
                 },
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Add item'),
+                label: Text(AppLocalizations.of(context)!.addItem),
                 foregroundColor: Colors.white,
                 backgroundColor: Theme.of(context).colorScheme.primary,
               ),
@@ -104,7 +105,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: uid == null
-                    ? const Center(child: Text('Please sign in'))
+                    ? Center(child: Text(AppLocalizations.of(context)!.listSignInPrompt))
                     : listAsync.when(
                         loading: () => const Center(child: CircularProgressIndicator()),
                         error: (e, _) => Center(child: Text('Failed to load list: ${e.toString().replaceFirst('Exception: ', '')}')),
@@ -117,7 +118,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 if (snapshot.connectionState == ConnectionState.waiting) {
                                   return const Center(child: CircularProgressIndicator());
                                 } else {
-                                  return const Center(child: Text('List not found'));
+                                  return Center(child: Text(AppLocalizations.of(context)!.listNotFound));
                                 }
                               },
                             );
@@ -159,7 +160,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(AppLocalizations.of(context)!.addToList, style: Theme.of(context).textTheme.titleLarge),
                   ),
                 ),
                 ListTile(
@@ -169,8 +170,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     height: 24,
                     colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurfaceVariant, BlendMode.srcIn),
                   ),
-                  title: const Text('Scan barcode'),
-                  subtitle: const Text('Use your camera to scan a barcode'),
+                  title: Text(AppLocalizations.of(context)!.listScanBarcode),
+                  subtitle: Text(AppLocalizations.of(context)!.listScanBarcodeSubtitle),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     context.go('/scan?mode=barcode&from=list&listId=${widget.listId}');
@@ -178,8 +179,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 ),
                 ListTile(
                   leading: const Icon(Icons.edit_note_rounded),
-                  title: const Text('Add manually'),
-                  subtitle: const Text('Manually enter item details'),
+                  title: Text(AppLocalizations.of(context)!.listAddManually),
+                  subtitle: Text(AppLocalizations.of(context)!.listAddManuallySubtitle),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _openItemForm(uid: uid);
@@ -219,9 +220,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item == null ? 'Add item' : 'Edit item', style: Theme.of(context).textTheme.titleLarge),
+                    Text(item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.listEditItemTitle, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
-                    Text(item == null ? 'Add a new item to the list' : 'Update item details', style: Theme.of(context).textTheme.bodyMedium),
+                    Text(item == null ? AppLocalizations.of(context)!.listAddItemSubtitle : AppLocalizations.of(context)!.listEditItemSubtitle, style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 16),
                     if (_formError != null) ...[
                       Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -231,9 +232,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       controller: _nameCtrl,
                       autofocus: true,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Item name'),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listItemName),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return 'Item name is required';
+                        if (value == null || value.trim().isEmpty) return AppLocalizations.of(context)!.listItemNameRequired;
                         return null;
                       },
                     ),
@@ -246,7 +247,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             controller: _quantityCtrl,
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(labelText: 'Quantity'),
+                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listQuantity),
                             validator: (value) {
                               if (value != null && value.trim().isNotEmpty) {
                                 if (int.tryParse(value.trim()) == null || int.parse(value.trim()) < 1) {
@@ -262,7 +263,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                           child: TextFormField(
                             controller: _unitCtrl,
                             textInputAction: TextInputAction.done,
-                            decoration: const InputDecoration(labelText: 'Unit'),
+                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listUnit),
                           ),
                         ),
                       ],
@@ -270,9 +271,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String?>(
                       initialValue: _selectedCategory,
-                      decoration: const InputDecoration(labelText: 'Category'),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listCategory),
                       items: [
-                        const DropdownMenuItem<String?>(value: null, child: Text('No category')),
+                        DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.of(context)!.listNoCategory)),
                         ..._categoryIcons.keys.map(
                           (c) => DropdownMenuItem<String?>(
                             value: c,
@@ -290,7 +291,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         onPressed: _saving ? null : () => _saveItemForm(uid: uid, setModalState: setModalState, sheetContext: context),
                         child: _saving
                             ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text(item == null ? 'Add item' : 'Save changes'),
+                            : Text(item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.saveChanges),
                       ),
                     ),
                   ],
@@ -372,11 +373,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text('Delete ${item.name}?', style: Theme.of(context).textTheme.titleLarge)),
+                          Expanded(child: Text(AppLocalizations.of(context)!.listDeleteItemTitle(item.name), style: Theme.of(context).textTheme.titleLarge)),
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Text('Item will be removed from the list', style: Theme.of(context).textTheme.bodyMedium),
+                      Text(AppLocalizations.of(context)!.listDeleteItemBody, style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -384,7 +385,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: TextButton(
                               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: deleting ? null : () => Navigator.of(dialogContext).pop(false),
-                              child: const Text('Close'),
+                              child: Text(AppLocalizations.of(context)!.close),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -411,7 +412,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                     },
                               child: deleting
                                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Delete'),
+                                  : Text(AppLocalizations.of(context)!.delete),
                             ),
                           ),
                         ],
@@ -453,7 +454,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
             void doRename() {
               final name = _renameCtrl.text.trim();
               if (name.isEmpty) {
-                setDialogState(() => error = 'Name is required');
+                setDialogState(() => error = AppLocalizations.of(context)!.listNameRequired);
                 return;
               }
               setDialogState(() {
@@ -487,14 +488,14 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Rename list', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppLocalizations.of(context)!.listRenameTitle, style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 16),
                       if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
                         controller: _renameCtrl,
                         autofocus: true,
                         textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(labelText: 'List name'),
+                        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.shoppingListNameLabel),
                         onSubmitted: saving ? null : (_) => doRename(),
                       ),
                       const SizedBox(height: 20),
@@ -504,7 +505,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: TextButton(
                               onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
                               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
-                              child: const Text('Close'),
+                              child: Text(AppLocalizations.of(context)!.close),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -514,7 +515,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                               onPressed: saving ? null : doRename,
                               child: saving
                                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Rename'),
+                                  : Text(AppLocalizations.of(context)!.rename),
                             ),
                           ),
                         ],
@@ -545,12 +546,12 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
             void doInvite() {
               final email = _inviteEmailCtrl.text.trim();
               if (email.isEmpty) {
-                setDialogState(() => error = 'Email is required');
+                setDialogState(() => error = AppLocalizations.of(context)!.listEmailRequired);
                 return;
               }
               final currentEmail = ref.read(authStateProvider).asData?.value?.email ?? '';
               if (email.toLowerCase() == currentEmail.toLowerCase()) {
-                setDialogState(() => error = 'You cannot invite yourself');
+                setDialogState(() => error = AppLocalizations.of(context)!.listCannotInviteSelf);
                 return;
               }
               setDialogState(() {
@@ -591,9 +592,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Invite to list', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppLocalizations.of(context)!.listInviteTitle, style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 4),
-                      Text('Invite user to join this shopping list', style: Theme.of(context).textTheme.bodyMedium),
+                      Text(AppLocalizations.of(context)!.listInviteSubtitle, style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 16),
                       if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
@@ -601,7 +602,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         autofocus: true,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(labelText: 'Email address'),
+                        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listEmailAddress),
                         onSubmitted: inviting ? null : (_) => doInvite(),
                       ),
                       const SizedBox(height: 20),
@@ -611,7 +612,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: TextButton(
                               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: () => Navigator.of(dialogContext).pop(),
-                              child: const Text('Close'),
+                              child: Text(AppLocalizations.of(context)!.close),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -621,7 +622,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                               onPressed: inviting ? null : doInvite,
                               child: inviting
                                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Invite'),
+                                  : Text(AppLocalizations.of(context)!.invite),
                             ),
                           ),
                         ],
@@ -661,11 +662,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Manage members', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppLocalizations.of(context)!.listManageMembersTitle, style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 4),
                       Text(
-                        '${list.members.length} member${list.members.length == 1 ? '' : 's'}'
-                        '${pendingInvitations.isNotEmpty ? ' · ${pendingInvitations.length} pending' : ''}',
+                        '${AppLocalizations.of(context)!.listMemberCount(list.members.length)}'
+                        '${pendingInvitations.isNotEmpty ? AppLocalizations.of(context)!.listPendingCount(pendingInvitations.length) : ''}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 16),
@@ -707,7 +708,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       if (pendingInvitations.isNotEmpty) ...[
                         const Divider(height: 20),
                         Text(
-                          'Pending invitations',
+                          AppLocalizations.of(context)!.listPendingInvitationsSection,
                           style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
@@ -729,7 +730,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       ],
                       if (members.isEmpty && pendingInvitations.isEmpty) ...[
                         const SizedBox(height: 8),
-                        Text('No other members yet', style: Theme.of(context).textTheme.bodyMedium),
+                        Text(AppLocalizations.of(context)!.listNoOtherMembers, style: Theme.of(context).textTheme.bodyMedium),
                       ],
                       const SizedBox(height: 16),
                       Align(
@@ -752,11 +753,13 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   }
 
   Future<void> _confirmLeaveOrDelete(String uid, ShoppingList list) async {
+    final l10n = AppLocalizations.of(context)!;
     final isOwner = list.ownerId == uid;
-    final action = isOwner ? 'Delete' : 'Leave';
+    final actionLabel = isOwner ? l10n.delete : l10n.listLeaveListMenu;
+    final titleText = isOwner ? l10n.listDeleteListTitle : l10n.listLeaveListTitle;
     final description = isOwner
-        ? 'This will permanently delete ${list.name} and all its items for all members'
-        : 'You will be removed from ${list.name} and will no longer see it in your lists';
+        ? l10n.listDeleteListDescription(list.name)
+        : l10n.listLeaveListDescription(list.name);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -786,7 +789,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(child: Text('$action list?', style: Theme.of(dialogContext).textTheme.titleLarge)),
+                      Expanded(child: Text(titleText, style: Theme.of(dialogContext).textTheme.titleLarge)),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -798,7 +801,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                         child: TextButton(
                           style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                           onPressed: () => Navigator.of(dialogContext).pop(false),
-                          child: const Text('Cancel'),
+                          child: Text(AppLocalizations.of(context)!.cancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -809,7 +812,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             foregroundColor: Theme.of(dialogContext).colorScheme.onError,
                           ),
                           onPressed: () => Navigator.of(dialogContext).pop(true),
-                          child: Text(action),
+                          child: Text(actionLabel),
                         ),
                       ),
                     ],
@@ -836,7 +839,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       context.go('/list');
     } catch (e) {
       if (!mounted) return;
-      SnackBarService.show('Failed to $action list: ${e.toString().replaceFirst('Exception: ', '')}');
+      SnackBarService.show('Failed to ${isOwner ? 'delete' : 'leave'} list: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
 }
@@ -867,7 +870,7 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  list?.name ?? 'Shopping List',
+                  list?.name ?? AppLocalizations.of(context)!.listFallbackTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -883,7 +886,7 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           if (list != null) ...[
-            IconButton(icon: const Icon(Icons.person_add_rounded), onPressed: onInvite, tooltip: 'Invite people'),
+            IconButton(icon: const Icon(Icons.person_add_rounded), onPressed: onInvite, tooltip: AppLocalizations.of(context)!.listInvitePeopleTooltip),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
@@ -896,11 +899,11 @@ class _TopBar extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
-                if (onManageMembers != null) const PopupMenuItem(value: 'manage', child: Text('Manage members')),
-                const PopupMenuItem(value: 'rename', child: Text('Rename list')),
+                if (onManageMembers != null) PopupMenuItem(value: 'manage', child: Text(AppLocalizations.of(context)!.listManageMembersMenu)),
+                PopupMenuItem(value: 'rename', child: Text(AppLocalizations.of(context)!.listRenameListMenu)),
                 PopupMenuItem(
                   value: 'leave',
-                  child: Text(isOwner ? 'Delete list' : 'Leave list', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Text(isOwner ? AppLocalizations.of(context)!.listDeleteListMenu : AppLocalizations.of(context)!.listLeaveListMenu, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
               ],
             ),
@@ -982,15 +985,27 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
     return sorted;
   }
 
+  String _itemSortLabel(_ItemSortOption option, AppLocalizations l10n) {
+    switch (option) {
+      case _ItemSortOption.newestFirst: return l10n.itemSortNewestFirst;
+      case _ItemSortOption.oldestFirst: return l10n.itemSortOldestFirst;
+      case _ItemSortOption.alphabeticalAZ: return l10n.itemSortAlphaAZ;
+      case _ItemSortOption.alphabeticalZA: return l10n.itemSortAlphaZA;
+      case _ItemSortOption.unboughtFirst: return l10n.itemSortUnboughtFirst;
+      case _ItemSortOption.boughtFirst: return l10n.itemSortBoughtFirst;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return widget.itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
       data: (items) {
         if (items.isEmpty) {
-          return const Center(
-            child: Text('Tap "Add item" to add items to this shopping list', style: TextStyle(fontSize: 15), textAlign: TextAlign.center),
+          return Center(
+            child: Text(l10n.listAddItemPrompt, style: const TextStyle(fontSize: 15), textAlign: TextAlign.center),
           );
         }
 
@@ -1003,7 +1018,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Items'),
+                Text(l10n.listItems),
                 PopupMenuButton<_ItemSortOption>(
                   onSelected: (option) => setState(() => _sortOption = option),
                   itemBuilder: (context) => _ItemSortOption.values
@@ -1014,20 +1029,20 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                             children: [
                               if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
                               const SizedBox(width: 12),
-                              Text(option.label),
+                              Text(_itemSortLabel(option, l10n)),
                             ],
                           ),
                         ),
                       )
                       .toList(),
-                  tooltip: 'Sort items',
+                  tooltip: l10n.listSortItems,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
-                        _sortOption.label.split('(')[0].trim(),
+                        _itemSortLabel(_sortOption, l10n).split('(')[0].trim(),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -1120,7 +1135,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
             children: [
               Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.error, size: 20),
               const SizedBox(width: 12),
-              Text('Remove', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(AppLocalizations.of(context)!.remove, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
           ),
         ),
@@ -1164,6 +1179,16 @@ class _ShoppingItemTile extends StatelessWidget {
   final ValueChanged<bool>? onToggleBought;
   final VoidCallback onEdit;
   final VoidCallback? onLongPress;
+
+  String? _subtitleText(AppLocalizations l10n) {
+    final deal = bestDeal;
+    if (deal == null) return null;
+    final savings = deal.savingsCents;
+    if (savings > 0) {
+      return l10n.listItemBestDealSave(deal.storeName, formatCents(deal.salePriceCents), formatCents(savings));
+    }
+    return l10n.listItemBestDeal(deal.storeName, formatCents(deal.salePriceCents));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1228,7 +1253,7 @@ class _ShoppingItemTile extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (_subtitleText() != null) ...[const SizedBox(height: 2), Text(_subtitleText()!, style: subtitleStyle)],
+                    if (_subtitleText(AppLocalizations.of(context)!) != null) ...[const SizedBox(height: 2), Text(_subtitleText(AppLocalizations.of(context)!)!, style: subtitleStyle)],
                   ],
                 ),
               ),
@@ -1239,15 +1264,6 @@ class _ShoppingItemTile extends StatelessWidget {
     );
   }
 
-  String? _subtitleText() {
-    final deal = bestDeal;
-    if (deal == null) return null;
-    final savings = deal.savingsCents;
-    if (savings > 0) {
-      return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)} (save ${formatCents(savings)})';
-    }
-    return 'Best now at ${deal.storeName} ${formatCents(deal.salePriceCents)}';
-  }
 
   String? _quantityUnitText() {
     final hasQty = item.quantity > 1;
@@ -1287,9 +1303,9 @@ class _MemberRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isSelf ? '$name (You)' : name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(isSelf ? '$name${AppLocalizations.of(context)!.listMemberYouSuffix}' : name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                 Text(
-                  isOwner ? 'Owner' : 'Member',
+                  isOwner ? AppLocalizations.of(context)!.listMemberOwner : AppLocalizations.of(context)!.listMemberMember,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -1302,10 +1318,10 @@ class _MemberRow extends StatelessWidget {
                 if (value == 'remove') onRemove?.call();
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'owner', child: Text('Make owner')),
+                PopupMenuItem(value: 'owner', child: Text(AppLocalizations.of(context)!.listMakeOwner)),
                 PopupMenuItem(
                   value: 'remove',
-                  child: Text('Remove from list', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Text(AppLocalizations.of(context)!.listRemoveFromList, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
               ],
             ),
@@ -1338,7 +1354,7 @@ class _PendingInvitationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(email, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                Text('Pending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(AppLocalizations.of(context)!.listPending, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -1349,7 +1365,7 @@ class _PendingInvitationRow extends StatelessWidget {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'cancel',
-                child: Text('Cancel invitation', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                child: Text(AppLocalizations.of(context)!.listCancelInvitation, style: TextStyle(color: Theme.of(context).colorScheme.error)),
               ),
             ],
           ),

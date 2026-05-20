@@ -1,5 +1,6 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/auth_util.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -62,8 +63,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 }
 
-// Form view — enter email
-
 class _FormView extends StatelessWidget {
   const _FormView({required this.formKey, required this.emailCtrl, required this.loading, required this.error, required this.onSubmit});
 
@@ -75,19 +74,18 @@ class _FormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
 
-        // Hero
-        Text('Reset password', style: Theme.of(context).textTheme.headlineMedium),
+        Text(l10n.forgotPasswordTitle, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
-        Text("Enter your email and we'll send you a link to reset your password.", style: Theme.of(context).textTheme.bodyMedium),
+        Text(l10n.forgotPasswordBody, style: Theme.of(context).textTheme.bodyMedium),
 
         const SizedBox(height: 32),
 
-        // Form
         Form(
           key: formKey,
           child: TextFormField(
@@ -97,12 +95,11 @@ class _FormView extends StatelessWidget {
             onFieldSubmitted: (_) => onSubmit(),
             autofocus: true,
             style: GoogleFonts.manrope(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
-            decoration: const InputDecoration(labelText: 'Email'),
+            decoration: InputDecoration(labelText: l10n.email),
             validator: validateEmail,
           ),
         ),
 
-        // Error
         if (error != null) ...[
           const SizedBox(height: 16),
           Text(error!, style: GoogleFonts.manrope(fontSize: 13, color: Theme.of(context).colorScheme.error)),
@@ -110,13 +107,11 @@ class _FormView extends StatelessWidget {
 
         const SizedBox(height: 32),
 
-        LargeButton(label: 'Send reset link', onPressed: loading ? null : onSubmit, loading: loading),
+        LargeButton(label: l10n.sendResetLink, onPressed: loading ? null : onSubmit, loading: loading),
       ],
     );
   }
 }
-
-// Confirmation view — email sent
 
 class _ConfirmationView extends StatelessWidget {
   const _ConfirmationView({required this.email});
@@ -125,6 +120,7 @@ class _ConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,25 +135,25 @@ class _ConfirmationView extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        Text('Check your email', style: Theme.of(context).textTheme.headlineMedium),
+        Text(l10n.checkYourEmail, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
         RichText(
           text: TextSpan(
             style: GoogleFonts.manrope(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.6),
             children: [
-              const TextSpan(text: "We've sent a password reset link to "),
+              TextSpan(text: l10n.resetEmailSentPre),
               TextSpan(
                 text: email,
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
               ),
-              const TextSpan(text: '. Follow the link in the email to set a new password'),
+              TextSpan(text: l10n.resetEmailSentPost),
             ],
           ),
         ),
 
         const SizedBox(height: 44),
 
-        LargeButton(label: 'Back to sign in', onPressed: () => context.go('/login')),
+        LargeButton(label: l10n.backToSignIn, onPressed: () => context.go('/login')),
 
         const SizedBox(height: 32),
       ],

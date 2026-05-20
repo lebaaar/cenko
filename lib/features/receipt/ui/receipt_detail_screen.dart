@@ -1,6 +1,7 @@
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -56,8 +57,8 @@ class ReceiptDetailScreen extends ConsumerWidget {
       data: (receiptDoc) {
         if (!receiptDoc.exists) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Receipt'), leading: BackButton(onPressed: () => context.pop())),
-            body: const Center(child: Text('Receipt not found')),
+            appBar: AppBar(title: Text(AppLocalizations.of(context)!.receiptTitle), leading: BackButton(onPressed: () => context.pop())),
+            body: Center(child: Text(AppLocalizations.of(context)!.receiptNotFound)),
           );
         }
 
@@ -152,7 +153,7 @@ class _ReceiptHeaderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Scanned ${displayWordedDate(scannedAt)} · ${_timeLabel(scannedAt)}',
+                  AppLocalizations.of(context)!.receiptScanned(displayWordedDate(scannedAt), _timeLabel(scannedAt)),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -200,12 +201,12 @@ class _ItemsCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ITEMS (${items.length})',
+                AppLocalizations.of(context)!.receiptItemsHeader(items.length),
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
               ),
               if (items.isEmpty) ...[
                 const SizedBox(height: 12),
-                Text('No items', style: Theme.of(context).textTheme.bodyMedium),
+                Text(AppLocalizations.of(context)!.receiptNoItems, style: Theme.of(context).textTheme.bodyMedium),
               ] else ...[
                 const SizedBox(height: 4),
                 for (int i = 0; i < items.length; i++) ...[
@@ -408,9 +409,9 @@ class _EditItemSheetState extends State<_EditItemSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit item', style: Theme.of(context).textTheme.titleLarge),
+            Text(AppLocalizations.of(context)!.receiptEditItemTitle, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
-            Text('Update item details', style: Theme.of(context).textTheme.bodyMedium),
+            Text(AppLocalizations.of(context)!.receiptEditItemSubtitle, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
             if (_formError != null) ...[
               Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -421,18 +422,18 @@ class _EditItemSheetState extends State<_EditItemSheet> {
               autofocus: true,
               textInputAction: TextInputAction.next,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Item name'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Item name is required' : null,
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listItemName),
+              validator: (v) => (v == null || v.trim().isEmpty) ? AppLocalizations.of(context)!.listItemNameRequired : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _priceCtrl,
               textInputAction: widget.quantity > 1 ? TextInputAction.next : TextInputAction.done,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Unit price (€)'),
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.receiptUnitPrice),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Price is required';
-                if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Invalid price';
+                if (v == null || v.trim().isEmpty) return AppLocalizations.of(context)!.receiptPriceRequired;
+                if (double.tryParse(v.replaceAll(',', '.')) == null) return AppLocalizations.of(context)!.receiptInvalidPrice;
                 return null;
               },
             ),
@@ -442,10 +443,10 @@ class _EditItemSheetState extends State<_EditItemSheet> {
                 controller: _qtyCtrl,
                 textInputAction: TextInputAction.done,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Quantity'),
+                decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listQuantity),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Quantity is required';
-                  if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Invalid quantity';
+                  if (v == null || v.trim().isEmpty) return AppLocalizations.of(context)!.receiptQuantityRequired;
+                  if (double.tryParse(v.replaceAll(',', '.')) == null) return AppLocalizations.of(context)!.receiptInvalidQuantity;
                   return null;
                 },
               ),
@@ -458,7 +459,7 @@ class _EditItemSheetState extends State<_EditItemSheet> {
                 onPressed: _saving ? null : _save,
                 child: _saving
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Save changes'),
+                    : Text(AppLocalizations.of(context)!.saveChanges),
               ),
             ),
           ],

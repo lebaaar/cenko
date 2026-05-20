@@ -16,6 +16,7 @@ import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stu
     if (dart.library.io) 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_io.dart'
     as receipt_ocr;
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -30,7 +31,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-const _processingHints = <String>['Reading receipt', 'Processing receipt', 'Extracting items and prices', 'Almost done'];
 
 const _commonBoughtProductWindowDays = 90;
 const _commonBoughtProductInactivityDays = 45;
@@ -117,8 +117,15 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   _ReceiptFlowState _receiptFlowState = _ReceiptFlowState.idle;
   Map<String, dynamic>? _pendingReceiptPayload;
   int _processingHintIndex = 0;
-  String _processingHint = _processingHints.first;
+  String _processingHint = '';
   Timer? _processingHintTimer;
+
+  List<String> get _processingHints => [
+    AppLocalizations.of(context)!.scanReadingReceipt,
+    AppLocalizations.of(context)!.scanProcessingReceipt,
+    AppLocalizations.of(context)!.scanExtractingItems,
+    AppLocalizations.of(context)!.scanAlmostDone,
+  ];
   String? _receiptFlowMessage;
   _BarcodeFlowState _barcodeFlowState = _BarcodeFlowState.idle;
   String? _barcodeFlowMessage;
@@ -241,7 +248,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               children: [
                 if (_receiptFlowState == _ReceiptFlowState.readyToSubmit) ...[
                   Text(
-                    'Receipt extracted',
+                    AppLocalizations.of(context)!.scanReceiptExtracted,
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 10),
@@ -252,7 +259,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Press Enter to store this receipt',
+                    AppLocalizations.of(context)!.scanPressEnterToStore,
                     style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.76)),
                     textAlign: TextAlign.center,
                   ),
@@ -262,14 +269,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: FilledButton.icon(
                       onPressed: _saveExtractedReceipt,
                       icon: const Icon(Icons.save_rounded),
-                      label: const Text('Store receipt'),
+                      label: Text(AppLocalizations.of(context)!.scanStoreReceipt),
                       style: _primaryActionStyle(context),
                     ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetReceiptFlow, style: _secondaryActionStyle(context), child: const Text('Scan again')),
+                    child: OutlinedButton(onPressed: _resetReceiptFlow, style: _secondaryActionStyle(context), child: Text(AppLocalizations.of(context)!.scanAgain)),
                   ),
                 ],
                 if (_receiptFlowState == _ReceiptFlowState.processing) ...[
@@ -291,12 +298,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Failed to save receipt',
+                    AppLocalizations.of(context)!.scanFailedToSaveReceipt,
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _receiptFlowMessage ?? 'Please try again',
+                    _receiptFlowMessage ?? AppLocalizations.of(context)!.scanPleaseTryAgain,
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -315,12 +322,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   const Icon(Icons.check_circle_rounded, size: 64, color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    'Receipt saved',
+                    AppLocalizations.of(context)!.scanReceiptSaved,
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Receipt from ${_asString((_pendingReceiptPayload?['receipt'] as Map<String, dynamic>?)?['store_name'], fallback: 'store')} logged successfully',
+                    AppLocalizations.of(context)!.scanReceiptLoggedSuccessfully(_asString((_pendingReceiptPayload?['receipt'] as Map<String, dynamic>?)?['store_name'], fallback: 'store')),
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -330,7 +337,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: FilledButton.icon(
                       onPressed: _resetReceiptFlow,
                       icon: const Icon(Icons.document_scanner_rounded),
-                      label: const Text('Scan another'),
+                      label: Text(AppLocalizations.of(context)!.scanAnother),
                       style: _primaryActionStyle(context),
                     ),
                   ),
@@ -340,7 +347,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: OutlinedButton(
                       onPressed: () => context.go('/profile'),
                       style: _secondaryActionStyle(context),
-                      child: const Text('See spendings breakdown'),
+                      child: Text(AppLocalizations.of(context)!.scanSeeSpendingsBreakdown),
                     ),
                   ),
                 ],
@@ -378,12 +385,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Failed to load product',
+                    AppLocalizations.of(context)!.scanFailedToLoadProduct,
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _barcodeFlowMessage ?? 'Failed to get product details',
+                    _barcodeFlowMessage ?? AppLocalizations.of(context)!.scanFailedToGetDetails,
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -393,27 +400,27 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: FilledButton.icon(
                       onPressed: _showBarcodeManualAddSheet,
                       icon: const Icon(Icons.edit_note_rounded),
-                      label: const Text('Add manually'),
+                      label: Text(AppLocalizations.of(context)!.scanAddManually),
                       style: _primaryActionStyle(context),
                     ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resumeBarcodeScanning, style: _secondaryActionStyle(context), child: const Text('Try again')),
+                    child: OutlinedButton(onPressed: _resumeBarcodeScanning, style: _secondaryActionStyle(context), child: Text(AppLocalizations.of(context)!.scanTryAgain)),
                   ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.success) ...[
                   const Icon(Icons.inventory_2_rounded, size: 64, color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    productName ?? 'Product found',
+                    productName ?? AppLocalizations.of(context)!.scanProductFound,
                     style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    productLabel ?? 'Ready to add to shopping list',
+                    productLabel ?? AppLocalizations.of(context)!.scanReadyToAdd,
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -423,7 +430,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: FilledButton.icon(
                       onPressed: _addBarcodeProductToShoppingList,
                       icon: const Icon(Icons.playlist_add_rounded),
-                      label: const Text('Add to shopping list'),
+                      label: Text(AppLocalizations.of(context)!.productAddToShoppingList),
                       style: _primaryActionStyle(context),
                     ),
                   ),
@@ -433,7 +440,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     child: OutlinedButton(
                       onPressed: _resumeBarcodeScanning,
                       style: _secondaryActionStyle(context),
-                      child: const Text('Scan another'),
+                      child: Text(AppLocalizations.of(context)!.scanAnother),
                     ),
                   ),
                 ],
@@ -472,8 +479,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _ModeTab(label: 'Barcode', selected: isBarcode, onTap: () => _onModeSelected(_ScanMode.barcode)),
-                      _ModeTab(label: 'Receipt', selected: !isBarcode, onTap: () => _onModeSelected(_ScanMode.receipt)),
+                      _ModeTab(label: AppLocalizations.of(context)!.scanBarcodeTab, selected: isBarcode, onTap: () => _onModeSelected(_ScanMode.barcode)),
+                      _ModeTab(label: AppLocalizations.of(context)!.scanReceiptTab, selected: !isBarcode, onTap: () => _onModeSelected(_ScanMode.receipt)),
                     ],
                   ),
                 ),
@@ -606,7 +613,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   String _modeInstruction() {
-    return _mode == _ScanMode.barcode ? 'Scan a barcode to add item to your shopping list' : 'Scan a receipt to track your spendings';
+    final l10n = AppLocalizations.of(context)!;
+    return _mode == _ScanMode.barcode ? l10n.scanBarcodeInstruction : l10n.scanReceiptInstruction;
   }
 
   String _readySummaryText() {
@@ -649,8 +657,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
       final camera = _receiptCamera;
       if (camera == null || !camera.value.isInitialized) {
-        return const Center(
-          child: Padding(padding: EdgeInsets.all(24), child: Text('Camera is not ready')),
+        return Center(
+          child: Padding(padding: const EdgeInsets.all(24), child: Text(AppLocalizations.of(context)!.scanCameraNotReady)),
         );
       }
       final previewSize = camera.value.previewSize;

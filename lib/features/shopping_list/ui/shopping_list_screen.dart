@@ -1,6 +1,7 @@
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -38,14 +39,14 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: MainTopBar(
-                title: 'Shopping Lists',
+                title: AppLocalizations.of(context)!.shoppingListsTitle,
                 trailing: uid == null
                     ? null
-                    : IconButton(icon: const Icon(Icons.add_rounded), onPressed: () => _showCreateListDialog(context, uid), tooltip: 'New list'),
+                    : IconButton(icon: const Icon(Icons.add_rounded), onPressed: () => _showCreateListDialog(context, uid), tooltip: AppLocalizations.of(context)!.shoppingListNewTooltip),
               ),
             ),
             Expanded(
-              child: uid == null ? const Center(child: Text('Please sign in to view your shopping lists')) : _Body(uid: uid),
+              child: uid == null ? Center(child: Text(AppLocalizations.of(context)!.shoppingListSignInPrompt)) : _Body(uid: uid),
             ),
           ],
         ),
@@ -57,6 +58,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     _newListNameCtrl.clear();
     final currentUser = ref.read(currentUserProvider).asData?.value;
 
+    final l10n = AppLocalizations.of(context)!;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -68,7 +70,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             void doCreate() {
               final name = _newListNameCtrl.text.trim();
               if (name.isEmpty) {
-                setDialogState(() => error = 'List name is required');
+                setDialogState(() => error = l10n.shoppingListNameRequired);
                 return;
               }
               setDialogState(() {
@@ -108,14 +110,14 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('New shopping list', style: Theme.of(context).textTheme.titleLarge),
+                      Text(l10n.shoppingListCreateTitle, style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 16),
                       if (error != null) ...[Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 8)],
                       TextField(
                         controller: _newListNameCtrl,
                         autofocus: true,
                         textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(labelText: 'List name'),
+                        decoration: InputDecoration(labelText: l10n.shoppingListNameLabel),
                         onSubmitted: creating ? null : (_) => doCreate(),
                       ),
                       const SizedBox(height: 20),
@@ -125,7 +127,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             child: TextButton(
                               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface),
                               onPressed: creating ? null : () => Navigator.of(dialogContext).pop(),
-                              child: const Text('Cancel'),
+                              child: Text(l10n.cancel),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -135,7 +137,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                               onPressed: creating ? null : doCreate,
                               child: creating
                                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Create'),
+                                  : Text(l10n.create),
                             ),
                           ),
                         ],
@@ -203,8 +205,24 @@ class _BodyState extends ConsumerState<_Body> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
+  String _sortOptionLabel(SortOption option, AppLocalizations l10n) {
+    switch (option) {
+      case SortOption.alphabeticalAZ:
+        return l10n.sortAlphaAZ;
+      case SortOption.alphabeticalZA:
+        return l10n.sortAlphaZA;
+      case SortOption.recentlyUpdated:
+        return l10n.sortRecentlyUpdated;
+      case SortOption.mostItems:
+        return l10n.sortMostItems;
+      case SortOption.leastItems:
+        return l10n.sortLeastItems;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final email = ref.watch(authStateProvider).asData?.value?.email ?? '';
     final listsAsync = ref.watch(userShoppingListsProvider(widget.uid));
     final invitationsAsync = email.isEmpty ? const AsyncLoading<List<ShoppingListInvitation>>() : ref.watch(pendingInvitationsProvider(email));
@@ -224,13 +242,13 @@ class _BodyState extends ConsumerState<_Body> {
                 children: [
                   invitationsAsync.when(
                     loading: () => const SizedBox.shrink(),
-                    error: (e, _) => const Padding(padding: EdgeInsets.only(bottom: 12), child: Text('Could not load invitations')),
+                    error: (e, _) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(l10n.shoppingListCouldNotLoadInvitations)),
                     data: (invitations) => invitations.isEmpty
                         ? const SizedBox.shrink()
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Invitations'),
+                              Text(l10n.shoppingListInvitationsSection),
                               const SizedBox(height: 8),
                               ...invitations.map(
                                 (inv) => _InvitationCard(
@@ -245,14 +263,14 @@ class _BodyState extends ConsumerState<_Body> {
                   ),
                   if (lists.isEmpty) ...[
                     const SizedBox(height: 80),
-                    const Center(
-                      child: Text('No shopping lists yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
+                    Center(
+                      child: Text(l10n.shoppingListEmptyState, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15)),
                     ),
                   ] else ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Your lists'),
+                        Text(l10n.shoppingListYourLists),
                         PopupMenuButton<SortOption>(
                           onSelected: (option) => setState(() => _sortOption = option),
                           itemBuilder: (context) => SortOption.values
@@ -263,20 +281,20 @@ class _BodyState extends ConsumerState<_Body> {
                                     children: [
                                       if (_sortOption == option) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
                                       const SizedBox(width: 12),
-                                      Text(option.label),
+                                      Text(_sortOptionLabel(option, l10n)),
                                     ],
                                   ),
                                 ),
                               )
                               .toList(),
-                          tooltip: 'Sort options',
+                          tooltip: l10n.dealsSort,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               const SizedBox(width: 4),
                               Text(
-                                _sortOption.label.split('(')[0].trim(),
+                                _sortOptionLabel(_sortOption, l10n).split('(')[0].trim(),
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ],
@@ -309,8 +327,9 @@ class _ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPrivate = list.members.length == 1;
-    final memberNames = isPrivate ? 'Private list' : list.members.map((m) => m.name).join(', ');
+    final memberNames = isPrivate ? l10n.listPrivate : list.members.map((m) => m.name).join(', ');
     final remaining = list.itemCount - list.boughtCount;
 
     return Padding(
@@ -350,7 +369,7 @@ class _ListCard extends StatelessWidget {
                   Icon(Icons.checklist_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
-                    list.itemCount == 0 ? 'Empty' : '$remaining remaining · ${list.boughtCount} bought',
+                    list.itemCount == 0 ? l10n.listEmpty : l10n.listItemsRemainingBought(remaining, list.boughtCount),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
@@ -392,7 +411,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${widget.invitation.invitedByName} invited you to join',
+              AppLocalizations.of(context)!.listInvitedToJoin(widget.invitation.invitedByName),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 2),
@@ -401,7 +420,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(onPressed: _loading ? null : () => _respond(false), child: const Text('Decline')),
+                  child: OutlinedButton(onPressed: _loading ? null : () => _respond(false), child: Text(AppLocalizations.of(context)!.decline)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -411,7 +430,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _loading ? null : () => _respond(true),
-                    child: const Text('Accept'),
+                    child: Text(AppLocalizations.of(context)!.accept),
                   ),
                 ),
               ],

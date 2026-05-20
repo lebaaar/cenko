@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -82,19 +83,28 @@ class _ContactScreenState extends State<ContactScreen> {
       );
       if (!mounted) return;
       context.pop();
-      SnackBarService.show('Message sent successfully!');
+      SnackBarService.show(AppLocalizations.of(context)!.contactMessageSent);
     } catch (_) {
       if (!mounted) return;
-      SnackBarService.show('Failed to send message. Please try again.');
+      SnackBarService.show(AppLocalizations.of(context)!.contactFailedToSend);
     } finally {
       if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  String _contactTypeLabel(ContactType type, AppLocalizations l10n) {
+    switch (type) {
+      case ContactType.contact: return l10n.aboutContact;
+      case ContactType.feedback: return l10n.aboutFeedback;
+      case ContactType.featureRequest: return l10n.aboutFeatureRequest;
+      case ContactType.bugReport: return l10n.aboutBugReport;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Contact')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.contactTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -105,8 +115,8 @@ class _ContactScreenState extends State<ContactScreen> {
               children: [
                 DropdownButtonFormField<ContactType>(
                   initialValue: _selectedType,
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  items: ContactType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.contactType),
+                  items: ContactType.values.map((t) => DropdownMenuItem(value: t, child: Text(_contactTypeLabel(t, AppLocalizations.of(context)!)))).toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedType = v);
                   },
@@ -116,18 +126,18 @@ class _ContactScreenState extends State<ContactScreen> {
                   controller: _nameCtrl,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Name (optional)'),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.contactNameOptional),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailCtrl,
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.email),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email is required';
+                    if (v == null || v.trim().isEmpty) return AppLocalizations.of(context)!.contactEmailRequired;
                     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                    if (!emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
+                    if (!emailRegex.hasMatch(v.trim())) return AppLocalizations.of(context)!.contactInvalidEmail;
                     return null;
                   },
                 ),
@@ -138,9 +148,9 @@ class _ContactScreenState extends State<ContactScreen> {
                   keyboardType: TextInputType.multiline,
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: 5,
-                  decoration: const InputDecoration(labelText: 'Message', alignLabelWithHint: true),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.contactMessage, alignLabelWithHint: true),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Message is required';
+                    if (v == null || v.trim().isEmpty) return AppLocalizations.of(context)!.contactMessageRequired;
                     return null;
                   },
                 ),
@@ -152,7 +162,7 @@ class _ContactScreenState extends State<ContactScreen> {
                     style: FilledButton.styleFrom(foregroundColor: Colors.white),
                     child: _isSending
                         ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Send'),
+                        : Text(AppLocalizations.of(context)!.send),
                   ),
                 ),
               ],

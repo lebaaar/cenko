@@ -66,6 +66,7 @@ flutter:
     - .env
     - assets/icons/barcode_scanner.svg
     - assets/cenko/logo.png
+    - assets/cenko/logo_rounded.png
     - assets/stores/spar.png
     - assets/stores/mercator.webp
     - assets/stores/tus.png

@@ -1,5 +1,6 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/auth_util.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
@@ -59,10 +60,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
-      setState(() => _error = 'You must agree to the terms and conditions before creating an account.');
+      setState(() => _error = l10n.mustAgreeToTerms);
       return;
     }
 
@@ -81,6 +82,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colors.surface,
@@ -93,14 +95,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             children: [
               const SizedBox(height: 12),
 
-              // Hero
-              Text('Create account', style: Theme.of(context).textTheme.headlineMedium),
+              Text(l10n.registerTitle, style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 6),
-              Text('Start tracking your spending', style: Theme.of(context).textTheme.bodyMedium),
+              Text(l10n.registerSubtitle, style: Theme.of(context).textTheme.bodyMedium),
 
               const SizedBox(height: 25),
 
-              // Form
               Form(
                 key: _formKey,
                 child: Column(
@@ -110,8 +110,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
-                      decoration: const InputDecoration(labelText: 'Full name'),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                      decoration: InputDecoration(labelText: l10n.fullName),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? l10n.enterYourName : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -119,7 +119,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      decoration: InputDecoration(labelText: l10n.email),
                       validator: validateEmail,
                     ),
                     const SizedBox(height: 14),
@@ -129,7 +129,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       textInputAction: TextInputAction.next,
                       style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: l10n.password,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -139,17 +139,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
-                      validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+                      validator: (v) => (v == null || v.length < 6) ? l10n.passwordMin6Chars : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _confirmCtrl,
                       obscureText: _obscureConfirm,
                       textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
+                      onFieldSubmitted: (_) => _submit(l10n),
                       style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
                       decoration: InputDecoration(
-                        labelText: 'Confirm password',
+                        labelText: l10n.confirmPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -159,7 +159,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                         ),
                       ),
-                      validator: (v) => v != _passwordCtrl.text ? 'Passwords do not match' : null,
+                      validator: (v) => v != _passwordCtrl.text ? l10n.passwordsDontMatch : null,
                     ),
                     const SizedBox(height: 16),
                     InkWell(
@@ -175,11 +175,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('I agree to the ', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
+                                  Text(l10n.iAgreeToThe, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                                   GestureDetector(
                                     onTap: () => context.push('/legal'),
                                     child: Text(
-                                      'terms and conditions',
+                                      l10n.termsAndConditions,
                                       style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
                                     ),
                                   ),
@@ -195,13 +195,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
 
               const SizedBox(height: 16),
-              // Error
               if (_error != null) ...[const SizedBox(height: 16), Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: colors.error))],
 
               const SizedBox(height: 32),
 
-              // CTA
-              LargeButton(label: 'Create account', onPressed: _loading || !_agreedToTerms ? null : _submit, loading: _loading),
+              LargeButton(label: l10n.registerTitle, onPressed: _loading || !_agreedToTerms ? null : () => _submit(l10n), loading: _loading),
               const SizedBox(height: 16),
               const OrDivider(),
               const SizedBox(height: 16),
@@ -209,17 +207,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
               const SizedBox(height: 32),
 
-              // Login link
               Center(
                 child: Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text('Already have an account? ', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
+                    Text(l10n.authAlreadyHaveAccount, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                     GestureDetector(
                       onTap: () => context.pop(),
                       child: Text(
-                        'Sign in',
+                        l10n.signIn,
                         style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
                       ),
                     ),

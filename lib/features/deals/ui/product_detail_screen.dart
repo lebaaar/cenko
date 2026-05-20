@@ -4,6 +4,7 @@ import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,8 +37,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }) async {
     if (_addingToList) return;
 
+    final l10n = AppLocalizations.of(context)!;
     if (lists.isEmpty) {
-      SnackBarService.show('No shopping lists found. Create one first.');
+      SnackBarService.show(l10n.noShoppingListsCreate);
       return;
     }
 
@@ -61,7 +63,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(AppLocalizations.of(context)!.addToList, style: Theme.of(context).textTheme.titleLarge),
                   ),
                   Expanded(
                     child: ListView(
@@ -71,7 +73,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           (list) => ListTile(
                             leading: const Icon(Icons.checklist_rounded),
                             title: Text(list.name),
-                            subtitle: Text('${list.itemCount} items'),
+                            subtitle: Text(AppLocalizations.of(context)!.productItemCount(list.itemCount)),
                             onTap: () => Navigator.of(sheetContext).pop(list.id),
                           ),
                         ),
@@ -93,11 +95,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     try {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
       if (mounted) {
-        SnackBarService.show('Added to shopping list');
+        SnackBarService.show(l10n.addedToShoppingList);
         context.pop();
       }
     } catch (_) {
-      if (mounted) SnackBarService.show('Failed to add item to shopping list');
+      if (mounted) SnackBarService.show(l10n.failedToAddToList);
     } finally {
       if (mounted) setState(() => _addingToList = false);
     }
@@ -123,13 +125,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         if (deal == null) {
           return Scaffold(
             appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
-            body: const Center(child: Text('Deal not found')),
+            body: Center(child: Text(AppLocalizations.of(context)!.productDealNotFound)),
           );
         }
         return _ProductDetailView(
           deal: deal,
           onAddToList: uid == null
-              ? () => SnackBarService.show('Sign in to add items to your shopping list')
+              ? () => SnackBarService.show(AppLocalizations.of(context)!.dealSignInToAdd)
               : () => _addToShoppingList(deal: deal, uid: uid, lists: lists),
           isAddingToList: _addingToList,
         );
@@ -137,6 +139,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 }
+
+
 
 class _ProductDetailView extends StatelessWidget {
   const _ProductDetailView({required this.deal, required this.onAddToList, required this.isAddingToList});
@@ -192,7 +196,7 @@ class _ProductDetailView extends StatelessWidget {
                 _ValidityCard(deal: deal),
                 if (deal.category != null) ...[
                   const SizedBox(height: 12),
-                  _InfoTile(icon: Icons.category_rounded, label: 'Category', value: deal.category!),
+                  _InfoTile(icon: Icons.category_rounded, label: AppLocalizations.of(context)!.productCategory, value: deal.category!),
                 ],
                 const SizedBox(height: 18),
                 SizedBox(
@@ -202,7 +206,7 @@ class _ProductDetailView extends StatelessWidget {
                     icon: isAddingToList
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.playlist_add_rounded),
-                    label: const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Add to shopping list')),
+                    label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(AppLocalizations.of(context)!.productAddToShoppingList)),
                     style: FilledButton.styleFrom(foregroundColor: Colors.white),
                   ),
                 ),
@@ -285,7 +289,7 @@ class _StorePriceCard extends StatelessWidget {
                     runSpacing: 4,
                     children: [
                       Text(
-                        'Was ${formatCents(deal.originalPrice)}',
+                        AppLocalizations.of(context)!.productWasPrice(formatCents(deal.originalPrice)),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -316,9 +320,9 @@ class _ValidityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (deal.validFrom != null || deal.validUntil != null) ...[
-            if (deal.validFrom != null) _ValidityRow(label: 'Valid from', date: deal.validFrom!),
+            if (deal.validFrom != null) _ValidityRow(label: AppLocalizations.of(context)!.productValidFrom, date: deal.validFrom!),
             if (deal.validFrom != null && deal.validUntil != null) const SizedBox(height: 10),
-            if (deal.validUntil != null) _ValidityRow(label: 'Valid until', date: deal.validUntil!),
+            if (deal.validUntil != null) _ValidityRow(label: AppLocalizations.of(context)!.productValidUntil, date: deal.validUntil!),
           ],
         ],
       ),

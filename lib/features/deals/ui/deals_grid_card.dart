@@ -2,6 +2,7 @@ import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class DealsGridCard extends StatelessWidget {
@@ -23,6 +24,7 @@ class DealsGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final discount = deal.discountPercent;
 
@@ -99,7 +101,7 @@ class DealsGridCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    'Valid until ${displayDate(deal.validUntil)}',
+                                    '${l10n.productValidUntil} ${displayDate(deal.validUntil)}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -118,7 +120,7 @@ class DealsGridCard extends StatelessWidget {
                           child: FilledButton.icon(
                             onPressed: (isAddingToShoppingList || isAlreadyOnShoppingList) ? null : onAddToShoppingList,
                             icon: Icon(isAlreadyOnShoppingList ? Icons.check_circle_rounded : Icons.playlist_add_rounded, size: 18),
-                            label: Text(isAlreadyOnShoppingList ? 'On list' : 'Add to list', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            label: Text(isAlreadyOnShoppingList ? l10n.dealOnList : l10n.addToList, maxLines: 1, overflow: TextOverflow.ellipsis),
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(34),
                               visualDensity: VisualDensity.compact,

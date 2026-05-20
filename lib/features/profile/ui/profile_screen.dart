@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/receipt_analytics_service.dart';
@@ -12,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class _MonthReceiptQuery {
   const _MonthReceiptQuery({required this.uid, required this.month, this.limit = 20});
@@ -232,23 +234,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _monthKey(DateTime month) => '${month.year}-${month.month.toString().padLeft(2, '0')}';
 
   String _monthLabel(DateTime month) {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return '${monthNames[month.month - 1]} ${month.year}';
+    final locale = Localizations.localeOf(context).languageCode;
+    final label = DateFormat('MMMM yyyy', locale).format(month);
+    return label[0].toUpperCase() + label.substring(1);
   }
 
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
 
+    final l10n = AppLocalizations.of(context)!;
+
     return userAsync.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 120),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
             child: Column(
               children: [
-                MainTopBar(title: 'Profile'),
-                Expanded(child: Center(child: CircularProgressIndicator())),
+                MainTopBar(title: l10n.navProfile),
+                const Expanded(child: Center(child: CircularProgressIndicator())),
               ],
             ),
           ),
@@ -260,7 +265,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
             child: Column(
               children: [
-                const MainTopBar(title: 'Profile'),
+                MainTopBar(title: l10n.navProfile),
                 Expanded(child: Center(child: Text(error.toString()))),
               ],
             ),
@@ -289,14 +294,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             });
           }
 
-          return const Scaffold(
+          return Scaffold(
             body: SafeArea(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
                 child: Column(
                   children: [
-                    MainTopBar(title: 'Profile'),
-                    Expanded(child: Center(child: CircularProgressIndicator())),
+                    MainTopBar(title: l10n.navProfile),
+                    const Expanded(child: Center(child: CircularProgressIndicator())),
                   ],
                 ),
               ),
@@ -320,7 +325,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const MainTopBar(title: 'Profile'),
+                  MainTopBar(title: l10n.navProfile),
                   InkWell(
                     borderRadius: BorderRadius.circular(14),
                     onTap: () => context.push('/settings'),
@@ -345,7 +350,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Text(user.name, style: Theme.of(context).textTheme.titleLarge),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Member since ${displayDate(user.createdAt)}',
+                                  l10n.profileMemberSince(displayDate(user.createdAt)),
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                                 ),
                               ],
@@ -364,7 +369,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         IconButton(
                           onPressed: selectedMonthIndex > 0 ? () => _shiftMonth(-1) : null,
                           icon: const Icon(Icons.chevron_left_rounded),
-                          tooltip: 'Previous month',
+                          tooltip: l10n.profilePreviousMonth,
                         ),
                         Expanded(
                           child: Center(child: Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleMedium)),
@@ -372,7 +377,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         IconButton(
                           onPressed: selectedMonthIndex < _monthOptions.length - 1 ? () => _shiftMonth(1) : null,
                           icon: const Icon(Icons.chevron_right_rounded),
-                          tooltip: 'Next month',
+                          tooltip: l10n.profileNextMonth,
                         ),
                       ],
                     ),
@@ -391,7 +396,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SPENDINGS',
+                            l10n.profileSpendings,
                             style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
                           ),
                           const SizedBox(height: 14),
@@ -446,7 +451,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                   Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleLarge),
                                                   const SizedBox(height: 2),
                                                   Text(
-                                                    'Receipts scanned: ${monthStats.receiptsScanned}',
+                                                    l10n.profileReceiptsScanned(monthStats.receiptsScanned),
                                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                                                   ),
                                                 ],
@@ -461,7 +466,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         if (shouldShowFirstScanButton) ...[
                                           const SizedBox(height: 16),
                                           Text(
-                                            'Scan your first receipt to start tracking spendings',
+                                            l10n.profileScanFirstReceiptPrompt,
                                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                                           ),
                                           const SizedBox(height: 12),
@@ -471,22 +476,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                               onPressed: () => context.go('/scan?mode=receipt'),
                                               style: FilledButton.styleFrom(foregroundColor: Colors.white),
                                               icon: const Icon(Icons.receipt_long_rounded),
-                                              label: const Text('Scan first receipt'),
+                                              label: Text(l10n.profileScanFirstReceiptBtn),
                                             ),
                                           ),
                                         ],
                                         if (!hasReceiptScans && !shouldShowFirstScanButton) ...[
                                           const SizedBox(height: 16),
-                                          Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium),
+                                          Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium),
                                         ],
                                         if (hasReceiptScans) ...[
                                           const SizedBox(height: 12),
                                           Divider(color: colorScheme.surfaceContainerHighest),
                                           const SizedBox(height: 10),
-                                          Text('Spendings by store', style: Theme.of(context).textTheme.titleMedium),
+                                          Text(l10n.profileSpendingsByStore, style: Theme.of(context).textTheme.titleMedium),
                                           const SizedBox(height: 8),
                                           if (stores.isEmpty)
-                                            Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium)
+                                            Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
                                           else
                                             Column(
                                               children: [
@@ -504,10 +509,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           const SizedBox(height: 16),
                                           Divider(color: colorScheme.surfaceContainerHighest),
                                           const SizedBox(height: 10),
-                                          Text('Recent receipts', style: Theme.of(context).textTheme.titleMedium),
+                                          Text(l10n.profileRecentReceipts, style: Theme.of(context).textTheme.titleMedium),
                                           const SizedBox(height: 8),
                                           if (monthReceiptsPage.receipts.isEmpty)
-                                            Text('No receipts scanned in this month', style: Theme.of(context).textTheme.bodyMedium)
+                                            Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
                                           else
                                             Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,7 +547,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                             storeName: receipt.storeName,
                                                             dateLabel: displayDate(receipt.date),
                                                             totalLabel: formatCents(receipt.totalPriceCents),
-                                                            itemLabel: '${receipt.itemCount} item${receipt.itemCount == 1 ? '' : 's'}',
+                                                            itemLabel: l10n.profileReceiptItemCount(receipt.itemCount),
                                                             onTap: () => context.push('/receipt/${receipt.id}'),
                                                             onLongPress: () =>
                                                                 _showReceiptContextMenu(context, user.userId, receipt, pressPosition ?? Offset.zero),
@@ -558,7 +563,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                     width: double.infinity,
                                                     child: OutlinedButton(
                                                       onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
-                                                      child: const Text('Load more'),
+                                                      child: Text(l10n.loadMore),
                                                     ),
                                                   ),
                                                 ],
@@ -605,13 +610,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                           child: Text(
-                            'SETTINGS',
+                            l10n.profileSettingsSection,
                             style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
                           ),
                         ),
-                        _SettingsRow(label: 'Account', onTap: () => context.push('/settings')),
-                        _SettingsRow(label: 'About', onTap: () => context.push('/about')),
-                        _SettingsRow(label: 'Legal', onTap: () => context.push('/legal')),
+                        _SettingsRow(label: l10n.settingsAccountSection, onTap: () => context.push('/settings')),
+                        _SettingsRow(label: l10n.profileAbout, onTap: () => context.push('/about')),
+                        _SettingsRow(label: l10n.profileLegal, onTap: () => context.push('/legal')),
                       ],
                     ),
                   ),
@@ -623,7 +628,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                      child: Text('Log out', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.error)),
+                      child: Text(l10n.profileLogOut, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.error)),
                     ),
                   ),
                 ],
@@ -636,6 +641,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<bool> _confirmDeleteReceipt({required BuildContext context, required String uid, required _MonthReceiptItem receipt}) async {
+    final l10n = AppLocalizations.of(context)!;
     final shouldDelete = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -665,11 +671,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text('Delete receipt?', style: Theme.of(context).textTheme.titleLarge)),
+                          Expanded(child: Text(l10n.profileDeleteReceiptTitle, style: Theme.of(context).textTheme.titleLarge)),
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Text('This receipt will be removed from your spending history', style: Theme.of(context).textTheme.bodyMedium),
+                      Text(l10n.profileDeleteReceiptBody, style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -677,7 +683,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: TextButton(
                               style: TextButton.styleFrom(foregroundColor: Colors.white),
                               onPressed: deleting ? null : () => Navigator.of(dialogContext).pop(false),
-                              child: const Text('Cancel'),
+                              child: Text(l10n.cancel),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -700,7 +706,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           return;
                                         }
                                         if (mounted) {
-                                          SnackBarService.show('Receipt deleted');
+                                          SnackBarService.show(l10n.profileReceiptDeleted);
                                         }
                                       } catch (error) {
                                         if (!dialogContext.mounted) {
@@ -712,7 +718,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     },
                               child: deleting
                                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Delete'),
+                                  : Text(l10n.delete),
                             ),
                           ),
                         ],
@@ -750,7 +756,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.error, size: 20),
               const SizedBox(width: 12),
-              Text('Remove', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(AppLocalizations.of(context)!.remove, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
           ),
         ),

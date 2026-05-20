@@ -1,6 +1,7 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/auth_util.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
@@ -77,6 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.sizeOf(context);
     final colors = Theme.of(context).colorScheme;
     final minHeight = (size.height - 80).clamp(0.0, double.infinity);
@@ -92,14 +94,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: 56),
 
-                // Hero
                 Text(kAppName, style: Theme.of(context).textTheme.displayMedium),
                 const SizedBox(height: 6),
-                Text(kCatchPhrase, style: Theme.of(context).textTheme.bodyMedium),
+                Text(l10n.catchPhrase, style: Theme.of(context).textTheme.bodyMedium),
 
                 const SizedBox(height: 52),
 
-                // Form
                 Form(
                   key: _formKey,
                   child: Column(
@@ -110,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: InputDecoration(labelText: l10n.email),
                         validator: validateEmail,
                       ),
                       const SizedBox(height: 14),
@@ -121,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onFieldSubmitted: (_) => _submit(),
                         style: GoogleFonts.manrope(color: colors.onSurface, fontSize: 15),
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: l10n.password,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -131,13 +131,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             onPressed: () => setState(() => _obscure = !_obscure),
                           ),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
+                        validator: (v) => (v == null || v.isEmpty) ? l10n.enterYourPassword : null,
                       ),
                     ],
                   ),
                 ),
 
-                // Forgot password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -146,11 +145,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       foregroundColor: colors.onSurfaceVariant,
                       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
                     ),
-                    child: Text('Forgot password?', style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
+                    child: Text(l10n.authForgotPassword, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                   ),
                 ),
 
-                // Error
                 if (_error != null) ...[
                   const SizedBox(height: 4),
                   Text(_error!, style: GoogleFonts.manrope(fontSize: 13, color: Theme.of(context).colorScheme.error)),
@@ -158,8 +156,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // CTAs
-                LargeButton(label: 'Sign in', onPressed: _loading ? null : _submit, loading: _loading),
+                LargeButton(label: l10n.signIn, onPressed: _loading ? null : _submit, loading: _loading),
                 const SizedBox(height: 24),
                 const OrDivider(),
                 const SizedBox(height: 24),
@@ -167,17 +164,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 32),
 
-                // Register link
                 Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text("Don't have an account? ", style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
+                      Text(l10n.authDontHaveAccount, style: GoogleFonts.manrope(fontSize: 13, color: colors.onSurfaceVariant)),
                       GestureDetector(
                         onTap: () => context.push('/register'),
                         child: Text(
-                          'Create one',
+                          l10n.authCreateOne,
                           style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
                         ),
                       ),

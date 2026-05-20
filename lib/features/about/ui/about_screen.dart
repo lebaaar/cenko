@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:flutter/material.dart';
@@ -43,15 +44,16 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _launchUrl(String url) async {
+    final l10n = AppLocalizations.of(context)!;
     final uri = Uri.parse(url);
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        SnackBarService.show('Cannot open link');
+        SnackBarService.show(l10n.aboutCannotOpenLink);
       }
     } catch (_) {
-      SnackBarService.show('An error occurred');
+      SnackBarService.show(l10n.aboutError);
     }
   }
 
@@ -62,7 +64,7 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.aboutTitle)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -70,9 +72,18 @@ class _AboutScreenState extends State<AboutScreen> {
             Center(
               child: Column(
                 children: [
-                  Image.asset('assets/images/logo.png', width: 80, height: 80),
+                  Image.asset(
+                    'assets/cenko/logo_rounded.png',
+                    width: 80,
+                    height: 80,
+                  ),
                   const SizedBox(height: 8),
-                  Text(kAppName, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    kAppName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   FutureBuilder<PackageInfo>(
                     future: PackageInfo.fromPlatform(),
@@ -83,7 +94,12 @@ class _AboutScreenState extends State<AboutScreen> {
                         children: [
                           Text(
                             'v${snapshot.data!.version}+${snapshot.data!.buildNumber}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                           const SizedBox(width: 6),
                           const Text('•'),
@@ -92,17 +108,32 @@ class _AboutScreenState extends State<AboutScreen> {
                             SizedBox(
                               height: 14,
                               width: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                             )
                           else
                             GestureDetector(
                               onTap: () => _launchUrl(kGooglePlayStoreUrl),
                               child: Text(
-                                _updateInfo?.updateAvailability == UpdateAvailability.updateAvailable ? 'Update available' : 'View on Google Play',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  decoration: TextDecoration.underline,
-                                ),
+                                _updateInfo?.updateAvailability ==
+                                        UpdateAvailability.updateAvailable
+                                    ? AppLocalizations.of(
+                                        context,
+                                      )!.aboutUpdateAvailable
+                                    : AppLocalizations.of(
+                                        context,
+                                      )!.aboutViewOnGooglePlay,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                      decoration: TextDecoration.underline,
+                                    ),
                               ),
                             ),
                         ],
@@ -116,64 +147,77 @@ class _AboutScreenState extends State<AboutScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Text(
-                'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. '
-                'Share shopping lists with family or friends and scan receipts to automatically track your spending. '
-                'Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most.',
+                AppLocalizations.of(context)!.aboutDescription,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             const SizedBox(height: 24),
-            Text('Support', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              AppLocalizations.of(context)!.aboutSupport,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             _buildActionButton(
               context,
               icon: Icons.mail_rounded,
-              title: 'Contact',
-              subtitle: 'Have a question? Get in touch',
+              title: AppLocalizations.of(context)!.aboutContact,
+              subtitle: AppLocalizations.of(context)!.aboutContactSubtitle,
               onTap: () => _openContact(ContactType.contact),
             ),
             const SizedBox(height: 10),
             _buildActionButton(
               context,
               icon: Icons.chat_bubble_outline_rounded,
-              title: 'Feedback',
-              subtitle: 'Share your thoughts or suggestions',
+              title: AppLocalizations.of(context)!.aboutFeedback,
+              subtitle: AppLocalizations.of(context)!.aboutFeedbackSubtitle,
               onTap: () => _openContact(ContactType.feedback),
             ),
             const SizedBox(height: 10),
             _buildActionButton(
               context,
               icon: Icons.lightbulb_outline_rounded,
-              title: 'Feature Request',
-              subtitle: 'Suggest something new',
+              title: AppLocalizations.of(context)!.aboutFeatureRequest,
+              subtitle: AppLocalizations.of(
+                context,
+              )!.aboutFeatureRequestSubtitle,
               onTap: () => _openContact(ContactType.featureRequest),
             ),
             const SizedBox(height: 10),
             _buildActionButton(
               context,
               icon: Icons.bug_report_rounded,
-              title: 'Report a Bug',
-              subtitle: 'Help us improve the app',
+              title: AppLocalizations.of(context)!.aboutBugReport,
+              subtitle: AppLocalizations.of(context)!.aboutBugReportSubtitle,
               onTap: () => _openContact(ContactType.bugReport),
             ),
             const SizedBox(height: 24),
-            Text('Development', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              AppLocalizations.of(context)!.aboutDevelopment,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             _buildActionButton(
               context,
               icon: Icons.code_rounded,
-              title: 'View Source Code',
-              subtitle: 'Open on GitHub',
+              title: AppLocalizations.of(context)!.aboutViewSourceCode,
+              subtitle: AppLocalizations.of(context)!.aboutViewSourceSubtitle,
               onTap: () => _launchUrl(kGitHubUrl),
             ),
             const SizedBox(height: 10),
             _buildActionButton(
               context,
               icon: Icons.favorite_rounded,
-              title: 'Buy Me a Ko-fi ☕',
-              subtitle: 'Support development',
+              title: AppLocalizations.of(context)!.aboutKofi,
+              subtitle: AppLocalizations.of(context)!.aboutKofiSubtitle,
               onTap: () => _launchUrl(kKofiUrl),
               isPrimary: true,
             ),
@@ -206,7 +250,11 @@ class _AboutScreenState extends State<AboutScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Icon(icon, color: isPrimary ? primaryColor : onSurfaceVariant, size: 26),
+              Icon(
+                icon,
+                color: isPrimary ? primaryColor : onSurfaceVariant,
+                size: 26,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -214,16 +262,26 @@ class _AboutScreenState extends State<AboutScreen> {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: isPrimary ? primaryColor : onSurface),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isPrimary ? primaryColor : onSurface,
+                      ),
                     ),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+                    Text(
+                      subtitle,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: onSurfaceVariant),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_rounded, color: isPrimary ? primaryColor : onSurfaceVariant, size: 18),
+              Icon(
+                Icons.arrow_forward_rounded,
+                color: isPrimary ? primaryColor : onSurfaceVariant,
+                size: 18,
+              ),
             ],
           ),
         ),

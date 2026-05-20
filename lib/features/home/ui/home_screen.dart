@@ -2,6 +2,7 @@ import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/features/home/data/home_deal_card_item.dart';
 import 'package:cenko/features/home/data/personalized_deals_provider.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/widgets/deal_card.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
@@ -12,15 +13,16 @@ import 'package:go_router/go_router.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  String _greeting() {
+  String _greeting(AppLocalizations l10n) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return l10n.goodMorning;
+    if (hour < 18) return l10n.goodAfternoon;
+    return l10n.goodEvening;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
@@ -59,43 +61,44 @@ class HomeScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const MainTopBar(title: kAppName),
-                    Text('${_greeting()}, $name', style: Theme.of(context).textTheme.displaySmall),
+                    Text('${_greeting(l10n)}, $name', style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 12),
                     Text.rich(
                       TextSpan(
                         style: secondaryBodyStyle,
                         children: [
                           TextSpan(
-                            text: '${shoppingListSaleCount + commonBoughtProductsSaleCount} items',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                            text: '${shoppingListSaleCount + commonBoughtProductsSaleCount}',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
                           ),
-                          TextSpan(text: ' you might be interested in are on sale right now!', style: secondaryBodyStyle),
+                          TextSpan(
+                            text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount + commonBoughtProductsSaleCount),
+                            style: secondaryBodyStyle,
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 18),
                     const SizedBox(height: 6),
-                    const _SectionHeader(title: 'From your shopping lists'),
+                    _SectionHeader(title: l10n.homeFromShoppingLists),
                     const SizedBox(height: 14),
                     _DealsList(
                       asyncDeals: shoppingListDealsAsync,
-                      emptyMessage: 'Once you add items to your shopping lists, you will see deals related to those items here',
-                      message: 'Based on the items you have in your shopping lists, these are on sale right now',
-                      emptyActionLabel: 'Go to shopping lists',
+                      emptyMessage: l10n.homeEmptyShoppingListDeals,
+                      message: l10n.homeShoppingListDealsMessage,
+                      emptyActionLabel: l10n.homeGoToShoppingLists,
                       emptyActionIcon: Icons.checklist_rounded,
                       emptyActionRoute: '/list',
                       onDealTap: (item) => context.push('/deal/${item.dealId}'),
                     ),
                     const SizedBox(height: 30),
-                    const _SectionHeader(title: 'Based on your shopping habits'),
+                    _SectionHeader(title: l10n.homeBasedOnHabits),
                     const SizedBox(height: 14),
                     _DealsList(
                       asyncDeals: commonBoughtProductsDealsAsync,
-                      emptyMessage: 'Scan more receipts to get personalized deals based on the products you buy often',
-                      message: 'Based on the products that show up often in your receipts, these are on sale right now',
-                      emptyActionLabel: 'Scan a receipt',
+                      emptyMessage: l10n.homeEmptyHabitsDeals,
+                      message: l10n.homeHabitsDealsMessage,
+                      emptyActionLabel: l10n.homeScanAReceipt,
                       emptyActionIcon: Icons.document_scanner_rounded,
                       emptyActionRoute: '/scan',
                       onDealTap: (item) => context.push('/deal/${item.dealId}'),
@@ -106,10 +109,8 @@ class HomeScreen extends ConsumerWidget {
                         onPressed: () => context.go('/deals'),
                         icon: const Icon(Icons.arrow_forward_rounded),
                         label: Text(
-                          'Show all deals',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                          l10n.homeShowAllDeals,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -175,6 +176,7 @@ class _DealsListState extends State<_DealsList> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return widget.asyncDeals.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 20),
@@ -225,7 +227,7 @@ class _DealsListState extends State<_DealsList> {
                     });
                   },
                   icon: const Icon(Icons.expand_more_rounded),
-                  label: const Text('Load more'),
+                  label: Text(l10n.loadMore),
                 ),
               ),
           ],

@@ -3,6 +3,7 @@ import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/deals/ui/deals_grid_card.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
+import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -156,16 +157,16 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     return (sliderMax / 2).round();
   }
 
-  String _sortLabel(_DealsSortOption option) {
+  String _sortLabel(_DealsSortOption option, AppLocalizations l10n) {
     switch (option) {
       case _DealsSortOption.highestDiscount:
-        return 'Highest discount';
+        return l10n.dealsSortHighestDiscount;
       case _DealsSortOption.lowestDiscount:
-        return 'Lowest discount';
+        return l10n.dealsSortLowestDiscount;
       case _DealsSortOption.lowestPrice:
-        return 'Lowest price';
+        return l10n.dealsSortLowestPrice;
       case _DealsSortOption.highestPrice:
-        return 'Highest price';
+        return l10n.dealsSortHighestPrice;
     }
   }
 
@@ -231,7 +232,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Price range', style: Theme.of(context).textTheme.titleLarge),
+                    Text(AppLocalizations.of(context)!.dealsPriceRange, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(
                       _priceRangeLabel(draft),
@@ -259,7 +260,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                 draft = RangeValues(0, sliderMax);
                               });
                             },
-                            child: const Text('Reset'),
+                            child: Text(AppLocalizations.of(context)!.reset),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -273,7 +274,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                               Navigator.of(sheetContext).pop();
                             },
                             style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                            child: const Text('Apply'),
+                            child: Text(AppLocalizations.of(context)!.apply),
                           ),
                         ),
                       ],
@@ -314,12 +315,12 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                    child: Text('Sort deals', style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(AppLocalizations.of(context)!.dealsSortTitle, style: Theme.of(context).textTheme.titleLarge),
                   ),
                   for (final option in _DealsSortOption.values)
                     RadioListTile<_DealsSortOption>(
                       value: option,
-                      title: Text(_sortLabel(option)),
+                      title: Text(_sortLabel(option, AppLocalizations.of(context)!)),
                       dense: true,
                       visualDensity: const VisualDensity(vertical: -3),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -342,7 +343,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
     final lists = ref.read(userShoppingListsProvider(uid)).asData?.value ?? [];
     if (lists.isEmpty) {
-      SnackBarService.show('No shopping lists found. Create one first.');
+      SnackBarService.show(AppLocalizations.of(context)!.noShoppingListsCreate);
       return;
     }
 
@@ -366,7 +367,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(AppLocalizations.of(context)!.addToList, style: Theme.of(context).textTheme.titleLarge),
                   ),
                   Expanded(
                     child: ListView(
@@ -376,7 +377,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           (list) => ListTile(
                             leading: const Icon(Icons.checklist_rounded),
                             title: Text(list.name),
-                            subtitle: Text('${list.itemCount} items'),
+                            subtitle: Text(AppLocalizations.of(context)!.productItemCount(list.itemCount)),
                             onTap: () => Navigator.of(sheetContext).pop(list.id),
                           ),
                         ),
@@ -400,7 +401,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
     } catch (_) {
       if (!mounted) return;
-      SnackBarService.show('Failed to add item to shopping list');
+      SnackBarService.show(AppLocalizations.of(context)!.failedToAddToList);
     } finally {
       if (mounted) setState(() => _addingDealIds.remove(key));
     }
@@ -408,6 +409,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final userAsync = ref.watch(currentUserProvider);
     final uid = userAsync.asData?.value?.userId;
@@ -452,13 +454,13 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const MainTopBar(title: 'Deals'),
+                          MainTopBar(title: l10n.dealsTitle),
                           TextField(
                             controller: _searchController,
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                              hintText: 'Search products on sale',
+                              hintText: l10n.dealsSearchHint,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               prefixIcon: const Icon(Icons.search_rounded),
                               suffixIcon: _query.isEmpty
@@ -517,7 +519,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: () => _openPriceSheet(priceSliderMax),
                                   icon: const Icon(Icons.euro_rounded),
-                                  label: const Text('Price', overflow: TextOverflow.ellipsis),
+                                  label: Text(l10n.dealsPrice, overflow: TextOverflow.ellipsis),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -525,19 +527,19 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _openSortSheet,
                                   icon: const Icon(Icons.sort_rounded),
-                                  label: const Text('Sort', overflow: TextOverflow.ellipsis),
+                                  label: Text(l10n.dealsSort, overflow: TextOverflow.ellipsis),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Price ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption)}',
+                            '${l10n.dealsPrice} ${_priceRangeLabel(effectivePriceRange)}  •  ${_sortLabel(_sortOption, l10n)}',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Showing $visibleCount of ${filteredDeals.length} deals',
+                            l10n.dealsShowing(visibleCount, filteredDeals.length),
                             style: Theme.of(
                               context,
                             ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
@@ -553,7 +555,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                       sliver: SliverToBoxAdapter(
                         child: Center(
                           child: Text(
-                            'No results found :(',
+                            l10n.dealsNoResults,
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ),
@@ -574,11 +576,11 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             isAlreadyOnShoppingList: alreadyOnShoppingList,
                             onAddToShoppingList: () {
                               if (alreadyOnShoppingList) {
-                                SnackBarService.show('This item is already on your shopping list');
+                                SnackBarService.show(l10n.dealItemAlreadyOnList);
                                 return;
                               }
                               if (uid == null) {
-                                SnackBarService.show('Sign in to add items to your shopping list');
+                                SnackBarService.show(l10n.dealSignInToAdd);
                                 return;
                               }
                               _addDealToShoppingList(deal: deal, uid: uid);
@@ -604,7 +606,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                             });
                           },
                           icon: const Icon(Icons.expand_more_rounded),
-                          label: const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('Load more')),
+                          label: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(l10n.loadMore)),
                           style: FilledButton.styleFrom(foregroundColor: Colors.white),
                         ),
                       ),

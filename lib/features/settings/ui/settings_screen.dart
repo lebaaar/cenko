@@ -88,21 +88,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete account'),
-        content: const Text('This will permanently delete your account and all associated data. This cannot be undone'),
+        title: Text(l10n.deleteAccountTitle),
+        content: Text(l10n.deleteAccountContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -119,53 +120,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (!mounted) return;
         await showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Cannot delete account'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('You are the owner of shared lists. Transfer ownership before deleting your account.'),
-                if (ownedLists.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  ...ownedLists.map(
-                    (name) => Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 4),
-                      child: Text('• $name', style: const TextStyle(fontWeight: FontWeight.w600)),
+          builder: (ctx) {
+            final dl10n = AppLocalizations.of(ctx)!;
+            return AlertDialog(
+              title: Text(dl10n.deleteAccountCannotTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(dl10n.deleteAccountTransferMsg),
+                  if (ownedLists.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    ...ownedLists.map(
+                      (name) => Padding(
+                        padding: const EdgeInsets.only(left: 8, bottom: 4),
+                        child: Text('• $name', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
                     ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(dl10n.deleteAccountTransferTitle),
+                  const SizedBox(height: 6),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('1. ${dl10n.deleteAccountStep1}'),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [Text('2. ${dl10n.deleteAccountStep2Pre}'), const Icon(Icons.more_vert, size: 16), Text(dl10n.deleteAccountStep2Post)],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('3. ${dl10n.deleteAccountStep3}'),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [Text('4. ${dl10n.deleteAccountStep4Pre}'), const Icon(Icons.more_vert, size: 16)],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('5. ${dl10n.deleteAccountStep5}'),
+                    ],
                   ),
                 ],
-                const SizedBox(height: 12),
-                const Text('To transfer ownership:'),
-                const SizedBox(height: 6),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('1. Open the list'),
-                    SizedBox(height: 6),
-
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [Text('2. Tap '), Icon(Icons.more_vert, size: 16), Text(' in the top right corner')],
-                    ),
-                    SizedBox(height: 6),
-
-                    Text('3. Tap "Manage members"'),
-                    SizedBox(height: 6),
-
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [Text('4. Select a member and tap '), Icon(Icons.more_vert, size: 16)],
-                    ),
-                    SizedBox(height: 6),
-
-                    Text('5. Tap "Make owner"'),
-                  ],
-                ),
-              ],
-            ),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
-          ),
+              ),
+              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(dl10n.close))],
+            );
+          },
         );
       } else {
         setState(() => _error = e.message ?? e.code);
@@ -180,9 +180,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _resetPassword() async {
+    final l10n = AppLocalizations.of(context)!;
     final email = FirebaseAuth.instance.currentUser?.email;
     if (email == null || email.isEmpty) {
-      setState(() => _error = 'No email found for this account');
+      setState(() => _error = l10n.settingsNoEmailForReset);
       return;
     }
 
@@ -191,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
       setState(() => _error = null);
-      SnackBarService.show('Password reset email has been sent to $email. Check your inbox and spam folder', duration: const Duration(seconds: 5));
+      SnackBarService.show(l10n.settingsPasswordResetSent(email), duration: const Duration(seconds: 5));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message ?? e.code);
@@ -258,24 +259,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               controller: _nameCtrl,
                               textInputAction: TextInputAction.next,
                               onChanged: user == null ? null : (value) => _onNameChanged(user.userId, value),
-                              decoration: const InputDecoration(labelText: 'Display name'),
+                              decoration: InputDecoration(labelText: l10n.settingsDisplayName),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _emailCtrl,
                               textInputAction: TextInputAction.next,
                               onChanged: user == null ? null : (value) => _onEmailChanged(user.userId, value),
-                              decoration: const InputDecoration(labelText: 'Email'),
+                              decoration: InputDecoration(labelText: l10n.email),
                               enabled: false, // TODO
                             ),
                             const SizedBox(height: 10),
                             DropdownButtonFormField<String>(
                               initialValue: _theme,
-                              decoration: const InputDecoration(labelText: 'Theme mode'),
-                              items: const [
-                                DropdownMenuItem(value: 'system', child: Text('System')),
-                                DropdownMenuItem(value: 'light', child: Text('Light')),
-                                DropdownMenuItem(value: 'dark', child: Text('Dark')),
+                              decoration: InputDecoration(labelText: l10n.settingsThemeLabel),
+                              items: [
+                                DropdownMenuItem(value: 'system', child: Text(l10n.settingsThemeSystem)),
+                                DropdownMenuItem(value: 'light', child: Text(l10n.settingsThemeLight)),
+                                DropdownMenuItem(value: 'dark', child: Text(l10n.settingsThemeDark)),
                               ],
                               onChanged: (value) {
                                 if (value == null) return;
@@ -302,8 +303,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const SizedBox(height: 20),
                             SwitchListTile.adaptive(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('Notifications'),
-                              subtitle: const Text('Enable app notifications'),
+                              title: Text(l10n.settingsNotificationsTitle),
+                              subtitle: Text(l10n.settingsNotificationsSubtitle),
                               value: _notificationsEnabled,
                               onChanged: (value) {
                                 setState(() => _notificationsEnabled = value);
@@ -323,9 +324,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Security', style: Theme.of(context).textTheme.titleLarge),
+                            Text(l10n.settingsSecuritySection, style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 8),
-                            Text('Manage your sign-in and account security', style: Theme.of(context).textTheme.bodyMedium),
+                            Text(l10n.settingsSecuritySubtitle, style: Theme.of(context).textTheme.bodyMedium),
                             const SizedBox(height: 16),
                             if (hasPasswordProvider) ...[
                               SizedBox(
@@ -334,7 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   onPressed: (user == null || _resetPasswordLoading || _deleteLoading) ? null : _resetPassword,
                                   child: _resetPasswordLoading
                                       ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                                      : const Text('Reset password'),
+                                      : Text(l10n.settingsResetPassword),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -347,7 +348,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   foregroundColor: Theme.of(context).colorScheme.error,
                                   side: BorderSide(color: Theme.of(context).colorScheme.error),
                                 ),
-                                child: const Text('Delete account'),
+                                child: Text(l10n.settingsDeleteAccount),
                               ),
                             ),
                           ],
