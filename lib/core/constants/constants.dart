@@ -46,5 +46,6 @@ const String kUpcItemDbLookupUrl = 'https://api.upcitemdb.com/prod/trial/lookup?
 const String kGtinSearchItemUrl = 'https://www.gtinsearch.org/api/items/';
 
 // legal
-const String kLegalContentUrl = 'https://lan.si/cenko/legal/raw';
+const String kLegalContentEnUrl = 'https://cenko.lan.si/legal/raw?lang=en';
+const String kLegalContentSlUrl = 'https://cenko.lan.si/legal/raw?lang=sl';
 const String kContactEmail = 'lanlebar6@gmail.com';

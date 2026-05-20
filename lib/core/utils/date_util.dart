@@ -13,6 +13,21 @@ const List<String> _monthNames = [
   'December',
 ];
 
+const List<String> _monthNamesSlovenian = [
+  'januar',
+  'februar',
+  'marec',
+  'april',
+  'maj',
+  'junij',
+  'julij',
+  'avgust',
+  'september',
+  'oktober',
+  'november',
+  'december',
+];
+
 String displayDate(DateTime? date) {
   if (date == null) return 'Unknown';
   final month = date.month.toString().padLeft(1, '0');
@@ -21,8 +36,8 @@ String displayDate(DateTime? date) {
   return '$day.$month.$year';
 }
 
-String displayWordedDate(DateTime date) {
-  final month = _monthNames[date.month - 1];
+String displayWordedDate(DateTime date, {String lang = 'en'}) {
+  final month = lang == 'sl' ? _monthNamesSlovenian[date.month - 1] : _monthNames[date.month - 1];
   final day = date.day;
   final year = date.year;
   return '$day. $month $year';
