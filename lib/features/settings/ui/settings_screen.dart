@@ -148,7 +148,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(height: 6),
                       Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [Text('2. ${dl10n.deleteAccountStep2Pre}'), const Icon(Icons.more_vert, size: 16), Text(dl10n.deleteAccountStep2Post)],
+                        children: [
+                          Text('2. ${dl10n.deleteAccountStep2Pre}'),
+                          const Icon(Icons.more_vert, size: 16),
+                          Text(dl10n.deleteAccountStep2Post),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text('3. ${dl10n.deleteAccountStep3}'),
@@ -251,7 +255,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(l10n.settingsAccountSection, style: Theme.of(context).textTheme.titleLarge),
+                            Text(l10n.settingsTitle, style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 8),
                             Text(l10n.settingsAccountSubtitle, style: Theme.of(context).textTheme.bodyMedium),
                             const SizedBox(height: 12),

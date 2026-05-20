@@ -98,9 +98,6 @@ class AppLocalizationsSl extends AppLocalizations {
   String get settingsTitle => 'Nastavitve';
 
   @override
-  String get settingsAccountSection => 'Račun';
-
-  @override
   String get settingsAccountSubtitle => 'Upravljajte nastavitve računa';
 
   @override
@@ -407,9 +404,6 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get profileRecentReceipts => 'Nedavni računi';
-
-  @override
-  String get profileSettingsSection => 'NASTAVITVE';
 
   @override
   String get profileAbout => 'O aplikaciji';

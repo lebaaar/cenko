@@ -272,12 +272,6 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settingsTitle;
 
-  /// Account section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Account'**
-  String get settingsAccountSection;
-
   /// Account section subtitle
   ///
   /// In en, this message translates to:
@@ -835,12 +829,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recent receipts'**
   String get profileRecentReceipts;
-
-  /// Settings section on profile
-  ///
-  /// In en, this message translates to:
-  /// **'SETTINGS'**
-  String get profileSettingsSection;
 
   /// About row on profile
   ///

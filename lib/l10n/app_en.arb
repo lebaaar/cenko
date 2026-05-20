@@ -61,8 +61,6 @@
 
   "settingsTitle": "Settings",
   "@settingsTitle": { "description": "Settings screen title" },
-  "settingsAccountSection": "Account",
-  "@settingsAccountSection": { "description": "Account section heading" },
   "settingsAccountSubtitle": "Manage your account settings and preferences",
   "@settingsAccountSubtitle": { "description": "Account section subtitle" },
   "settingsDisplayName": "Display name",
@@ -281,8 +279,6 @@
   "@profileSpendingsByStore": { "description": "Spendings by store section" },
   "profileRecentReceipts": "Recent receipts",
   "@profileRecentReceipts": { "description": "Recent receipts section" },
-  "profileSettingsSection": "SETTINGS",
-  "@profileSettingsSection": { "description": "Settings section on profile" },
   "profileAbout": "About",
   "@profileAbout": { "description": "About row on profile" },
   "profileLegal": "Legal",

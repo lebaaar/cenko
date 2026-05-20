@@ -32,7 +32,6 @@
   "navProfile": "Profil",
 
   "settingsTitle": "Nastavitve",
-  "settingsAccountSection": "Račun",
   "settingsAccountSubtitle": "Upravljajte nastavitve računa",
   "settingsDisplayName": "Prikazno ime",
   "settingsThemeLabel": "Tema",
@@ -132,7 +131,6 @@
   "profileNoReceiptsThisMonth": "Ta mesec ni skeniranih računov",
   "profileSpendingsByStore": "Poraba po trgovinah",
   "profileRecentReceipts": "Nedavni računi",
-  "profileSettingsSection": "NASTAVITVE",
   "profileAbout": "O aplikaciji",
   "profileLegal": "Pravni pogoji",
   "profileLogOut": "Odjava",

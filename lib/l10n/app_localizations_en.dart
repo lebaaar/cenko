@@ -98,9 +98,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
-  String get settingsAccountSection => 'Account';
-
-  @override
   String get settingsAccountSubtitle =>
       'Manage your account settings and preferences';
 
@@ -411,9 +408,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileRecentReceipts => 'Recent receipts';
-
-  @override
-  String get profileSettingsSection => 'SETTINGS';
 
   @override
   String get profileAbout => 'About';
