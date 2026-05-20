@@ -1,6 +1,7 @@
 import 'package:cenko/core/utils/user_util.dart';
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
+import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,7 +20,9 @@ class AuthNotifier extends ChangeNotifier {
   final _userRepo = UserRepository();
   final _shoppingListRepo = SharedShoppingListRepository();
 
-  AuthNotifier(Ref ref) {
+  final Ref _ref;
+
+  AuthNotifier(Ref ref) : _ref = ref {
     ref.listen(authStateProvider, (_, _) => notifyListeners());
   }
 
@@ -33,15 +36,21 @@ class AuthNotifier extends ChangeNotifier {
     return 'User';
   }
 
-  Future<void> _ensureUserDocument({required User user, required String authProvider, String? name, String? googleId}) async {
-    if (await _userRepo.userExists(user.uid)) {
-      return;
-    }
+  Future<void> _ensureUserDocument({required User user, required String authProvider, String? name, String? googleId, String language = 'sl'}) async {
+    if (await _userRepo.userExists(user.uid)) return;
 
     final userName = name?.trim().isNotEmpty == true ? name!.trim() : _fallbackName(user);
 
     await _userRepo.saveUser(
-      UserModel(userId: user.uid, name: userName, email: user.email ?? '', createdAt: DateTime.now(), authProvider: authProvider, googleId: googleId),
+      UserModel(
+        userId: user.uid,
+        name: userName,
+        email: user.email ?? '',
+        createdAt: DateTime.now(),
+        authProvider: authProvider,
+        googleId: googleId,
+        settings: UserSettings(language: language),
+      ),
     );
 
     await _shoppingListRepo.createList(ownerUid: user.uid, ownerName: userName, name: 'My Shopping List');
@@ -56,19 +65,23 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> registerWithEmail(String email, String password, String displayName) async {
+    final language = _ref.read(authLocaleProvider);
     final credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
     final user = credential.user!;
     await user.updateDisplayName(displayName);
-    await _ensureUserDocument(user: user, authProvider: 'email', name: displayName);
+    await _ensureUserDocument(user: user, authProvider: 'email', name: displayName, language: language);
+    await clearAuthLocale();
   }
 
   Future<void> signInWithGoogle() async {
+    final language = _ref.read(authLocaleProvider);
     final googleUser = await GoogleSignIn.instance.authenticate();
     final idToken = googleUser.authentication.idToken;
     final credential = GoogleAuthProvider.credential(idToken: idToken);
     final result = await _auth.signInWithCredential(credential);
     final user = result.user!;
-    await _ensureUserDocument(user: user, authProvider: 'google', googleId: googleUser.id);
+    await _ensureUserDocument(user: user, authProvider: 'google', googleId: googleUser.id, language: language);
+    await clearAuthLocale();
   }
 
   Future<void> sendPasswordResetEmail(String email) async {

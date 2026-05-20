@@ -34,6 +34,7 @@ const List<String> kSlovenianGroceryStores = [
 
 // UI
 const int kSnackBarDurationSeconds = 4;
+const List<String> kSupportedLocales = ['en', 'sl'];
 
 // links
 const String kKofiUrl = 'https://ko-fi.com/lebaaar';

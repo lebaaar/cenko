@@ -2,6 +2,7 @@ import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/auth_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
+import 'package:cenko/shared/widgets/auth_locale_button.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
@@ -86,7 +87,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colors.surface,
-      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login')), backgroundColor: colors.surface),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.go('/login')),
+        backgroundColor: colors.surface,
+        actions: const [AuthLocaleButton(), SizedBox(width: 8)],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),

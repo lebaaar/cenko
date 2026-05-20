@@ -4,6 +4,7 @@ import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/router.dart';
+import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -77,7 +78,11 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
     final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.settings.theme), orElse: () => ThemeMode.system);
-    final locale = userAsync.maybeWhen(data: (user) => _localeFromSettings(user?.settings.language), orElse: () => const Locale('sl'));
+    final authLocale = ref.watch(authLocaleProvider);
+    final locale = userAsync.maybeWhen(
+      data: (user) => _localeFromSettings(user?.settings.language ?? authLocale),
+      orElse: () => _localeFromSettings(authLocale),
+    );
 
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
     final brightness = themeMode == ThemeMode.system

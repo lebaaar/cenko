@@ -1,5 +1,6 @@
 import 'package:cenko/app.dart';
 import 'package:cenko/firebase_options.dart';
+import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -42,10 +43,12 @@ void main() async {
   );
   await GoogleSignIn.instance.initialize();
   final introductionShown = await getIntroductionShown();
+  final authLocale = await getAuthLocale();
   runApp(
     ProviderScope(
       overrides: [
         introductionShownProvider.overrideWith((ref) => introductionShown),
+        authLocaleProvider.overrideWith((ref) => authLocale),
       ],
       child: const CenkoApp(),
     ),

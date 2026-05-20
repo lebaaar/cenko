@@ -4,6 +4,7 @@ import 'package:cenko/core/utils/auth_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
+import 'package:cenko/shared/widgets/auth_locale_button.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
@@ -95,7 +96,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 56),
+                const SizedBox(height: 16),
+                const Align(alignment: Alignment.centerRight, child: AuthLocaleButton()),
+                const SizedBox(height: 16),
                 Text(kAppName, style: Theme.of(context).textTheme.displayMedium),
                 const SizedBox(height: 6),
                 Text(l10n.catchPhrase, style: Theme.of(context).textTheme.bodyMedium),
