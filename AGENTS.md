@@ -1,6 +1,6 @@
 # Cenko mobile application
 
-Before continuing, make sure to check out the [README.md](README.md) for an overview. There you will find core features and basic commands.
+Before continuing, make sure to check out the [README.md](README.md) for an overview and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines. There you will find core features and basic commands.
 
 ## Docs
 Most of the documentation is in the [docs](/docs) folder. Here are some important docs to check out before starting development:
@@ -12,7 +12,7 @@ Most of the documentation is in the [docs](/docs) folder. Here are some importan
 - If loading status is needed, you can pick from CircularProgressIndicator or the custom [AnimatedDots](lib/shared/widgets/animated_dots.dart) widget. The AnimatedDots widget is a simple widget that shows three dots that animate in a loop.
 - All constants such as links, contacts...  should be defined in [constants.dart](lib/core/constants/constants.dart).
 - Firebase reads are expensive, so if you need to read something from Firebase, try to read it once and store it in memory. For example, if you need to read the user's name, read it once and store it in a provider. Then you can use that provider to get the user's name whenever you need it.
-
+- Every time you add a dependecy to `pubspec.yaml`, make sure depencies stay organized and sorted alphabetically.
 
 ## Don't
 - Never use hardcoded colors, always use colors from the theme. If you need to add a new color, add it to the theme and use it from there. Colors are defined in [app_theme.dart](lib/app_theme.dart).
