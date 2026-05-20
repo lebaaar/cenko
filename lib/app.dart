@@ -64,6 +64,8 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
     switch (lang) {
       case 'sl':
         return const Locale('sl');
+      case 'en':
+        return const Locale('en');
       default:
         return const Locale('sl');
     }
