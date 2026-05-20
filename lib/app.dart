@@ -65,7 +65,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
       case 'sl':
         return const Locale('sl');
       default:
-        return const Locale('en');
+        return const Locale('sl');
     }
   }
 
@@ -74,7 +74,7 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
     final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.settings.theme), orElse: () => ThemeMode.system);
-    final locale = userAsync.maybeWhen(data: (user) => _localeFromSettings(user?.settings.language), orElse: () => const Locale('en'));
+    final locale = userAsync.maybeWhen(data: (user) => _localeFromSettings(user?.settings.language), orElse: () => const Locale('sl'));
 
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
     final brightness = themeMode == ThemeMode.system

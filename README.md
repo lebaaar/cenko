@@ -17,6 +17,7 @@ Cenko brings all deals from major Slovenian stores into one place so you always 
 - **Browse all deals in one place** - find the best deals across all major stores in Slovenia (Mercator, Spar, Hofer, Tuš and Tuš drogerija)
 - **Shared shopping list** - create shopping lists and share them with family or friends and make sure you always get the best deal for the products on your list
 - **Personalized recommendations** - get deal recommendations based on your shopping list and frequently bought products
+- **Supported languages** - English and Slovenian
 
 ## Tech stack
 - Flutter for cross-platform mobile development. State management with [Riverpod](https://pub.dev/packages/flutter_riverpod) and navigation with [GoRouter](https://pub.dev/packages/go_router)
