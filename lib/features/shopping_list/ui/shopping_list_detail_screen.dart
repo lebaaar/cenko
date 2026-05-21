@@ -1,6 +1,7 @@
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
+import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
@@ -1185,9 +1186,9 @@ class _ShoppingItemTile extends StatelessWidget {
     if (deal == null) return null;
     final savings = deal.savingsCents;
     if (savings > 0) {
-      return l10n.listItemBestDealSave(deal.storeName, formatCents(deal.salePriceCents), formatCents(savings));
+      return l10n.listItemBestDealSave(storeDisplayName(deal.storeName), formatCents(deal.salePriceCents), formatCents(savings));
     }
-    return l10n.listItemBestDeal(deal.storeName, formatCents(deal.salePriceCents));
+    return l10n.listItemBestDeal(storeDisplayName(deal.storeName), formatCents(deal.salePriceCents));
   }
 
   @override
