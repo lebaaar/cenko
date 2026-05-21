@@ -14,11 +14,35 @@
       },
       "oauth_client": [
         {
+          "client_id": "488111643065-3kna0h65m0dkp476ma9iaagc66f2j514.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lebaaar.cenko",
+            "certificate_hash": "1ea595acbe742949c8f01e79cbf830073f96a8a5"
+          }
+        },
+        {
           "client_id": "488111643065-4clks2lv6kqd9r069ntu01ucaaidhjil.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.lebaaar.cenko",
             "certificate_hash": "5fde54bcba91ed218de638eeadb13224767d9eb1"
+          }
+        },
+        {
+          "client_id": "488111643065-6b3soi6h1hhpq54rhrglli8ocl6leju6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lebaaar.cenko",
+            "certificate_hash": "169cf53823168e651c67d0fab82aa4872d5d68a4"
+          }
+        },
+        {
+          "client_id": "488111643065-tooqn0l93dgs04dlbj1p6jss8gvcdkph.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lebaaar.cenko",
+            "certificate_hash": "bcd6b96776110466af9d36f4298f6c32d73e3e63"
           }
         },
         {
