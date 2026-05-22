@@ -1,8 +1,8 @@
 import 'package:cenko/core/utils/user_util.dart';
 import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
-import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
+import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
