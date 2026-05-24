@@ -1,153 +1,147 @@
 # Database schema
 
-Project uses NoSQL Firestore database
+Cenko uses PostgreSQL relational database hosted on Supabase.
+Database schema is available at [dbdiagram.io](https://dbdiagram.io/d/cenko-69cc2d8e78c6c4bc7ab354da), copu paste can be found bellow:
 
-Collections:
+```dbml
+Table user {
+  id int [primary key, increment]
+  plan_id int [not null]
+  display_name varchar(500) [not null]
+  email varchar(320) [unique, not null]
+  joined_at timestamptz [not null]
+  password_hash text [null, note: "null if using SSO"]
+  auth_provider varchar(50) [not null]
+  google_id varchar(255) [null]
+  theme varchar(10) [default: "system", note: "system, dark, light"]
+  lang varchar(2) // en, sl
+  notifications_enabled boolean [default: true]
+}
+Ref: user.plan_id > plan.plan_id
 
-## /users/{user_id}
+Table plan {
+  plan_id int [primary key, increment]
+  name varchar(100)  [not null, note: "Free, Pro"]
+  lists_limit int [not null]
+  shared_lists_limit int [not null]
+  members_per_shared_list int [not null]
+  monthly_receipt_scan_limit int [not null]
+}
 
-```json
-{
-  "user_id": 0, // auto-generated
-  "name": "string",
-  "email": "string",
-  "created_at": "timestamp",
-  "auth_provider": "email | google",
-  "google_id": "string | null",
-  "plan": "string", // "free"
-  "settings": {
-    "theme": "system | dark | light",
-    "notificationsEnabled": true
-  },
-  "stats": {
-    "total_spent": 0, // in cents
-    "receipts_scanned": 0,
-    "most_visited_stores": [
-      {
-        "store_name": "string",
-        "visit_count": 0
-      }
-    ]
+Table shopping_list {
+  id int [primary key, increment]
+  created_by_user_id int [not null]
+  name varchar(500) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+Ref: shopping_list.created_by_user_id > user.id
+
+Table shopping_list_item {
+  id int [primary key, increment]
+  name varchar(500) [not null]
+  shopping_list_id int [not null]
+  added_by_user_id int [not null]
+  is_bought bool [not null]
+  bought_by_user_id int [null]
+  bought_at timestamptz [null]
+  quantity int [null]
+  unit varchar(100) [null]
+  added_at timestamptz [not null]
+  edited_at timestamptz [not null]
+  Indexes {
+    (shopping_list_id)
+    (is_bought)
+}
+}
+Ref: shopping_list_item.shopping_list_id > shopping_list.id
+Ref: shopping_list_item.bought_by_user_id > user.id
+Ref: shopping_list_item.added_by_user_id > user.id
+
+Table shopping_list_member {
+  id int [primary key, increment]
+  user_id int [not null]
+  shopping_list_id int [not null]
+  role varchar(20) [not null, note: "use enum: owner | member. v1 supports only member, can be promoted to owner manually later."]
+  joined_at timestamptz [not null]
+  Indexes {
+    (shopping_list_id)
+    (user_id)
+    (shopping_list_id, user_id) [unique]
   }
 }
-```
+Ref: shopping_list_member.shopping_list_id > shopping_list.id
+Ref: shopping_list_member.user_id > user.id
 
-## /users/{user_id}/receipts/{receipt_id}
-```json
-{
-  "receipt_id": "string", // auto-generated
-  "store_name": "string", // eg. Mercator, Lidl, Spar
-  "total_price": 0, // in cents
-  "item_count": 0,
-  "raw_ocr": "string", // full raw OCR text for debugging and future improvements
-  "date": "timestamp"
+Table shopping_list_invitation [note: "Only pending entries live in this table. Accepted or declined get removed from table "] {
+  id int [primary key, increment]
+  invited_by_user_id int [not null]
+  invited_user_id int [not null]
+  shopping_list_id int [not null]
+  sent_at timestamptz [not null]
+  expires_at timestamptz [not null]
+  Indexes {
+    (shopping_list_id)
+    (invited_by_user_id)
+    (invited_user_id)
+    (shopping_list_id, invited_by_user_id, invited_user_id) [unique]
+  }
 }
-```
+Ref: shopping_list_invitation.shopping_list_id > shopping_list.id
+Ref: shopping_list_invitation.invited_by_user_id > user.id
+Ref: shopping_list_invitation.invited_user_id > user.id
 
-## /users/{user_id}/receipts/{receipt_id}/items/{item_id}
-```json
-{
-  "item_id": "string", // auto-generated id
-  "raw_name": "string", // eg. Milka Oreo 100g
-  "unit_price": 0, // price per unit in cents
-  "quantity": 0,
-  "total_price": 0 // in cents
+Table receipt {
+  id int [primary key, increment]
+  user_id int [not null]
+  store_id int [null, note: "null if store is unrecognized"]
+  total int [not null, note: "in cents"]
+  receipt_date date [not null]
+  scanned_at timestamptz [not null]
+  raw_ocr text [not null]
+  Indexes {
+    (user_id)
+    (store_id)
+  }
 }
-```
+Ref: receipt.user_id  > user.id
+Ref: receipt.store_id > store.id
 
-## /users/{user_id}/shopping_lists_memberships/{list_id}
-```json
-{
-  "list_id": "string", // shopping list id
-  "name": "string", // shopping list name (for quick access without fetching the whole list)
-  "joined_at": "timestamp"
+Table receipt_item {
+  id int [primary key, increment]
+  receipt_id int [not null]
+  name text [not null]
+  quantity int  [default: 1]
+  unit_price int [not null, note: "in cents"]
+  total_price int [not null, note: "in cents"]
+  Indexes {
+    (receipt_id)
+  }
 }
-```
+Ref: receipt_item.receipt_id  > receipt.id
 
-## /users/{user_id}/common_products/{item_id}
-Items that the user frequently buys, inferred from scanned receipts. Used for personalized deal recommendations on the Home page.
-```json
-{
-  "item_id": "string", // auto-generated id
-  "name": "string",
-  "brand": "string | null",
-  "image_url": "string | null",
-  "purchase_count": 0,
-  "last_purchased_at": "timestamp",
-  "added_at": "timestamp" // refreshed to the latest matching receipt date; delete after 45 days of inactivity. Checked each time a receipt is scanned
+Table store {
+  id int [primary key, increment]
+  name varchar(100) [not null, unique]
+  logo_url text
+  supported boolean [default: true, note: "if false = store is known but not yet fully supported"]
 }
-```
 
-<br><br><br>
-
-## /shopping_lists/{list_id}
-Shpping lists can be shared with other users.
-```json
-{
-  "list_id": "string", // auto-generated id
-  "name": "string",
-  "owner_id": "string", // user_id of list owner - only owner can remove the list (can also transfer ownership to another member)
-  "created_at": "timestamp",
-  "updated_at": "timestamp",
-  "item_count": 88,
-  "bought_count": 14,
-  "members": [ // max 5 members per list, for free plan, TBD for premium plans
-    {
-      "user_id": "string",
-      "joined_at": "timestamp",
-      "role": "owner | member" // owner can remove list and remove members, members can do everything except removing the list and removing other members
-    }
-  ]
+Table product [note: "scraper fills this table"] {
+  id int [primary key, increment]
+  store_id int [not null]
+  name text [not null]
+  sale_price int [not null, note: "in cents"]
+  original_price int [not null, note: "in cents"]
+  discount_pct int [not null]
+  image_url text [null]
+  valid_from timestamptz [null]
+  valid_to timestamptz [null]
+  scraped_at timestamptz [not null]
+  Indexes {
+    (store_id)
+    (valid_from, valid_to)
+  }
 }
-```
-
-## /shopping_lists/{list_id}/items/{item_id}
-```json
-{
-  "item_id": "string", // auto-generated id
-  "name": "string",
-  "brand": "string | null",
-  "quantity": 0,
-  "unit": "string | null",
-  "is_bought": false,
-  "added_by": "string",
-  "added_at": "timestamp",
-  "bought_at": "timestamp | null"
-}
-```
-
-## /shopping_list_invitations/{invitation_id}
-```json
-{
-  "invitation_id": "string", // auto-generated id
-  "list_id": "string",
-  "invited_user_id": "string",
-  "invited_by_user_id": "string",
-  "status": "pending | accepted | declined",
-  "sent_at": "timestamp",
-  "responded_at": "timestamp | null",
-  "expires_at": "timestamp | null"
-}
-```
-
-<br><br><br>
-
-## /products/{product_id}
-Scraper results, products on sale across different stores.
-```json
-{
-  "product_id": "string", // auto-generated id
-  "store_name": "string",
-  "product_name": "string",
-  "brand": "string | null",
-  //"category": "string | null",
-  "image_url": "string | null",
-  "original_price": 0,
-  "sale_price": 0,
-  "discount_pct": 0,
-  "valid_from": "timestamp",
-  "valid_until": "timestamp",
-  "scraped_at": "timestamp",
-  "scrapped_from_url": "string | null"
-}
+Ref: product.store_id  > store.id
 ```
