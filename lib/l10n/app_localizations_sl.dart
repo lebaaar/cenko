@@ -104,7 +104,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get preferencesTitle => 'Personalizacija';
 
   @override
-  String get preferencesAccountSubtitle => 'Prilagodite nastavitve apliakcije';
+  String get preferencesAccountSubtitle => 'Prilagodite nastavitve aplikacije';
 
   @override
   String get settingsDisplayName => 'Prikazno ime';

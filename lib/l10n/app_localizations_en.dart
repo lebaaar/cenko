@@ -288,7 +288,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeEmptyState =>
-      'Bellow you will see personalized deals based on your shopping lists';
+      'Below you will see personalized deals based on your shopping lists';
 
   @override
   String get homeFromShoppingLists => 'From your shopping lists';

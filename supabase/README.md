@@ -111,7 +111,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#supabase-stuff) for Supabase setup instruc
 ### Deploy a single function
 
 ```bash
-supabase functions deploy `function-name`
+supabase functions deploy function-name
 ```
 
 ### Deploy all functions

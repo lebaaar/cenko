@@ -617,7 +617,7 @@ abstract class AppLocalizations {
   /// Home empty state message
   ///
   /// In en, this message translates to:
-  /// **'Bellow you will see personalized deals based on your shopping lists'**
+  /// **'Below you will see personalized deals based on your shopping lists'**
   String get homeEmptyState;
 
   /// Home section header
