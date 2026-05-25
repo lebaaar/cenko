@@ -7,7 +7,7 @@ from typing import Any
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-STORE_NAME = "tus_drogerija"
+STORE_NAME = "tuš drogerija"
 SITE_ORIGIN = "https://www.tusdrogerija.si"
 CATALOG_CATS_URL = f"{SITE_ORIGIN}/api/catalog/cats"
 CATEGORY_PRODUCTS_URL = f"{SITE_ORIGIN}/api/catalog/{{slug}}/products"
