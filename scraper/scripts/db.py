@@ -48,10 +48,10 @@ def get_db_connection(database_url: str | None = None) -> psycopg2.extensions.co
 
 
 def _fetch_store_id_map(conn: psycopg2.extensions.connection) -> dict[str, int]:
-    """Return {store.name -> store.id} for all rows in the store table."""
+    """Return {store.name.lower() -> store.id} for all rows in the store table."""
     with conn.cursor() as cur:
         cur.execute("SELECT id, name FROM store")
-        return {name: id_ for id_, name in cur.fetchall()}
+        return {name.lower(): id_ for id_, name in cur.fetchall()}
 
 
 def upsert_products(
