@@ -4,10 +4,10 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key, this.initialType});
@@ -94,10 +94,14 @@ class _ContactScreenState extends State<ContactScreen> {
 
   String _contactTypeLabel(ContactType type, AppLocalizations l10n) {
     switch (type) {
-      case ContactType.contact: return l10n.aboutContact;
-      case ContactType.feedback: return l10n.aboutFeedback;
-      case ContactType.featureRequest: return l10n.aboutFeatureRequest;
-      case ContactType.bugReport: return l10n.aboutBugReport;
+      case ContactType.contact:
+        return l10n.aboutContact;
+      case ContactType.feedback:
+        return l10n.aboutFeedback;
+      case ContactType.featureRequest:
+        return l10n.aboutFeatureRequest;
+      case ContactType.bugReport:
+        return l10n.aboutBugReport;
     }
   }
 
@@ -116,7 +120,9 @@ class _ContactScreenState extends State<ContactScreen> {
                 DropdownButtonFormField<ContactType>(
                   initialValue: _selectedType,
                   decoration: InputDecoration(labelText: AppLocalizations.of(context)!.contactType),
-                  items: ContactType.values.map((t) => DropdownMenuItem(value: t, child: Text(_contactTypeLabel(t, AppLocalizations.of(context)!)))).toList(),
+                  items: ContactType.values
+                      .map((t) => DropdownMenuItem(value: t, child: Text(_contactTypeLabel(t, AppLocalizations.of(context)!))))
+                      .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedType = v);
                   },

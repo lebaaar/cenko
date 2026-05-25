@@ -17,21 +17,20 @@ import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stu
     as receipt_ocr;
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/l10n/app_localizations.dart';
+import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
-import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cenko/shared/widgets/animated_dots.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key, this.initialMode, this.returnTo, this.targetListId});
@@ -273,7 +272,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resetReceiptFlow, style: _secondaryActionStyle(context), child: Text(AppLocalizations.of(context)!.scanAgain)),
+                    child: OutlinedButton(
+                      onPressed: _resetReceiptFlow,
+                      style: _secondaryActionStyle(context),
+                      child: Text(AppLocalizations.of(context)!.scanAgain),
+                    ),
                   ),
                 ],
                 if (_receiptFlowState == _ReceiptFlowState.processing) ...[
@@ -324,7 +327,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    AppLocalizations.of(context)!.scanReceiptLoggedSuccessfully(_asString((_pendingReceiptPayload?['receipt'] as Map<String, dynamic>?)?['store_name'], fallback: 'store')),
+                    AppLocalizations.of(context)!.scanReceiptLoggedSuccessfully(
+                      _asString((_pendingReceiptPayload?['receipt'] as Map<String, dynamic>?)?['store_name'], fallback: 'store'),
+                    ),
                     style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
                     textAlign: TextAlign.center,
                   ),
@@ -404,7 +409,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(onPressed: _resumeBarcodeScanning, style: _secondaryActionStyle(context), child: Text(AppLocalizations.of(context)!.scanTryAgain)),
+                    child: OutlinedButton(
+                      onPressed: _resumeBarcodeScanning,
+                      style: _secondaryActionStyle(context),
+                      child: Text(AppLocalizations.of(context)!.scanTryAgain),
+                    ),
                   ),
                 ],
                 if (_barcodeFlowState == _BarcodeFlowState.success) ...[
@@ -476,8 +485,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _ModeTab(label: AppLocalizations.of(context)!.scanBarcodeTab, selected: isBarcode, onTap: () => _onModeSelected(_ScanMode.barcode)),
-                      _ModeTab(label: AppLocalizations.of(context)!.scanReceiptTab, selected: !isBarcode, onTap: () => _onModeSelected(_ScanMode.receipt)),
+                      _ModeTab(
+                        label: AppLocalizations.of(context)!.scanBarcodeTab,
+                        selected: isBarcode,
+                        onTap: () => _onModeSelected(_ScanMode.barcode),
+                      ),
+                      _ModeTab(
+                        label: AppLocalizations.of(context)!.scanReceiptTab,
+                        selected: !isBarcode,
+                        onTap: () => _onModeSelected(_ScanMode.receipt),
+                      ),
                     ],
                   ),
                 ),
@@ -1995,21 +2012,21 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     final rawOcr = _asString(receipt['raw_ocr']);
 
     // Resolve store_id (null if store not found in DB)
-    final storeRows = await supabase
-        .from('store')
-        .select('id')
-        .ilike('name', normalizedStoreName)
-        .limit(1);
+    final storeRows = await supabase.from('store').select('id').ilike('name', normalizedStoreName).limit(1);
     final storeId = (storeRows as List).isNotEmpty ? storeRows.first['id'] as int? : null;
 
     // Insert receipt row
-    final receiptRow = await supabase.from('receipt').insert({
-      'user_id': uid,
-      if (storeId != null) 'store_id': storeId,
-      'total': totalPrice,
-      'receipt_date': parsedDate.toIso8601String().substring(0, 10),
-      'raw_ocr': rawOcr,
-    }).select('id').single();
+    final receiptRow = await supabase
+        .from('receipt')
+        .insert({
+          'user_id': uid,
+          'store_id': ?storeId,
+          'total': totalPrice,
+          'receipt_date': parsedDate.toIso8601String().substring(0, 10),
+          'raw_ocr': rawOcr,
+        })
+        .select('id')
+        .single();
 
     final receiptId = receiptRow['id'] as int;
 
