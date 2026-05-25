@@ -27,6 +27,11 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
   bool _suppressOffline = false;
   Timer? _suppressTimer;
 
+  // Cached from last successful currentUserProvider data
+  // Prevents locale/theme flicker when the provider errors (eg. network drops and the Supabase fetch fails).
+  Locale? _cachedLocale;
+  ThemeMode? _cachedThemeMode;
+
   @override
   void initState() {
     super.initState();
@@ -77,11 +82,18 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
-    final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.theme), orElse: () => ThemeMode.system);
     final authLocale = ref.watch(authLocaleProvider);
-    final locale = userAsync.maybeWhen(
-      data: (user) => _localeFromSettings(user?.lang ?? authLocale),
-      orElse: () => _localeFromSettings(authLocale),
+
+    // Update cache when real data arrives; hold cached value during loading/error so locale and theme don't revert when the network drops temporarily.
+    final themeMode = userAsync.when(
+      data: (user) => _cachedThemeMode = _themeModeFromSettings(user?.theme),
+      loading: () => _cachedThemeMode ?? ThemeMode.system,
+      error: (e, _) => _cachedThemeMode ?? ThemeMode.system,
+    );
+    final locale = userAsync.when(
+      data: (user) => _cachedLocale = _localeFromSettings(user?.lang ?? authLocale),
+      loading: () => _cachedLocale ?? _localeFromSettings(authLocale),
+      error: (e, _) => _cachedLocale ?? _localeFromSettings(authLocale),
     );
 
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
