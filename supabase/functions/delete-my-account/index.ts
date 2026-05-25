@@ -65,29 +65,17 @@ Deno.serve(async (req: Request) => {
       .eq('bought_by_user_id', uid)
     if (boughtErr) throw boughtErr
 
-    //  4. Delete items added by user on lists they don't own
-    //    added_by_user_id is NOT NULL with no ON DELETE — must clean manually
-    //    before the auth user delete to avoid FK violation.
-    const ownedListIds = (ownedLists ?? []).map((l: any) => l.id as number)
-
-    const { data: memberRows, error: memberErr } = await admin
-      .from('shopping_list_member')
-      .select('shopping_list_id')
-      .eq('user_id', uid)
-    if (memberErr) throw memberErr
-
-    const nonOwnedListIds = (memberRows ?? [])
-      .map((r: any) => r.shopping_list_id as number)
-      .filter((id) => !ownedListIds.includes(id))
-
-    if (nonOwnedListIds.length > 0) {
-      const { error: itemsErr } = await admin
-        .from('shopping_list_item')
-        .delete()
-        .eq('added_by_user_id', uid)
-        .in('shopping_list_id', nonOwnedListIds)
-      if (itemsErr) throw itemsErr
-    }
+    //  4. Delete ALL items added by this user across every list.
+    //    added_by_user_id is NOT NULL with no ON DELETE rule, so Postgres will
+    //    refuse to delete public.user while any referencing rows exist — even for
+    //    owned lists whose shopping_list rows will cascade later. The cascade on
+    //    shopping_list → shopping_list_item fires after the public.user FK is
+    //    checked, so we must clear added_by_user_id rows first unconditionally.
+    const { error: itemsErr } = await admin
+      .from('shopping_list_item')
+      .delete()
+      .eq('added_by_user_id', uid)
+    if (itemsErr) throw itemsErr
 
     //  5. Delete pending invitations sent or received
     //    invited_by_user_id and invited_user_id have no ON DELETE cascade.
