@@ -4,6 +4,7 @@ import 'package:cenko/features/auth/data/user_repository.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/bullet_point.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await _repo.updateDisplayName(uid, trimmed);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.saveDisplayName', userId: uid);
       if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
@@ -62,7 +64,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await _repo.updateEmail(uid, trimmed);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.saveEmail', userId: uid);
       if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
@@ -73,7 +76,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await _repo.updateSettings(uid, theme: _theme, lang: _language, notificationsEnabled: _notificationsEnabled);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.savePreferences', userId: uid);
       if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
@@ -173,7 +177,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.deleteAccount');
       if (!mounted) return;
       setState(() => _deleteLoading = false);
       showDialog<void>(
@@ -210,7 +215,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.resetPassword');
       if (!mounted) return;
       setState(() => _error = l10n.errorGeneric);
     } finally {

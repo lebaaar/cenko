@@ -4,6 +4,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:flutter/material.dart';
@@ -482,7 +483,8 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
       }
       ref.invalidate(pendingInvitationsProvider(widget.uid));
       ref.invalidate(userShoppingListsProvider(widget.uid));
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ShoppingListScreen.acceptDeclineInvitation', userId: widget.uid);
       if (mounted) {
         SnackBarService.show(AppLocalizations.of(context)!.errorFailedToAcceptInvitation);
       }

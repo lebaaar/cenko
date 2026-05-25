@@ -6,6 +6,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:flutter/material.dart';
@@ -401,7 +402,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
       ref.invalidate(shoppingListItemsProvider(listId));
       if (mounted) SnackBarService.show(AppLocalizations.of(context)!.addedToShoppingList);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'DealsScreen.addDealToShoppingList', userId: uid);
       if (!mounted) return;
       SnackBarService.show(AppLocalizations.of(context)!.failedToAddToList);
     } finally {

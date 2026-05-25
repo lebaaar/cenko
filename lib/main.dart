@@ -2,6 +2,7 @@ import 'package:cenko/app.dart';
 import 'package:cenko/firebase_options.dart';
 import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -31,6 +32,7 @@ void _setSystemUIOverlayStyle(Brightness brightness) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  ExceptionReportingService.setupGlobalHandlers();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   _setSystemUIOverlayStyle(Brightness.dark); // Set initial (dark) style
 

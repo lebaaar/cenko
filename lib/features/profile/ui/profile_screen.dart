@@ -7,6 +7,7 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:flutter/material.dart';
@@ -695,7 +696,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         if (mounted) {
                                           SnackBarService.show(l10n.profileReceiptDeleted);
                                         }
-                                      } catch (error) {
+                                      } catch (error, st) {
+                                        ExceptionReportingService.report(error, st, context: 'ProfileScreen.deleteReceipt');
                                         if (!dialogContext.mounted) {
                                           return;
                                         }

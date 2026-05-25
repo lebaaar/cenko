@@ -20,6 +20,7 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/animated_dots.dart';
 import 'package:firebase_ai/firebase_ai.dart';
@@ -829,7 +830,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
         _receiptCamera = camera;
         _receiptTorchOn = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ScanScreen.initializeReceiptCamera');
       if (mounted) {
         setState(() {
           _receiptFlowMessage = l10n.scanCameraNotReady;
@@ -989,7 +991,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       }
 
       await _showProductInsightsSheet(productNames: {name});
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ScanScreen.addBarcodeProductToShoppingList', userId: uid);
       if (!mounted) {
         return;
       }
@@ -1090,7 +1093,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                                     FocusManager.instance.primaryFocus?.unfocus();
                                     Navigator.of(sheetContext).pop();
                                   }
-                                } catch (error) {
+                                } catch (error, st) {
+                                  ExceptionReportingService.report(error, st, context: 'ScanScreen.manualAddToShoppingList', userId: uid);
                                   if (!sheetContext.mounted) {
                                     return;
                                   }
@@ -1271,7 +1275,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
         _barcodeFlowState = _BarcodeFlowState.success;
         _barcodeFlowMessage = null;
       });
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ScanScreen.handleBarcodeDetection');
       if (mounted) {
         setState(() {
           _barcodeProduct = null;
@@ -1353,7 +1358,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
         });
       }
       await _extractReceiptJson(file, autoStore: true, imageBytes: bytes);
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ScanScreen.captureReceiptFromCamera');
       if (!mounted) {
         return;
       }
@@ -1429,7 +1435,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
           _receiptFlowState = _ReceiptFlowState.readyToSubmit;
         });
       }
-    } catch (e) {
+    } catch (e, st) {
+      if (e is! _UserVisibleError) {
+        ExceptionReportingService.report(e, st, context: 'ScanScreen.extractReceiptJson');
+      }
       if (!mounted) return;
 
       setState(() {
@@ -1498,7 +1507,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
           _receiptFlowState = _ReceiptFlowState.readyToSubmit;
         });
       }
-    } catch (e) {
+    } catch (e, st) {
+      if (e is! _UserVisibleError) {
+        ExceptionReportingService.report(e, st, context: 'ScanScreen.extractReceiptJsonFromImage');
+      }
       if (!mounted) return;
 
       setState(() {
@@ -1873,7 +1885,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       setState(() {
         _receiptFlowState = _ReceiptFlowState.success;
       });
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ScanScreen.saveExtractedReceipt');
       if (!mounted) return;
 
       setState(() {

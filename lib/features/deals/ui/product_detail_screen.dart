@@ -6,6 +6,7 @@ import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +105,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         SnackBarService.show(l10n.addedToShoppingList);
         context.pop();
       }
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ProductDetailScreen.addToShoppingList', userId: uid);
       if (mounted) SnackBarService.show(l10n.failedToAddToList);
     } finally {
       if (mounted) setState(() => _addingToList = false);

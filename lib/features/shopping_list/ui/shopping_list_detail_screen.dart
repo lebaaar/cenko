@@ -12,6 +12,7 @@ import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/catalog_deals_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -360,7 +361,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       ref.invalidate(shoppingListItemsProvider(widget.listId));
       ref.invalidate(userShoppingListsProvider(uid));
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.saveItem', userId: uid);
       if (mounted) {
         setModalState(() {
           _formError = l10n.errorFailedToSaveItem;
@@ -437,7 +439,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                         ref.invalidate(shoppingListItemsProvider(widget.listId));
                                         if (uid != null) ref.invalidate(userShoppingListsProvider(uid));
                                         if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
-                                      } catch (e) {
+                                      } catch (e, st) {
+                                        ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.deleteItem');
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
                                         SnackBarService.show(AppLocalizations.of(context)!.errorFailedToDeleteItem);
@@ -468,7 +471,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
       ref.invalidate(shoppingListItemsProvider(widget.listId));
       ref.invalidate(userShoppingListsProvider(uid));
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.setBought', userId: uid);
       if (!mounted) return;
       SnackBarService.show(AppLocalizations.of(context)!.errorFailedToUpdateItem);
     } finally {
@@ -728,7 +732,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 ref.invalidate(shoppingListProvider(list.id));
                                 ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                              } catch (e) {
+                              } catch (e, st) {
+                                ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.transferOwnership');
                                 if (context.mounted) {
                                   SnackBarService.show(AppLocalizations.of(context)!.errorFailedToTransferOwnership);
                                 }
@@ -740,7 +745,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 ref.invalidate(shoppingListProvider(list.id));
                                 ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                              } catch (e) {
+                              } catch (e, st) {
+                                ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.removeMember');
                                 if (context.mounted) {
                                   SnackBarService.show(AppLocalizations.of(context)!.errorFailedToRemoveMember);
                                 }
@@ -763,7 +769,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                               try {
                                 await repo.cancelInvitation(inv.id);
                                 setDialogState(() => pendingInvitations.remove(inv));
-                              } catch (e) {
+                              } catch (e, st) {
+                                ExceptionReportingService.report(e, st, context: 'ShoppingListDetailScreen.cancelInvitation');
                                 if (context.mounted) {
                                   SnackBarService.show(AppLocalizations.of(context)!.errorFailedToCancelInvitation);
                                 }
@@ -878,7 +885,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       ref.invalidate(userShoppingListsProvider(uid));
       if (!mounted) return;
       context.go('/list');
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: isOwner ? 'ShoppingListDetailScreen.deleteList' : 'ShoppingListDetailScreen.leaveList', userId: uid);
       if (!mounted) return;
       SnackBarService.show(isOwner ? AppLocalizations.of(context)!.errorFailedToDeleteList : AppLocalizations.of(context)!.errorFailedToLeaveList);
     }

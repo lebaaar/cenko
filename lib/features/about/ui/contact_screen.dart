@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +85,8 @@ class _ContactScreenState extends State<ContactScreen> {
       if (!mounted) return;
       context.pop();
       SnackBarService.show(AppLocalizations.of(context)!.contactMessageSent);
-    } catch (_) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ContactScreen.sendMessage');
       if (!mounted) return;
       SnackBarService.show(AppLocalizations.of(context)!.contactFailedToSend);
     } finally {

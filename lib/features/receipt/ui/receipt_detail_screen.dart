@@ -4,6 +4,7 @@ import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
+import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -364,7 +365,8 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
       ref.invalidate(_receiptRowProvider(args));
       ref.read(receiptRevisionProvider.notifier).increment();
       if (mounted) Navigator.of(context).pop();
-    } catch (e) {
+    } catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'ReceiptDetailScreen.saveItem', userId: widget.uid);
       if (mounted) {
         setState(() {
           _saving = false;
