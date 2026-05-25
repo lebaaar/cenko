@@ -190,7 +190,7 @@ class SharedShoppingListRepository {
     final normalizedEmail = email.trim().toLowerCase();
     final id = int.parse(listId);
 
-    // Resolve email → user id
+    // Resolve email -> user id
     final userRows = await _client.from('user').select('id').eq('email', normalizedEmail).limit(1);
     if ((userRows as List).isEmpty) {
       throw Exception('No user with that email address was found');

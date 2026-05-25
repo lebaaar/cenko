@@ -20,7 +20,7 @@ grant usage on schema private to authenticated;
 -- table's own RLS policy, which breaks the mutual recursion that would
 -- otherwise occur between the shopping_list ↔ shopping_list_member policies.
 --
--- Lives in private schema → not callable via REST → no security warning.
+-- Lives in private schema -> not callable via REST -> no security warning.
 --
 create or replace function private.get_my_shopping_list_ids()
 returns setof integer

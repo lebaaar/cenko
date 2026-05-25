@@ -15,11 +15,11 @@ Performs a safe, ordered deletion to avoid FK violations before calling
 `auth.admin.deleteUser()`, which triggers PostgreSQL cascade deletes for
 most data. Manual cleanup steps:
 
-1. Block if user owns any **shared** list (other members present) → return `409`
+1. Block if user owns any **shared** list (other members present) -> return `409`
 2. Null out `bought_by_user_id` references (nullable FK, no `ON DELETE`)
 3. Delete `shopping_list_item` rows added by the user on lists they don't own (`NOT NULL` FK, no `ON DELETE`)
 4. Delete pending `shopping_list_invitation` rows sent or received by the user (no `ON DELETE`)
-5. `auth.admin.deleteUser(uid)` — cascades: `public.user` → `shopping_list` → `shopping_list_member` / `shopping_list_item` / `receipt` / `receipt_item`
+5. `auth.admin.deleteUser(uid)` — cascades: `public.user` -> `shopping_list` -> `shopping_list_member` / `shopping_list_item` / `receipt` / `receipt_item`
 
 **Responses**
 

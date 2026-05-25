@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   )
 
-  // Verify caller JWT → get uid
+  // Verify caller JWT -> get uid
   const { data: { user }, error: authError } = await admin.auth.getUser(token)
   if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
@@ -98,12 +98,12 @@ Deno.serve(async (req: Request) => {
 
     //  6. Delete auth user
     //    Cascade chain:
-    //      auth.users → public.user
-    //                 → shopping_list (owned) → shopping_list_member
-    //                                         → shopping_list_item
-    //                                         → shopping_list_invitation (list cascade)
-    //                 → shopping_list_member (membership rows)
-    //                 → receipt → receipt_item
+    //      auth.users -> public.user
+    //                 -> shopping_list (owned) -> shopping_list_member
+    //                                         -> shopping_list_item
+    //                                         -> shopping_list_invitation (list cascade)
+    //                 -> shopping_list_member (membership rows)
+    //                 -> receipt -> receipt_item
     const { error: deleteErr } = await admin.auth.admin.deleteUser(uid)
     if (deleteErr) throw deleteErr
 
