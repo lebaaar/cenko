@@ -35,15 +35,6 @@ class PersonalizedDealsRepository {
     return _matchDealsForTexts(texts, limit: limit);
   }
 
-  /// Not yet implemented — no common_products table in schema yet.
-  Future<List<PersonalizedDealCardItem>> fetchCommonBoughtProductsOnSale(String uid, {int limit = 10}) async {
-    return const [];
-  }
-
-  Future<List<PersonalizedDealCardItem>> fetchFromSpendingHabitsOnSale(String uid, {int limit = 10}) async {
-    return const [];
-  }
-
   Future<List<PersonalizedDealCardItem>> _matchDealsForTexts(Set<String> sourceTexts, {required int limit}) async {
     if (sourceTexts.isEmpty) return const [];
     final activeDeals = await _catalogDealsRepository.watchActiveCatalogDeals(fetchLimit: 400).first;

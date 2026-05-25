@@ -32,8 +32,7 @@ class HomeScreen extends ConsumerWidget {
             final uid = ref.read(currentUserProvider).asData?.value?.id;
             if (uid != null) {
               ref.invalidate(shoppingListOnSaleProvider(uid));
-              ref.invalidate(commonBoughtProductsOnSaleProvider(uid));
-              await Future.wait([ref.read(shoppingListOnSaleProvider(uid).future), ref.read(commonBoughtProductsOnSaleProvider(uid).future)]);
+              await ref.read(shoppingListOnSaleProvider(uid).future);
             }
           },
           child: SingleChildScrollView(
@@ -51,11 +50,7 @@ class HomeScreen extends ConsumerWidget {
                 final shoppingListDealsAsync = user == null
                     ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
                     : ref.watch(shoppingListOnSaleProvider(user.id));
-                final commonBoughtProductsDealsAsync = user == null
-                    ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                    : ref.watch(commonBoughtProductsOnSaleProvider(user.id));
                 final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length ?? 0;
-                final commonBoughtProductsSaleCount = commonBoughtProductsDealsAsync.asData?.value.length ?? 0;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,19 +58,19 @@ class HomeScreen extends ConsumerWidget {
                     const MainTopBar(title: kAppName),
                     Text('${_greeting(l10n)}, $name', style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 12),
-                    if (shoppingListSaleCount + commonBoughtProductsSaleCount > 0)
+                    if (shoppingListSaleCount > 0)
                       Text.rich(
                         TextSpan(
                           style: secondaryBodyStyle,
                           children: [
                             TextSpan(
-                              text: '${shoppingListSaleCount + commonBoughtProductsSaleCount}',
+                              text: '$shoppingListSaleCount',
                               style: Theme.of(
                                 context,
                               ).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
                             ),
                             TextSpan(
-                              text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount + commonBoughtProductsSaleCount),
+                              text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount),
                               style: secondaryBodyStyle,
                             ),
                           ],
@@ -93,18 +88,6 @@ class HomeScreen extends ConsumerWidget {
                       emptyActionLabel: l10n.homeGoToShoppingLists,
                       emptyActionIcon: Icons.checklist_rounded,
                       emptyActionRoute: '/list',
-                      onDealTap: (item) => context.push('/deal/${item.dealId}'),
-                    ),
-                    const SizedBox(height: 30),
-                    _SectionHeader(title: l10n.homeBasedOnHabits),
-                    const SizedBox(height: 14),
-                    _DealsList(
-                      asyncDeals: commonBoughtProductsDealsAsync,
-                      emptyMessage: l10n.homeEmptyHabitsDeals,
-                      message: l10n.homeHabitsDealsMessage,
-                      emptyActionLabel: l10n.homeScanAReceipt,
-                      emptyActionIcon: Icons.document_scanner_rounded,
-                      emptyActionRoute: '/scan',
                       onDealTap: (item) => context.push('/deal/${item.dealId}'),
                     ),
                     const SizedBox(height: 14),

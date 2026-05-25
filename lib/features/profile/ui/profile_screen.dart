@@ -7,7 +7,6 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
-import 'package:cenko/shared/services/receipt_analytics_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
 import 'package:flutter/material.dart';
@@ -150,7 +149,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _monthAnimationDirection = 1;
   double _spendingCardDragDx = 0;
   late final List<DateTime> _monthOptions;
-  final ReceiptAnalyticsService _receiptAnalyticsService = ReceiptAnalyticsService();
   final Map<String, int> _visibleReceiptsByMonth = <String, int>{};
 
   @override
@@ -686,7 +684,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   : () async {
                                       setDialogState(() => deleting = true);
                                       try {
-                                        await _receiptAnalyticsService.deleteReceiptAndResyncCommonProducts(uid: uid, receiptId: receipt.id);
+                                        await Supabase.instance.client.from('receipt').delete().eq('id', int.parse(receipt.id)).eq('user_id', uid);
                                         ref.read(receiptRevisionProvider.notifier).increment();
                                         if (dialogContext.mounted) {
                                           Navigator.of(dialogContext).pop(true);

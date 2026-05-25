@@ -287,10 +287,6 @@ class AppLocalizationsSl extends AppLocalizations {
   String get homeFromShoppingLists => 'Iz nakupovalnih seznamov';
 
   @override
-  String get homeBasedOnHabits =>
-      'Priporočila glede na vaše nakupovalne navade';
-
-  @override
   String get homeEmptyShoppingListDeals =>
       'Ko dodate artikle na nakupovalne sezname, boste tu videli ustrezne akcije';
 
@@ -299,18 +295,7 @@ class AppLocalizationsSl extends AppLocalizations {
       'Na podlagi artiklov na vaših nakupovalnih seznamih so te akcije zdaj na voljo';
 
   @override
-  String get homeEmptyHabitsDeals =>
-      'Skenirajte več računov za personalizirane akcije na pogosto kupljene izdelke';
-
-  @override
-  String get homeHabitsDealsMessage =>
-      'Na podlagi pogosto kupljenih izdelkov so te akcije zdaj na voljo';
-
-  @override
   String get homeGoToShoppingLists => 'Na nakupovalne sezname';
-
-  @override
-  String get homeScanAReceipt => 'Skeniraj račun';
 
   @override
   String get homeShowAllDeals => 'Prikaži vse akcije';

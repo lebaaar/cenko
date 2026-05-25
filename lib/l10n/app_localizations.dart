@@ -626,12 +626,6 @@ abstract class AppLocalizations {
   /// **'From your shopping lists'**
   String get homeFromShoppingLists;
 
-  /// Home section header
-  ///
-  /// In en, this message translates to:
-  /// **'Based on your shopping habits'**
-  String get homeBasedOnHabits;
-
   /// Empty shopping list deals
   ///
   /// In en, this message translates to:
@@ -644,29 +638,11 @@ abstract class AppLocalizations {
   /// **'Based on the items you have in your shopping lists, these are on sale right now'**
   String get homeShoppingListDealsMessage;
 
-  /// Empty habit deals
-  ///
-  /// In en, this message translates to:
-  /// **'Scan more receipts to get personalized deals based on the products you buy often'**
-  String get homeEmptyHabitsDeals;
-
-  /// Habit deals message
-  ///
-  /// In en, this message translates to:
-  /// **'Based on the products that show up often in your receipts, these are on sale right now'**
-  String get homeHabitsDealsMessage;
-
   /// Go to shopping lists button
   ///
   /// In en, this message translates to:
   /// **'Go to shopping lists'**
   String get homeGoToShoppingLists;
-
-  /// Scan a receipt button
-  ///
-  /// In en, this message translates to:
-  /// **'Scan a receipt'**
-  String get homeScanAReceipt;
 
   /// Show all deals button
   ///

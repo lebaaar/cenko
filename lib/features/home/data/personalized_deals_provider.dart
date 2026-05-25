@@ -17,10 +17,3 @@ final shoppingListOnSaleProvider = FutureProvider.autoDispose.family<List<Person
   return ref.read(personalizedDealsRepositoryProvider).fetchShoppingListOnSale(uid);
 });
 
-final commonBoughtProductsOnSaleProvider = FutureProvider.autoDispose.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
-  return ref.read(personalizedDealsRepositoryProvider).fetchCommonBoughtProductsOnSale(uid);
-});
-
-final spendingHabitsOnSaleProvider = FutureProvider.autoDispose.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
-  return ref.read(personalizedDealsRepositoryProvider).fetchFromSpendingHabitsOnSale(uid);
-});

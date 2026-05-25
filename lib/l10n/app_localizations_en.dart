@@ -294,9 +294,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeFromShoppingLists => 'From your shopping lists';
 
   @override
-  String get homeBasedOnHabits => 'Based on your shopping habits';
-
-  @override
   String get homeEmptyShoppingListDeals =>
       'Once you add items to your shopping lists, you will see deals related to those items here';
 
@@ -305,18 +302,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Based on the items you have in your shopping lists, these are on sale right now';
 
   @override
-  String get homeEmptyHabitsDeals =>
-      'Scan more receipts to get personalized deals based on the products you buy often';
-
-  @override
-  String get homeHabitsDealsMessage =>
-      'Based on the products that show up often in your receipts, these are on sale right now';
-
-  @override
   String get homeGoToShoppingLists => 'Go to shopping lists';
-
-  @override
-  String get homeScanAReceipt => 'Scan a receipt';
 
   @override
   String get homeShowAllDeals => 'Show all deals';

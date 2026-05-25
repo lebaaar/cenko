@@ -94,13 +94,9 @@
   "homeItemsOnSaleSuffix": " artiklov, ki bi vas morda zanimali, je trenutno v akciji!",
   "homeEmptyState": "Spodaj boste videli personalizirane akcije na podlagi vaših nakupovalnih seznamov",
   "homeFromShoppingLists": "Iz nakupovalnih seznamov",
-  "homeBasedOnHabits": "Priporočila glede na vaše nakupovalne navade",
   "homeEmptyShoppingListDeals": "Ko dodate artikle na nakupovalne sezname, boste tu videli ustrezne akcije",
   "homeShoppingListDealsMessage": "Na podlagi artiklov na vaših nakupovalnih seznamih so te akcije zdaj na voljo",
-  "homeEmptyHabitsDeals": "Skenirajte več računov za personalizirane akcije na pogosto kupljene izdelke",
-  "homeHabitsDealsMessage": "Na podlagi pogosto kupljenih izdelkov so te akcije zdaj na voljo",
   "homeGoToShoppingLists": "Na nakupovalne sezname",
-  "homeScanAReceipt": "Skeniraj račun",
   "homeShowAllDeals": "Prikaži vse akcije",
 
   "dealsTitle": "Akcije",
