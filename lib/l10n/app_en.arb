@@ -306,22 +306,6 @@
   "listEmpty": "Empty list",
   "@listEmpty": { "description": "Empty list label" },
 
-  "listRemainingCount": "{count} remaining",
-  "@listRemainingCount": {
-    "description": "Remaining item count on list card",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-
-  "listBoughtCount": "{count} bought",
-  "@listBoughtCount": {
-    "description": "Bought item count on list card",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-
   "shoppingListsTitle": "Shopping Lists",
   "@shoppingListsTitle": { "description": "Shopping lists screen title" },
   "shoppingListNewTooltip": "New list",

@@ -896,18 +896,6 @@ abstract class AppLocalizations {
   /// **'Empty list'**
   String get listEmpty;
 
-  /// Remaining item count on list card
-  ///
-  /// In en, this message translates to:
-  /// **'{count} remaining'**
-  String listRemainingCount(int count);
-
-  /// Bought item count on list card
-  ///
-  /// In en, this message translates to:
-  /// **'{count} bought'**
-  String listBoughtCount(int count);
-
   /// Shopping lists screen title
   ///
   /// In en, this message translates to:

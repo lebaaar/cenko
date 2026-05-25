@@ -448,16 +448,6 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listEmpty => 'Prazen seznam';
 
   @override
-  String listRemainingCount(int count) {
-    return '$count preostalo';
-  }
-
-  @override
-  String listBoughtCount(int count) {
-    return '$count kupljeno';
-  }
-
-  @override
   String get shoppingListsTitle => 'Nakupovalni seznami';
 
   @override

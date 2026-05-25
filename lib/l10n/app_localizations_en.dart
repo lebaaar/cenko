@@ -452,16 +452,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listEmpty => 'Empty list';
 
   @override
-  String listRemainingCount(int count) {
-    return '$count remaining';
-  }
-
-  @override
-  String listBoughtCount(int count) {
-    return '$count bought';
-  }
-
-  @override
   String get shoppingListsTitle => 'Shopping Lists';
 
   @override

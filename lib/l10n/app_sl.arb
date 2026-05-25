@@ -144,9 +144,6 @@
   "listPrivate": "Zasebni seznam",
   "listEmpty": "Prazen seznam",
 
-  "listRemainingCount": "{count} preostalo",
-  "listBoughtCount": "{count} kupljeno",
-
   "shoppingListsTitle": "Nakupovalni seznami",
   "shoppingListNewTooltip": "Nov seznam",
   "shoppingListSignInPrompt": "Prijavite se za ogled nakupovalnih seznamov",

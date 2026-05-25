@@ -2,6 +2,7 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -188,17 +189,42 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Single
 
   List<_OnboardingSlide> _buildSlides(AppLocalizations l10n) {
     return [
-      _OnboardingSlide(icon: Icons.local_offer_rounded, title: l10n.onboardingSlide1Title, body: l10n.onboardingSlide1Body),
-      _OnboardingSlide(icon: Icons.qr_code_scanner_rounded, title: l10n.onboardingSlide2Title, body: l10n.onboardingSlide2Body),
-      _OnboardingSlide(icon: Icons.receipt_long_rounded, title: l10n.onboardingSlide3Title, body: l10n.onboardingSlide3Body),
-      _OnboardingSlide(icon: Icons.checklist_rounded, title: l10n.onboardingSlide4Title, body: l10n.onboardingSlide4Body),
-      _OnboardingSlide(icon: Icons.rocket_launch_rounded, title: l10n.onboardingSlide5Title, body: l10n.onboardingSlide5Body),
+      _OnboardingSlide(
+        icon: const Icon(Icons.local_offer_rounded, size: 64, color: Colors.white),
+        title: l10n.onboardingSlide1Title,
+        body: l10n.onboardingSlide1Body,
+      ),
+      _OnboardingSlide(
+        icon: SvgPicture.asset(
+          'assets/icons/barcode_scanner.svg',
+          width: 70,
+          height: 70,
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        ),
+        title: l10n.onboardingSlide2Title,
+        body: l10n.onboardingSlide2Body,
+      ),
+      _OnboardingSlide(
+        icon: const Icon(Icons.receipt_long_rounded, size: 64, color: Colors.white),
+        title: l10n.onboardingSlide3Title,
+        body: l10n.onboardingSlide3Body,
+      ),
+      _OnboardingSlide(
+        icon: const Icon(Icons.checklist_rounded, size: 64, color: Colors.white),
+        title: l10n.onboardingSlide4Title,
+        body: l10n.onboardingSlide4Body,
+      ),
+      _OnboardingSlide(
+        icon: const Icon(Icons.rocket_launch_rounded, size: 64, color: Colors.white),
+        title: l10n.onboardingSlide5Title,
+        body: l10n.onboardingSlide5Body,
+      ),
     ];
   }
 }
 
 class _OnboardingSlide {
-  final IconData icon;
+  final Widget icon;
   final String title;
   final String body;
   const _OnboardingSlide({required this.icon, required this.title, required this.body});
@@ -249,12 +275,13 @@ class _SlideContentState extends State<_SlideContent> with SingleTickerProviderS
               Container(
                 width: 128,
                 height: 128,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.12),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
                 ),
-                child: Icon(widget.slide.icon, size: 64, color: Colors.white),
+                child: widget.slide.icon,
               ),
               const SizedBox(height: 44),
               Text(
