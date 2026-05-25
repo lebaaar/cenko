@@ -63,23 +63,27 @@ class HomeScreen extends ConsumerWidget {
                     const MainTopBar(title: kAppName),
                     Text('${_greeting(l10n)}, $name', style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 12),
-                    Text.rich(
-                      TextSpan(
-                        style: secondaryBodyStyle,
-                        children: [
-                          TextSpan(
-                            text: '${shoppingListSaleCount + commonBoughtProductsSaleCount}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
-                          ),
-                          TextSpan(
-                            text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount + commonBoughtProductsSaleCount),
-                            style: secondaryBodyStyle,
-                          ),
-                        ],
-                      ),
-                    ),
+                    if (shoppingListSaleCount + commonBoughtProductsSaleCount > 0)
+                      Text.rich(
+                        TextSpan(
+                          style: secondaryBodyStyle,
+                          children: [
+                            TextSpan(
+                              text: '${shoppingListSaleCount + commonBoughtProductsSaleCount}',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                            ),
+                            TextSpan(
+                              text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount + commonBoughtProductsSaleCount),
+                              style: secondaryBodyStyle,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(l10n.homeEmptyState, style: secondaryBodyStyle),
                     const SizedBox(height: 18),
-                    const SizedBox(height: 6),
                     _SectionHeader(title: l10n.homeFromShoppingLists),
                     const SizedBox(height: 14),
                     _DealsList(
@@ -110,7 +114,9 @@ class HomeScreen extends ConsumerWidget {
                         icon: const Icon(Icons.arrow_forward_rounded),
                         label: Text(
                           l10n.homeShowAllDeals,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),

@@ -280,6 +280,10 @@ class AppLocalizationsSl extends AppLocalizations {
   }
 
   @override
+  String get homeEmptyState =>
+      'Spodaj boste videli personalizirane akcije na podlagi vaših nakupovalnih seznamov';
+
+  @override
   String get homeFromShoppingLists => 'Iz nakupovalnih seznamov';
 
   @override

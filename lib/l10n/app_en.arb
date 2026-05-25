@@ -186,6 +186,8 @@
       "count": { "type": "int" }
     }
   },
+  "homeEmptyState": "Bellow you will see personalized deals based on your shopping lists",
+  "@homeEmptyState": { "description": "Home empty state message" },
   "homeFromShoppingLists": "From your shopping lists",
   "@homeFromShoppingLists": { "description": "Home section header" },
   "homeBasedOnHabits": "Based on your shopping habits",

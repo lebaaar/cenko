@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **' {count, plural, one{item} other{items}} you might be interested in are on sale right now!'**
   String homeItemsOnSaleSuffix(int count);
 
+  /// Home empty state message
+  ///
+  /// In en, this message translates to:
+  /// **'Bellow you will see personalized deals based on your shopping lists'**
+  String get homeEmptyState;
+
   /// Home section header
   ///
   /// In en, this message translates to:
