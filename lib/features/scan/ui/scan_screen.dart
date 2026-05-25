@@ -904,10 +904,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
   Future<String?> _pickListId(String uid) async {
     if (widget.targetListId != null) return widget.targetListId;
 
+    final l10n = AppLocalizations.of(context)!;
     final lists = await _shoppingListRepository.getUserLists(uid);
     if (lists.isEmpty) {
       if (mounted) {
-        SnackBarService.show('No shopping lists found. Create one first.');
+        SnackBarService.show(l10n.noShoppingListsCreate);
       }
       return null;
     }
@@ -930,7 +931,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Text('Add to list', style: Theme.of(context).textTheme.titleLarge),
+                  child: Text(AppLocalizations.of(context)!.addToList, style: Theme.of(context).textTheme.titleLarge),
                 ),
                 Expanded(
                   child: ListView(
@@ -991,8 +992,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       if (!mounted) {
         return;
       }
-      final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'Failed to add product to shopping list. Please try again';
-      SnackBarService.show(msg);
+      SnackBarService.show(AppLocalizations.of(context)!.scanFailedToAddToList);
     }
   }
 
@@ -1224,7 +1224,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     if (_mode == _ScanMode.barcode) {
       _handleBarcodeDetection(capture);
     } else {
-      SnackBarService.show('Receipt captured. Cloud parsing is next');
+      SnackBarService.show(AppLocalizations.of(context)!.scanReceiptCapturedParsing);
       Future<void>.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) {
           return;
@@ -1321,7 +1321,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     }
 
     if (capture == null || capture.barcodes.isEmpty) {
-      SnackBarService.show('No barcode detected in selected image');
+      SnackBarService.show(AppLocalizations.of(context)!.scanNoBarcodeInImage);
       return;
     }
 

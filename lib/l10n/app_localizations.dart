@@ -1886,6 +1886,24 @@ abstract class AppLocalizations {
   /// **'Almost done'**
   String get scanAlmostDone;
 
+  /// Snackbar when receipt photo is taken
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt captured. Cloud parsing is next'**
+  String get scanReceiptCapturedParsing;
+
+  /// Snackbar when no barcode found in gallery image
+  ///
+  /// In en, this message translates to:
+  /// **'No barcode detected in selected image'**
+  String get scanNoBarcodeInImage;
+
+  /// Snackbar error when adding scanned product to list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add product to shopping list. Please try again'**
+  String get scanFailedToAddToList;
+
   /// Auth error: user not found
   ///
   /// In en, this message translates to:
@@ -2059,6 +2077,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again'**
   String get errorGeneric;
+
+  /// Error when transfer ownership fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to transfer list ownership'**
+  String get errorFailedToTransferOwnership;
+
+  /// Error when removing member fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove member from list'**
+  String get errorFailedToRemoveMember;
+
+  /// Error when cancelling invitation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel invitation'**
+  String get errorFailedToCancelInvitation;
+
+  /// Error when accepting/declining invitation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept or decline invitation'**
+  String get errorFailedToAcceptInvitation;
 
   /// Snackbar when item limit hit
   ///

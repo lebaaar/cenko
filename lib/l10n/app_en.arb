@@ -699,6 +699,12 @@
   "@scanExtractingItems": { "description": "Processing hint 3" },
   "scanAlmostDone": "Almost done",
   "@scanAlmostDone": { "description": "Processing hint 4" },
+  "scanReceiptCapturedParsing": "Receipt captured.",
+  "@scanReceiptCapturedParsing": { "description": "Snackbar when receipt photo is taken" },
+  "scanNoBarcodeInImage": "No barcode detected in selected image",
+  "@scanNoBarcodeInImage": { "description": "Snackbar when no barcode found in gallery image" },
+  "scanFailedToAddToList": "Failed to add product to shopping list. Please try again",
+  "@scanFailedToAddToList": { "description": "Snackbar error when adding scanned product to list fails" },
 
   "authErrorUserNotFound": "No account found for this email",
   "@authErrorUserNotFound": { "description": "Auth error: user not found" },
@@ -763,6 +769,14 @@
   "@errorFailedToLoadLists": { "description": "Error loading shopping lists" },
   "errorGeneric": "Something went wrong. Please try again",
   "@errorGeneric": { "description": "Generic fallback error" },
+  "errorFailedToTransferOwnership": "Failed to transfer list ownership",
+  "@errorFailedToTransferOwnership": { "description": "Error when transfer ownership fails" },
+  "errorFailedToRemoveMember": "Failed to remove member from list",
+  "@errorFailedToRemoveMember": { "description": "Error when removing member fails" },
+  "errorFailedToCancelInvitation": "Failed to cancel invitation",
+  "@errorFailedToCancelInvitation": { "description": "Error when cancelling invitation fails" },
+  "errorFailedToAcceptInvitation": "Failed to accept or decline invitation",
+  "@errorFailedToAcceptInvitation": { "description": "Error when accepting/declining invitation fails" },
 
   "listItemLimitReached": "This list has reached the maximum of {max} items",
   "@listItemLimitReached": {

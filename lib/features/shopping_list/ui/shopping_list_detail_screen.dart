@@ -79,7 +79,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               child: FloatingActionButton.extended(
                 onPressed: () {
                   if (currentUser?.isFreePlan == true && (items?.length ?? 0) >= kMaxNumberOfItemsPerList) {
-                    SnackBarService.show('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
+                    SnackBarService.show(AppLocalizations.of(context)!.listItemLimitReached(kMaxNumberOfItemsPerList));
                     return;
                   }
                   _showAddActions(context, uid);
@@ -421,7 +421,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
-                                        SnackBarService.show('Failed to delete item: ${e.toString().replaceFirst('Exception: ', '')}');
+                                        SnackBarService.show(AppLocalizations.of(context)!.errorFailedToDeleteItem);
                                       }
                                     },
                               child: deleting
@@ -451,7 +451,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       ref.invalidate(userShoppingListsProvider(uid));
     } catch (e) {
       if (!mounted) return;
-      SnackBarService.show('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}');
+      SnackBarService.show(AppLocalizations.of(context)!.errorFailedToUpdateItem);
     } finally {
       if (mounted) setState(() => _updatingBought = false);
     }
@@ -576,6 +576,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 inviting = true;
                 error = null;
               });
+              final invitedMsg = AppLocalizations.of(context)!.invitationSentTo(email);
               ref
                   .read(sharedShoppingListRepositoryProvider)
                   .inviteByEmail(
@@ -587,7 +588,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   )
                   .then((_) {
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                    SnackBarService.show('Invitation sent to $email');
+                    SnackBarService.show(invitedMsg);
                   })
                   .catchError((e) {
                     if (mounted) {
@@ -708,7 +709,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToTransferOwnership);
                                 }
                               }
                             },
@@ -720,7 +721,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToRemoveMember);
                                 }
                               }
                             },
@@ -743,7 +744,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 setDialogState(() => pendingInvitations.remove(inv));
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToCancelInvitation);
                                 }
                               }
                             },
@@ -860,7 +861,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
       context.go('/list');
     } catch (e) {
       if (!mounted) return;
-      SnackBarService.show('Failed to ${isOwner ? 'delete' : 'leave'} list: ${e.toString().replaceFirst('Exception: ', '')}');
+      SnackBarService.show(isOwner ? AppLocalizations.of(context)!.errorFailedToDeleteList : AppLocalizations.of(context)!.errorFailedToLeaveList);
     }
   }
 }

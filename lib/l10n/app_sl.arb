@@ -317,6 +317,9 @@
   "scanProcessingReceipt": "Obdelava računa",
   "scanExtractingItems": "Izluščevanje artiklov in cen",
   "scanAlmostDone": "Skoraj končano",
+  "scanReceiptCapturedParsing": "Račun zajet.",
+  "scanNoBarcodeInImage": "V izbrani sliki ni bila zaznana črtna koda",
+  "scanFailedToAddToList": "Artikla ni bilo mogoče dodati na nakupovalni seznam. Prosimo, poskusite znova",
 
   "authErrorUserNotFound": "Ni najden račun za ta e-naslov",
   "authErrorWrongPassword": "Napačen e-naslov ali geslo",
@@ -349,6 +352,10 @@
   "errorFailedToLoadItems": "Napaka pri nalaganju artiklov",
   "errorFailedToLoadLists": "Napaka pri nalaganju nakupovalnih seznamov",
   "errorGeneric": "Prišlo je do napake. Poskusite znova",
+  "errorFailedToTransferOwnership": "Prenosa lastništva seznama ni bilo mogoče izvesti",
+  "errorFailedToRemoveMember": "Člana ni bilo mogoče odstraniti s seznama",
+  "errorFailedToCancelInvitation": "Preklica povabila ni bilo mogoče izvesti",
+  "errorFailedToAcceptInvitation": "Sprejemanja ali zavrnitve povabila ni bilo mogoče izvesti",
 
   "listItemLimitReached": "Seznam je dosegel največje število {max} artiklov",
   "listQuantityInvalid": "Neveljavna vrednost",

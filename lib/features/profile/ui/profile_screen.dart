@@ -702,7 +702,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           return;
                                         }
                                         setDialogState(() => deleting = false);
-                                        SnackBarService.show('Failed to delete receipt: ${error.toString().replaceFirst('Exception: ', '')}');
+                                        SnackBarService.show(l10n.errorFailedToDeleteReceipt);
                                       }
                                     },
                               child: deleting

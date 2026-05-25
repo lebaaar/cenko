@@ -500,7 +500,7 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
       ref.invalidate(userShoppingListsProvider(widget.uid));
     } catch (e) {
       if (mounted) {
-        SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+        SnackBarService.show(AppLocalizations.of(context)!.errorFailedToAcceptInvitation);
       }
     } finally {
       widget.onAcceptingChanged(false);

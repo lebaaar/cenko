@@ -582,7 +582,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get categoryFruitsAndVegetables => 'Sadje in zelenjava';
 
   @override
-  String get categoryMeat => 'Meso';
+  String get categoryMeat => 'Meso in mesni izdelki';
 
   @override
   String get categoryFishAndSeafood => 'Ribe in morski sadeži';
@@ -594,13 +594,13 @@ class AppLocalizationsSl extends AppLocalizations {
   String get categoryEggs => 'Jajca';
 
   @override
-  String get categoryBakery => 'Pekarniški izdelki';
+  String get categoryBakery => 'Kruh in pekovski izdelki';
 
   @override
-  String get categoryPantryStaples => 'Osnove shrambe';
+  String get categoryPantryStaples => 'Osnovna živila';
 
   @override
-  String get categoryCansAndJars => 'Konzerve in kozarci';
+  String get categoryCansAndJars => 'Konzervirana hrana';
 
   @override
   String get categorySeasoningsSaucesAndCondiments =>
@@ -991,6 +991,18 @@ class AppLocalizationsSl extends AppLocalizations {
   String get scanAlmostDone => 'Skoraj končano';
 
   @override
+  String get scanReceiptCapturedParsing =>
+      'Račun zajet. Sledi analiza v oblaku';
+
+  @override
+  String get scanNoBarcodeInImage =>
+      'V izbrani sliki ni bila zaznana črtna koda';
+
+  @override
+  String get scanFailedToAddToList =>
+      'Artikla ni bilo mogoče dodati na nakupovalni seznam. Poskusite znova';
+
+  @override
   String get authErrorUserNotFound => 'Ni najden račun za ta e-naslov';
 
   @override
@@ -1082,6 +1094,22 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get errorGeneric => 'Prišlo je do napake. Poskusite znova';
+
+  @override
+  String get errorFailedToTransferOwnership =>
+      'Prenosa lastništva seznama ni bilo mogoče izvesti';
+
+  @override
+  String get errorFailedToRemoveMember =>
+      'Člana ni bilo mogoče odstraniti s seznama';
+
+  @override
+  String get errorFailedToCancelInvitation =>
+      'Preklica povabila ni bilo mogoče izvesti';
+
+  @override
+  String get errorFailedToAcceptInvitation =>
+      'Sprejemanja ali zavrnitve povabila ni bilo mogoče izvesti';
 
   @override
   String listItemLimitReached(int max) {

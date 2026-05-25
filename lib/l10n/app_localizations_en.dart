@@ -987,6 +987,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanAlmostDone => 'Almost done';
 
   @override
+  String get scanReceiptCapturedParsing =>
+      'Receipt captured. Cloud parsing is next';
+
+  @override
+  String get scanNoBarcodeInImage => 'No barcode detected in selected image';
+
+  @override
+  String get scanFailedToAddToList =>
+      'Failed to add product to shopping list. Please try again';
+
+  @override
   String get authErrorUserNotFound => 'No account found for this email';
 
   @override
@@ -1077,6 +1088,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorGeneric => 'Something went wrong. Please try again';
+
+  @override
+  String get errorFailedToTransferOwnership =>
+      'Failed to transfer list ownership';
+
+  @override
+  String get errorFailedToRemoveMember => 'Failed to remove member from list';
+
+  @override
+  String get errorFailedToCancelInvitation => 'Failed to cancel invitation';
+
+  @override
+  String get errorFailedToAcceptInvitation =>
+      'Failed to accept or decline invitation';
 
   @override
   String listItemLimitReached(int max) {
