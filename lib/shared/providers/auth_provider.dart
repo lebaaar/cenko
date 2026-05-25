@@ -70,20 +70,13 @@ class AuthNotifier extends ChangeNotifier {
     } on FunctionException catch (e) {
       final data = e.details;
       if (e.status == 409 && data is Map && data['owned_lists'] != null) {
-        throw OwnedSharedListsException(
-          List<String>.from(data['owned_lists'] as List),
-        );
+        throw OwnedSharedListsException(List<String>.from(data['owned_lists'] as List));
       }
-      throw Exception(
-        (data is Map ? data['error'] : null) ?? 'Failed to delete account',
-      );
+      throw Exception((data is Map ? data['error'] : null) ?? 'Failed to delete account');
     }
     // Auth user deleted server-side — clear local session so authStateProvider
     // emits null and the router redirects to login.
-    await Future.wait([
-      _auth.signOut(scope: SignOutScope.local),
-      GoogleSignIn.instance.signOut(),
-    ]);
+    await Future.wait([_auth.signOut(scope: SignOutScope.local), GoogleSignIn.instance.signOut()]);
   }
 }
 

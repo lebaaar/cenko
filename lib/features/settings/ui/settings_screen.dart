@@ -121,7 +121,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _deleteLoading = true);
     try {
       await ref.read(authNotifierProvider).deleteAccount();
-    } on OwnedSharedListsException catch (e) {
+    } on OwnedSharedListsException catch (e, st) {
+      ExceptionReportingService.report(e, st, context: 'SettingsScreen.deleteAccount.blockedByOwnedLists');
       if (!mounted) return;
       setState(() => _deleteLoading = false);
       showDialog<void>(

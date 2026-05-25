@@ -23,22 +23,21 @@ class ExceptionReportingService {
     };
   }
 
-  /// Report an exception. Never throws — failure is silently swallowed.
-  ///
-  /// [context]  Where the error occurred, e.g. `'DealsScreen._addDealToShoppingList'`.
-  /// [userId]   Supabase UID; resolved from current session when null.
+  /// Report an exception
+  /// [context] Where the error occurred, e.g. `'DealsScreen._addDealToShoppingList'`
+  /// [userId] Supabase UID; resolved from current session when null
   static Future<void> report(Object exception, StackTrace stackTrace, {String? context, String? userId}) async {
-    // Skip in debug — use the console instead.
-    if (kDebugMode) return;
+    if (kDebugMode) {
+      debugPrint('[CENKO_EXCEPTION] Exception in $context: $exception\n$stackTrace');
+      return;
+    }
 
     try {
       await _send(exception, stackTrace, context: context, userId: userId);
     } catch (_) {
-      // Never surface webhook errors to the user.
+      // Don't surface webhook errors to the user
     }
   }
-
-  // ── Implementation ──────────────────────────────────────────────────────────
 
   static Future<void> _send(Object exception, StackTrace stackTrace, {String? context, String? userId}) async {
     final webhookUrl = dotenv.maybeGet('DISCORD_WEBHOOK_EXCEPTION');
@@ -50,23 +49,18 @@ class ExceptionReportingService {
     final frames = _topAppFrames(stackTrace);
 
     final fields = <Map<String, dynamic>>[
-      {'name': '🐛 Exception', 'value': _cap(exception.toString(), 1024), 'inline': false},
-      if (context != null && context.isNotEmpty) {'name': '📍 Context', 'value': _cap(context, 256), 'inline': false},
-      {'name': '👤 User ID', 'value': uid ?? 'unauthenticated', 'inline': true},
-      {'name': '📱 App', 'value': appInfo, 'inline': true},
-      {'name': '💻 Device', 'value': deviceInfo, 'inline': true},
-      {'name': '🔍 Stack (app frames)', 'value': '```\n${_cap(frames, 980)}\n```', 'inline': false},
+      {'name': 'Exception', 'value': exception.toString(), 'inline': false},
+      if (context != null && context.isNotEmpty) {'name': 'Context', 'value': _cap(context, 500), 'inline': false},
+      {'name': 'User ID', 'value': uid ?? 'unauthenticated', 'inline': true},
+      {'name': 'App', 'value': appInfo, 'inline': true},
+      {'name': 'Device', 'value': deviceInfo, 'inline': true},
+      {'name': 'Stack (app frames)', 'value': '```\n${_cap(frames, 980)}\n```', 'inline': false},
     ];
 
     final payload = {
-      'username': 'Cenko — Exception',
+      'username': 'Cenko App',
       'embeds': [
-        {
-          'title': _cap(exception.runtimeType.toString(), 256),
-          'color': 0xE74C3C, // red
-          'fields': fields,
-          'timestamp': DateTime.now().toUtc().toIso8601String(),
-        },
+        {'title': exception.runtimeType.toString(), 'color': 0xE74C3C, 'fields': fields, 'timestamp': DateTime.now().toUtc().toIso8601String()},
       ],
     };
 
