@@ -498,6 +498,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shoppingListCreateTitle => 'New shopping list';
 
   @override
+  String get shoppingListDefaultName => 'My shopping list';
+
+  @override
   String get shoppingListNameLabel => 'List name';
 
   @override
@@ -987,8 +990,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanAlmostDone => 'Almost done';
 
   @override
-  String get scanReceiptCapturedParsing =>
-      'Receipt captured. Cloud parsing is next';
+  String get scanReceiptCapturedParsing => 'Receipt captured.';
 
   @override
   String get scanNoBarcodeInImage => 'No barcode detected in selected image';

@@ -495,6 +495,9 @@ class AppLocalizationsSl extends AppLocalizations {
   String get shoppingListCreateTitle => 'Nov nakupovalni seznam';
 
   @override
+  String get shoppingListDefaultName => 'Moj nakupovalni seznam';
+
+  @override
   String get shoppingListNameLabel => 'Ime seznama';
 
   @override
@@ -991,8 +994,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get scanAlmostDone => 'Skoraj končano';
 
   @override
-  String get scanReceiptCapturedParsing =>
-      'Račun zajet. Sledi analiza v oblaku';
+  String get scanReceiptCapturedParsing => 'Račun zajet.';
 
   @override
   String get scanNoBarcodeInImage =>
@@ -1000,7 +1002,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get scanFailedToAddToList =>
-      'Artikla ni bilo mogoče dodati na nakupovalni seznam. Poskusite znova';
+      'Artikla ni bilo mogoče dodati na nakupovalni seznam. Prosimo, poskusite znova';
 
   @override
   String get authErrorUserNotFound => 'Ni najden račun za ta e-naslov';

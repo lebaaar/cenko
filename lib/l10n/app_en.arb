@@ -345,6 +345,8 @@
   "@shoppingListYourLists": { "description": "Your lists section header" },
   "shoppingListCreateTitle": "New shopping list",
   "@shoppingListCreateTitle": { "description": "Create list dialog title" },
+  "shoppingListDefaultName": "My shopping list",
+  "@shoppingListDefaultName": { "description": "Default name pre-filled in new list dialog" },
   "shoppingListNameLabel": "List name",
   "@shoppingListNameLabel": { "description": "List name field label" },
   "shoppingListNameRequired": "List name is required",

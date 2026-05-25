@@ -27,12 +27,19 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
+    final language = _ref.read(authLocaleProvider);
     await _auth.signInWithPassword(email: email, password: password);
+    final uid = _auth.currentSession?.user.id;
+    if (uid != null) await UserRepository().updateSettings(uid, lang: language);
+    await clearAuthLocale();
   }
 
   Future<void> registerWithEmail(String email, String password, String displayName) async {
     final language = _ref.read(authLocaleProvider);
     await _auth.signUp(email: email, password: password, data: {'display_name': displayName, 'auth_provider': 'email', 'lang': language});
+    // Also update user row directly — metadata-based trigger may not set lang
+    final uid = _auth.currentSession?.user.id;
+    if (uid != null) await UserRepository().updateSettings(uid, lang: language);
     await clearAuthLocale();
   }
 
@@ -44,13 +51,8 @@ class AuthNotifier extends ChangeNotifier {
 
     await _auth.signInWithIdToken(provider: OAuthProvider.google, idToken: idToken);
 
-    // lang not available from Google token — update after sign-in if non-default
-    if (language != 'en') {
-      final uid = _auth.currentSession?.user.id;
-      if (uid != null) {
-        await UserRepository().updateSettings(uid, lang: language);
-      }
-    }
+    final uid = _auth.currentSession?.user.id;
+    if (uid != null) await UserRepository().updateSettings(uid, lang: language);
     await clearAuthLocale();
   }
 

@@ -974,6 +974,12 @@ abstract class AppLocalizations {
   /// **'New shopping list'**
   String get shoppingListCreateTitle;
 
+  /// Default name pre-filled in new list dialog
+  ///
+  /// In en, this message translates to:
+  /// **'My shopping list'**
+  String get shoppingListDefaultName;
+
   /// List name field label
   ///
   /// In en, this message translates to:
@@ -1889,7 +1895,7 @@ abstract class AppLocalizations {
   /// Snackbar when receipt photo is taken
   ///
   /// In en, this message translates to:
-  /// **'Receipt captured. Cloud parsing is next'**
+  /// **'Receipt captured.'**
   String get scanReceiptCapturedParsing;
 
   /// Snackbar when no barcode found in gallery image

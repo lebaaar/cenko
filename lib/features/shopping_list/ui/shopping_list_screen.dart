@@ -55,10 +55,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   }
 
   Future<void> _showCreateListDialog(BuildContext context, String uid) async {
-    _newListNameCtrl.clear();
-    final currentUser = ref.read(currentUserProvider).asData?.value;
-
     final l10n = AppLocalizations.of(context)!;
+    final defaultName = l10n.shoppingListDefaultName;
+    _newListNameCtrl.value = TextEditingValue(
+      text: defaultName,
+      selection: TextSelection(baseOffset: 0, extentOffset: defaultName.length),
+    );
+    final currentUser = ref.read(currentUserProvider).asData?.value;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {

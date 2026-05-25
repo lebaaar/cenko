@@ -89,7 +89,7 @@
   "backToSignIn": "Nazaj na prijavo",
 
   "goodMorning": "Dobro jutro",
-  "goodAfternoon": "Pozdravljeni",
+  "goodAfternoon": "Zdravo",
   "goodEvening": "Dober večer",
   "homeItemsOnSaleSuffix": " artiklov, ki bi vas morda zanimali, je trenutno v akciji!",
   "homeFromShoppingLists": "Iz nakupovalnih seznamov",
@@ -158,6 +158,7 @@
   "shoppingListEmptyState": "Ni nakupovalnih seznamov.\nPritisnite + za ustvaritev.",
   "shoppingListYourLists": "Vaši seznami",
   "shoppingListCreateTitle": "Nov nakupovalni seznam",
+  "shoppingListDefaultName": "Moj nakupovalni seznam",
   "shoppingListNameLabel": "Ime seznama",
   "shoppingListNameRequired": "Ime seznama je obvezno",
   "shoppingListCouldNotLoadInvitations": "Povabil ni mogoče naložiti",
