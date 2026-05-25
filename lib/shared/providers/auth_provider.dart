@@ -6,6 +6,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Thrown when account deletion is blocked because the user owns shared lists.
+class OwnedSharedListsException implements Exception {
+  const OwnedSharedListsException(this.listNames);
+  final List<String> listNames;
+}
+
 final _supabase = Supabase.instance.client;
 
 final authStateProvider = StreamProvider<Session?>((ref) {
@@ -26,15 +32,7 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> registerWithEmail(String email, String password, String displayName) async {
     final language = _ref.read(authLocaleProvider);
-    await _auth.signUp(
-      email: email,
-      password: password,
-      data: {
-        'display_name': displayName,
-        'auth_provider': 'email',
-        'lang': language,
-      },
-    );
+    await _auth.signUp(email: email, password: password, data: {'display_name': displayName, 'auth_provider': 'email', 'lang': language});
     await clearAuthLocale();
   }
 
@@ -65,9 +63,25 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> deleteAccount() async {
-    // Deleting auth.users requires server-side admin API.
-    // TODO: implement via Supabase Edge Function that calls auth.admin.deleteUser()
-    await signOut();
+    try {
+      await _supabase.functions.invoke('delete-my-account');
+    } on FunctionException catch (e) {
+      final data = e.details;
+      if (e.status == 409 && data is Map && data['owned_lists'] != null) {
+        throw OwnedSharedListsException(
+          List<String>.from(data['owned_lists'] as List),
+        );
+      }
+      throw Exception(
+        (data is Map ? data['error'] : null) ?? 'Failed to delete account',
+      );
+    }
+    // Auth user deleted server-side — clear local session so authStateProvider
+    // emits null and the router redirects to login.
+    await Future.wait([
+      _auth.signOut(scope: SignOutScope.local),
+      GoogleSignIn.instance.signOut(),
+    ]);
   }
 }
 

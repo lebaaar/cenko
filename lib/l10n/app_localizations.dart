@@ -392,6 +392,12 @@ abstract class AppLocalizations {
   /// **'Delete account'**
   String get deleteAccountTitle;
 
+  /// Error dialog title when account deletion fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete account'**
+  String get deleteAccountFailedTitle;
+
   /// Delete account dialog body
   ///
   /// In en, this message translates to:
@@ -407,7 +413,7 @@ abstract class AppLocalizations {
   /// Transfer ownership message
   ///
   /// In en, this message translates to:
-  /// **'You are the owner of shared lists. Transfer ownership before deleting your account.'**
+  /// **'You are the owner of shared lists, so you must transfer ownership before deleting your account. Lists where you are owner:'**
   String get deleteAccountTransferMsg;
 
   /// Transfer instructions heading
@@ -905,14 +911,8 @@ abstract class AppLocalizations {
   /// Empty list label
   ///
   /// In en, this message translates to:
-  /// **'Empty'**
+  /// **'Empty list'**
   String get listEmpty;
-
-  /// Items remaining and bought
-  ///
-  /// In en, this message translates to:
-  /// **'{remaining} remaining · {bought} bought'**
-  String listItemsRemainingBought(int remaining, int bought);
 
   /// All items bought
   ///

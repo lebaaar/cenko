@@ -54,3 +54,8 @@ __pycache__
 # Keys and credentials
 firebase_key.json
 serviceAccountKey.json
+
+# Supabase
+supabase/.env.local
+supabase/.temp/
+supabase/.branches/

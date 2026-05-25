@@ -163,6 +163,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccountTitle => 'Delete account';
 
   @override
+  String get deleteAccountFailedTitle => 'Failed to delete account';
+
+  @override
   String get deleteAccountContent =>
       'This will permanently delete your account and all associated data. This cannot be undone';
 
@@ -171,7 +174,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountTransferMsg =>
-      'You are the owner of shared lists. Transfer ownership before deleting your account.';
+      'You are the owner of shared lists, so you must transfer ownership before deleting your account. Lists where you are owner:';
 
   @override
   String get deleteAccountTransferTitle => 'To transfer ownership:';
@@ -456,12 +459,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listPrivate => 'Private list';
 
   @override
-  String get listEmpty => 'Empty';
-
-  @override
-  String listItemsRemainingBought(int remaining, int bought) {
-    return '$remaining remaining · $bought bought';
-  }
+  String get listEmpty => 'Empty list';
 
   @override
   String get listAllDone => 'All done!';

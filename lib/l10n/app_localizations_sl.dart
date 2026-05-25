@@ -161,6 +161,9 @@ class AppLocalizationsSl extends AppLocalizations {
   String get deleteAccountTitle => 'Izbriši račun';
 
   @override
+  String get deleteAccountFailedTitle => 'Brisanje računa ni uspelo';
+
+  @override
   String get deleteAccountContent =>
       'To bo trajno izbrisalo vaš račun in vse povezane podatke. Tega dejanja ni mogoče razveljaviti.';
 
@@ -169,28 +172,28 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get deleteAccountTransferMsg =>
-      'Ste lastnik deljenih seznamov. Pred izbrisom računa prenesite lastništvo.';
+      'Ste lastnik deljenih nakupovalnih seznamov, zato morate pred izbrisom računa prenesti lastništvo. Seznami, katerih ste lastnik:';
 
   @override
   String get deleteAccountTransferTitle => 'Za prenos lastništva:';
 
   @override
-  String get deleteAccountStep1 => 'Odprite seznam';
+  String get deleteAccountStep1 => 'Odprite nakupovalni seznam';
 
   @override
-  String get deleteAccountStep2Pre => 'Tapnite ';
+  String get deleteAccountStep2Pre => 'Pritisnite na ';
 
   @override
   String get deleteAccountStep2Post => ' v zgornjem desnem kotu';
 
   @override
-  String get deleteAccountStep3 => 'Tapnite \"Upravljaj člane\"';
+  String get deleteAccountStep3 => 'Pritisnite na \"Upravljaj člane\"';
 
   @override
-  String get deleteAccountStep4Pre => 'Izberite člana in tapnite ';
+  String get deleteAccountStep4Pre => 'Izberite člana in pritisnite na ';
 
   @override
-  String get deleteAccountStep5 => 'Tapnite \"Nastavi kot lastnika\"';
+  String get deleteAccountStep5 => 'Pritisnite na \"Nastavi kot lastnika\"';
 
   @override
   String get authForgotPassword => 'Pozabljeno geslo?';
@@ -453,12 +456,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listPrivate => 'Zasebni seznam';
 
   @override
-  String get listEmpty => 'Prazno';
-
-  @override
-  String listItemsRemainingBought(int remaining, int bought) {
-    return '$remaining preostalo · $bought kupljeno';
-  }
+  String get listEmpty => 'Prazen seznam';
 
   @override
   String get listAllDone => 'Vse opravljeno!';
@@ -488,7 +486,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get shoppingListEmptyState =>
-      'Ni nakupovalnih seznamov.\nTapnite + za ustvaritev.';
+      'Ni nakupovalnih seznamov.\nPritisnite + za ustvaritev.';
 
   @override
   String get shoppingListYourLists => 'Vaši seznami';
@@ -538,7 +536,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get listAddItemPrompt =>
-      'Tapnite \"Dodaj artikel\" da dodate artikel na ta nakupovalni seznam';
+      'Pritisnite \"Dodaj artikel\", da dodate artikel na ta nakupovalni seznam';
 
   @override
   String get listScanBarcode => 'Skeniraj črtno kodo';

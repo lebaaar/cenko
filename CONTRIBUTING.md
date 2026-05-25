@@ -16,6 +16,11 @@ Welcome to the Cenko contribution guide! This document will help you set up your
 4. Create an enulator in Tools -> Device Manager.<br>
 Check if emaultor is installed by running  `flutter emuators` and run it via `flutter emulators --launch <emulator id>`
 
+## Supabase stuff
+1. Install Supabase CLI: `npm install -g supabase`
+2. Authenticate with the CLI: `supabase login`
+3. Link the CLI to the Cenko project: `supabase link --project-ref thxuthzspysisqqoxlhq`
+
 ## Development
 To run the app locally:
 - Install depencides:<br>
@@ -56,9 +61,11 @@ To add a new translatable string:
 
 Generated `app_localizations*.dart` files in `lib/l10n/. These are auto-created, don't edit them manually.
 
-## Supabase stuff
+## Supabase Edge Functions
 
-See [Supabase Functions](functions/README.md) for instructions on how to deploy and run functions locally
+Edge functions live in `supabase/functions/<name>/index.ts` and run on Deno.
+
+See [supabase/README.md](supabase/README.md) for more details.
 
 ## Secrets
 Copy `.env.example` to `.env` and fill in the secrets. Get in touch with the [Lan](https://github.com/lebaaar) if you need access to the secrets.

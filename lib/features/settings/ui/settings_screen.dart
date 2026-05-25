@@ -5,6 +5,7 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
+import 'package:cenko/shared/widgets/bullet_point.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -113,12 +114,76 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _deleteLoading = true);
     try {
       await ref.read(authNotifierProvider).deleteAccount();
+    } on OwnedSharedListsException catch (e) {
+      if (!mounted) return;
+      setState(() => _deleteLoading = false);
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.deleteAccountCannotTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.deleteAccountTransferMsg),
+                const SizedBox(height: 12),
+                ...e.listNames.map((name) => BulletPoint(name)),
+                const SizedBox(height: 4),
+                Text(l10n.deleteAccountTransferTitle, style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                BulletPoint(l10n.deleteAccountStep1),
+                BulletPoint.widget(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(text: l10n.deleteAccountStep2Pre),
+                      const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                      TextSpan(text: l10n.deleteAccountStep2Post),
+                    ]),
+                    style: Theme.of(ctx).textTheme.bodyMedium,
+                  ),
+                ),
+                BulletPoint(l10n.deleteAccountStep3),
+                BulletPoint.widget(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(text: l10n.deleteAccountStep4Pre),
+                      const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                    ]),
+                    style: Theme.of(ctx).textTheme.bodyMedium,
+                  ),
+                ),
+                BulletPoint(l10n.deleteAccountStep5),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _deleteLoading = false;
-        _error = e.toString();
-      });
+      setState(() => _deleteLoading = false);
+      final message = e.toString().replaceFirst('Exception: ', '');
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.deleteAccountFailedTitle),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
     }
   }
 

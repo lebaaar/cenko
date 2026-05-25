@@ -6,5 +6,6 @@
             150
         ],
     },
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
+    "deno.enable": true
 }

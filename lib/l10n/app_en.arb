@@ -105,11 +105,13 @@
 
   "deleteAccountTitle": "Delete account",
   "@deleteAccountTitle": { "description": "Delete account dialog title" },
+  "deleteAccountFailedTitle": "Failed to delete account",
+  "@deleteAccountFailedTitle": { "description": "Error dialog title when account deletion fails" },
   "deleteAccountContent": "This will permanently delete your account and all associated data. This cannot be undone",
   "@deleteAccountContent": { "description": "Delete account dialog body" },
   "deleteAccountCannotTitle": "Cannot delete account",
   "@deleteAccountCannotTitle": { "description": "Cannot delete account dialog title" },
-  "deleteAccountTransferMsg": "You are the owner of shared lists. Transfer ownership before deleting your account.",
+  "deleteAccountTransferMsg": "You are the owner of shared lists, so you must transfer ownership before deleting your account. Lists where you are owner:",
   "@deleteAccountTransferMsg": { "description": "Transfer ownership message" },
   "deleteAccountTransferTitle": "To transfer ownership:",
   "@deleteAccountTransferTitle": { "description": "Transfer instructions heading" },
@@ -307,16 +309,8 @@
 
   "listPrivate": "Private list",
   "@listPrivate": { "description": "Private list label" },
-  "listEmpty": "Empty",
+  "listEmpty": "Empty list",
   "@listEmpty": { "description": "Empty list label" },
-  "listItemsRemainingBought": "{remaining} remaining · {bought} bought",
-  "@listItemsRemainingBought": {
-    "description": "Items remaining and bought",
-    "placeholders": {
-      "remaining": { "type": "int" },
-      "bought": { "type": "int" }
-    }
-  },
 
   "listAllDone": "All done!",
   "@listAllDone": { "description": "All items bought" },
