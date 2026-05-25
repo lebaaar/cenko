@@ -4,7 +4,8 @@ Welcome to the Cenko contribution guide! This document will help you set up your
 
 ## Tech stack
 - Flutter for cross-platform mobile development. State management with [Riverpod](https://pub.dev/packages/flutter_riverpod) and navigation with [GoRouter](https://pub.dev/packages/go_router)
-- Firebase backend - authentication (with Google or email/password), Firestore database and AI logic
+- Supabase backend - authentication (with Google or email/password), Postgres database
+- Firebase for AI logic with Gemini for structured data extraction
 - OCR with Gemini for structured data extraction
 - Scraping store deals with a custom Python scraper
 
@@ -14,15 +15,6 @@ Welcome to the Cenko contribution guide! This document will help you set up your
 3. Under Tools -> SDK Manager -> SDK Tools install Android SDK Build-Tools, NDK (Side by side), Android SDK Command-line Tools (latest), CMake, Android Emulator and Android SDK Platform-Tools
 4. Create an enulator in Tools -> Device Manager.<br>
 Check if emaultor is installed by running  `flutter emuators` and run it via `flutter emulators --launch <emulator id>`
-5. Install FlutterFire and Firebase CLI:
-    ```bash
-    npm install -g firebase-tools
-    dart pub global activate flutterfire_cli
-    echo 'export PATH="$PATH":"$HOME/.pub-cache/bin"' >> ~/.bashrc # add to PATH
-    source ~/.bashrc
-    firebase login
-    flutterfire configure
-    ```
 
 ## Development
 To run the app locally:
@@ -64,12 +56,9 @@ To add a new translatable string:
 
 Generated `app_localizations*.dart` files in `lib/l10n/. These are auto-created, don't edit them manually.
 
-## Firebase stuff
+## Supabase stuff
 
-To deploy Firestore rules and indexes:<br>
-`firebase deploy --only firestore:rules,firestore:indexes`
-
-See [Firebase Functions](functions/README.md) for instructions on how to deploy and run functions locally
+See [Supabase Functions](functions/README.md) for instructions on how to deploy and run functions locally
 
 ## Secrets
 Copy `.env.example` to `.env` and fill in the secrets. Get in touch with the [Lan](https://github.com/lebaaar) if you need access to the secrets.

@@ -1766,49 +1766,49 @@ abstract class AppLocalizations {
   /// **'Almost done'**
   String get scanAlmostDone;
 
-  /// Firebase auth error: user not found
+  /// Auth error: user not found
   ///
   /// In en, this message translates to:
   /// **'No account found for this email'**
   String get authErrorUserNotFound;
 
-  /// Firebase auth error: wrong password / invalid credential
+  /// Auth error: wrong password / invalid credential
   ///
   /// In en, this message translates to:
   /// **'Incorrect email or password'**
   String get authErrorWrongPassword;
 
-  /// Firebase auth error: email already in use
+  /// Auth error: email already in use
   ///
   /// In en, this message translates to:
   /// **'An account already exists for this email'**
   String get authErrorEmailInUse;
 
-  /// Firebase auth error: weak password
+  /// Auth error: weak password
   ///
   /// In en, this message translates to:
   /// **'Password is too weak'**
   String get authErrorWeakPassword;
 
-  /// Firebase auth error: invalid email
+  /// Auth error: invalid email
   ///
   /// In en, this message translates to:
   /// **'Invalid email address'**
   String get authErrorInvalidEmail;
 
-  /// Firebase auth error: too many requests
+  /// Auth error: too many requests
   ///
   /// In en, this message translates to:
   /// **'Too many attempts. Try again later'**
   String get authErrorTooManyRequests;
 
-  /// Firebase auth error: network failure
+  /// Auth error: network failure
   ///
   /// In en, this message translates to:
   /// **'Network error. Check your connection'**
   String get authErrorNetwork;
 
-  /// Firebase auth error: fallback
+  /// Auth error: fallback
   ///
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again'**
