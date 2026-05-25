@@ -74,7 +74,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get noShoppingListsCreate =>
-      'Ni nakupovalnih seznamov. Za nadaljevanje, ustvarite nov seznam.';
+      'Ni nakupovalnih seznamov. Za nadaljevanje, ustvarite nov seznam';
 
   @override
   String get continueWithGoogle => 'Nadaljuj z Googlom';
@@ -99,6 +99,12 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get settingsAccountSubtitle => 'Upravljajte nastavitve računa';
+
+  @override
+  String get preferencesTitle => 'Personalizacija';
+
+  @override
+  String get preferencesAccountSubtitle => 'Prilagodite nastavitve aplikacije';
 
   @override
   String get settingsDisplayName => 'Prikazno ime';
@@ -155,36 +161,39 @@ class AppLocalizationsSl extends AppLocalizations {
   String get deleteAccountTitle => 'Izbriši račun';
 
   @override
+  String get deleteAccountFailedTitle => 'Brisanje računa ni uspelo';
+
+  @override
   String get deleteAccountContent =>
-      'To bo trajno izbrisalo vaš račun in vse povezane podatke. Tega dejanja ni mogoče razveljaviti.';
+      'To bo trajno izbrisalo vaš račun in vse povezane podatke. Tega dejanja ni mogoče razveljaviti';
 
   @override
   String get deleteAccountCannotTitle => 'Računa ni mogoče izbrisati';
 
   @override
   String get deleteAccountTransferMsg =>
-      'Ste lastnik deljenih seznamov. Pred izbrisom računa prenesite lastništvo.';
+      'Ste lastnik deljenih nakupovalnih seznamov, zato morate pred izbrisom računa prenesti lastništvo. Seznami, katerih ste lastnik:';
 
   @override
   String get deleteAccountTransferTitle => 'Za prenos lastništva:';
 
   @override
-  String get deleteAccountStep1 => 'Odprite seznam';
+  String get deleteAccountStep1 => 'Odprite nakupovalni seznam';
 
   @override
-  String get deleteAccountStep2Pre => 'Tapnite ';
+  String get deleteAccountStep2Pre => 'Pritisnite na ';
 
   @override
   String get deleteAccountStep2Post => ' v zgornjem desnem kotu';
 
   @override
-  String get deleteAccountStep3 => 'Tapnite \"Upravljaj člane\"';
+  String get deleteAccountStep3 => 'Pritisnite na \"Upravljaj člane\"';
 
   @override
-  String get deleteAccountStep4Pre => 'Izberite člana in tapnite ';
+  String get deleteAccountStep4Pre => 'Izberite člana in pritisnite na ';
 
   @override
-  String get deleteAccountStep5 => 'Tapnite \"Nastavi kot lastnika\"';
+  String get deleteAccountStep5 => 'Pritisnite na \"Nastavi kot lastnika\"';
 
   @override
   String get authForgotPassword => 'Pozabljeno geslo?';
@@ -218,7 +227,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get mustAgreeToTerms =>
-      'Pred ustvarjanjem računa se morate strinjati s pogoji uporabe in politiko zasebnosti.';
+      'Pred ustvarjanjem računa se morate strinjati s pogoji uporabe in politiko zasebnosti';
 
   @override
   String get passwordMin6Chars => 'Vsaj 6 znakov';
@@ -237,7 +246,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get forgotPasswordBody =>
-      'Vnesite svojo e-pošto in poslali vam bomo povezavo za ponastavitev gesla.';
+      'Vnesite svojo e-pošto in poslali vam bomo povezavo za ponastavitev gesla';
 
   @override
   String get sendResetLink => 'Pošlji povezavo za ponastavitev';
@@ -251,7 +260,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get resetEmailSentPost =>
-      '. Sledite povezavi v e-pošti za nastavitev novega gesla.';
+      '. Sledite povezavi v e-pošti za nastavitev novega gesla';
 
   @override
   String get backToSignIn => 'Nazaj na prijavo';
@@ -260,7 +269,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get goodMorning => 'Dobro jutro';
 
   @override
-  String get goodAfternoon => 'Dober dan';
+  String get goodAfternoon => 'Živjo';
 
   @override
   String get goodEvening => 'Dober večer';
@@ -271,11 +280,11 @@ class AppLocalizationsSl extends AppLocalizations {
   }
 
   @override
-  String get homeFromShoppingLists => 'Iz nakupovalnih seznamov';
+  String get homeEmptyState =>
+      'Spodaj boste videli personalizirane akcije na podlagi vaših nakupovalnih seznamov';
 
   @override
-  String get homeBasedOnHabits =>
-      'Priporočila glede na vaše nakupovalne navade';
+  String get homeFromShoppingLists => 'Iz nakupovalnih seznamov';
 
   @override
   String get homeEmptyShoppingListDeals =>
@@ -286,18 +295,7 @@ class AppLocalizationsSl extends AppLocalizations {
       'Na podlagi artiklov na vaših nakupovalnih seznamih so te akcije zdaj na voljo';
 
   @override
-  String get homeEmptyHabitsDeals =>
-      'Skenirajte več računov za personalizirane akcije na pogosto kupljene izdelke';
-
-  @override
-  String get homeHabitsDealsMessage =>
-      'Na podlagi pogosto kupljenih izdelkov so te akcije zdaj na voljo';
-
-  @override
   String get homeGoToShoppingLists => 'Na nakupovalne sezname';
-
-  @override
-  String get homeScanAReceipt => 'Skeniraj račun';
 
   @override
   String get homeShowAllDeals => 'Prikaži vse akcije';
@@ -378,7 +376,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String profileMemberSince(String date) {
-    return 'Pridružil $date';
+    return 'Član od $date';
   }
 
   @override
@@ -447,11 +445,16 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listPrivate => 'Zasebni seznam';
 
   @override
-  String get listEmpty => 'Prazno';
+  String get listEmpty => 'Prazen seznam';
 
   @override
-  String listItemsRemainingBought(int remaining, int bought) {
-    return '$remaining preostalo · $bought kupljeno';
+  String listRemainingCount(int count) {
+    return '$count preostalo';
+  }
+
+  @override
+  String listBoughtCount(int count) {
+    return '$count kupljeno';
   }
 
   @override
@@ -469,13 +472,16 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get shoppingListEmptyState =>
-      'Ni nakupovalnih seznamov.\nTapnite + za ustvaritev.';
+      'Ni nakupovalnih seznamov.\nPritisnite + za ustvaritev';
 
   @override
   String get shoppingListYourLists => 'Vaši seznami';
 
   @override
   String get shoppingListCreateTitle => 'Nov nakupovalni seznam';
+
+  @override
+  String get shoppingListDefaultName => 'Moj nakupovalni seznam';
 
   @override
   String get shoppingListNameLabel => 'Ime seznama';
@@ -519,7 +525,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get listAddItemPrompt =>
-      'Tapnite \"Dodaj artikel\" da dodate artikel na ta nakupovalni seznam';
+      'Pritisnite \"Dodaj artikel\", da dodate artikel na ta nakupovalni seznam';
 
   @override
   String get listScanBarcode => 'Skeniraj črtno kodo';
@@ -562,6 +568,67 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listNoCategory => 'Brez kategorije';
 
   @override
+  String get categoryFruitsAndVegetables => 'Sadje in zelenjava';
+
+  @override
+  String get categoryMeat => 'Meso in mesni izdelki';
+
+  @override
+  String get categoryFishAndSeafood => 'Ribe in morski sadeži';
+
+  @override
+  String get categoryDairyProducts => 'Mlečni izdelki';
+
+  @override
+  String get categoryEggs => 'Jajca';
+
+  @override
+  String get categoryBakery => 'Kruh in pekovski izdelki';
+
+  @override
+  String get categoryPantryStaples => 'Osnovna živila';
+
+  @override
+  String get categoryCansAndJars => 'Konzervirana hrana';
+
+  @override
+  String get categorySeasoningsSaucesAndCondiments =>
+      'Začimbe, omake in kondimenti';
+
+  @override
+  String get categoryFrozenFoods => 'Zamrznjena hrana';
+
+  @override
+  String get categorySnacksAndSweets => 'Prigrizki in sladkarije';
+
+  @override
+  String get categoryDrinks => 'Pijača';
+
+  @override
+  String get categoryCoffeeAndTea => 'Kava in čaj';
+
+  @override
+  String get categoryBabyProducts => 'Otroški izdelki';
+
+  @override
+  String get categoryPetSupplies => 'Potrebščine za hišne živali';
+
+  @override
+  String get categoryPersonalCare => 'Osebna nega';
+
+  @override
+  String get categoryHouseholdSupplies => 'Gospodinjski pripomočki';
+
+  @override
+  String get categoryCleaningSupplies => 'Čistilna sredstva';
+
+  @override
+  String get categoryHomeAndGarden => 'Dom in vrt';
+
+  @override
+  String get categoryOther => 'Ostalo';
+
+  @override
   String get listRenameTitle => 'Preimenuj seznam';
 
   @override
@@ -577,7 +644,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listEmailRequired => 'E-pošta je obvezna';
 
   @override
-  String get listCannotInviteSelf => 'Ne morete povabiti sebe';
+  String get listCannotInviteSelf => 'Ne morete povabiti samega sebe';
 
   @override
   String get listEmailAddress => 'E-poštni naslov';
@@ -622,7 +689,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listDeleteListMenu => 'Izbriši seznam';
 
   @override
-  String get listLeaveListMenu => 'Zapusti seznam';
+  String get listLeaveListMenu => 'Zapusti';
 
   @override
   String get listDeleteListTitle => 'Izbriši seznam?';
@@ -747,7 +814,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get aboutDescription =>
-      'Cenko omogoča pregled vseh akcij v slovenskih trgovinah na enem mestu, kar vam omogoča, da vedno dobite najboljšo ceno. Delite nakupovalne sezname z družino ali prijatelji in skenirajte račune za samodejno sledenje potrošnji. Na podlagi vaših nakupovalnih navad dobite tudi personalizirana priporočila akcij.';
+      'Cenko omogoča pregled vseh akcij v slovenskih trgovinah na enem mestu, kar vam omogoča, da vedno dobite najboljšo ceno. Delite nakupovalne sezname z družino ali prijatelji in skenirajte račune za samodejno sledenje potrošnji. Na podlagi vaših nakupovalnih navad dobite tudi personalizirana priporočila akcij';
 
   @override
   String get aboutSupport => 'Podpora';
@@ -756,7 +823,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get aboutContact => 'Kontakt';
 
   @override
-  String get aboutContactSubtitle => 'Imate vprašanje? Stopite v stik.';
+  String get aboutContactSubtitle => 'Imate vprašanje? Stopite v stik';
 
   @override
   String get aboutFeedback => 'Povratne informacije';
@@ -830,7 +897,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get contactFailedToSend =>
-      'Pošiljanje sporočila ni uspelo. Prosimo, poskusite znova.';
+      'Pošiljanje sporočila ni uspelo. Prosimo, poskusite znova';
 
   @override
   String get scanBarcodeTab => 'Črtna koda';
@@ -913,6 +980,17 @@ class AppLocalizationsSl extends AppLocalizations {
   String get scanAlmostDone => 'Skoraj končano';
 
   @override
+  String get scanReceiptCapturedParsing => 'Račun zajet';
+
+  @override
+  String get scanNoBarcodeInImage =>
+      'V izbrani sliki ni bila zaznana črtna koda';
+
+  @override
+  String get scanFailedToAddToList =>
+      'Artikla ni bilo mogoče dodati na nakupovalni seznam. Prosimo, poskusite znova';
+
+  @override
   String get authErrorUserNotFound => 'Ni najden račun za ta e-naslov';
 
   @override
@@ -933,9 +1011,6 @@ class AppLocalizationsSl extends AppLocalizations {
   @override
   String get authErrorNetwork =>
       'Napaka omrežja. Preverite internetno povezavo';
-
-  @override
-  String get authErrorGeneric => 'Prišlo je do napake. Poskusite znova';
 
   @override
   String get authErrorAccountSetupFailed =>
@@ -1006,6 +1081,22 @@ class AppLocalizationsSl extends AppLocalizations {
   String get errorGeneric => 'Prišlo je do napake. Poskusite znova';
 
   @override
+  String get errorFailedToTransferOwnership =>
+      'Prenosa lastništva seznama ni bilo mogoče izvesti';
+
+  @override
+  String get errorFailedToRemoveMember =>
+      'Člana ni bilo mogoče odstraniti s seznama';
+
+  @override
+  String get errorFailedToCancelInvitation =>
+      'Preklica povabila ni bilo mogoče izvesti';
+
+  @override
+  String get errorFailedToAcceptInvitation =>
+      'Sprejemanja ali zavrnitve povabila ni bilo mogoče izvesti';
+
+  @override
   String listItemLimitReached(int max) {
     return 'Seznam je dosegel največje število $max artiklov';
   }
@@ -1067,7 +1158,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get legalQuestionsBody =>
-      'Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore.';
+      'Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore';
 
   @override
   String get legalContactUs => 'Kontaktirajte nas';

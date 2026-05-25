@@ -8,18 +8,15 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
-    env:
-      FIREBASE_SERVICE_ACCOUNT_KEY: $RUNNER_TEMP/firebase-key.json
+    name: ${{ matrix.store }}
+    strategy:
+      fail-fast: false
+      matrix:
+        store: [lidl, mercator, tusdrogerija, spar]
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -31,24 +28,8 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scraper/requirements.txt
 
-      - name: Write Firebase credentials
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > $RUNNER_TEMP/firebase-key.json
-
-      - name: Run scraper
-        run: python main.py
+      - name: Scrape ${{ matrix.store }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python main.py --store ${{ matrix.store }}
         working-directory: scraper
-
-      - name: Commit scraper output
-        run: |
-          git config user.name "scraper-bot"
-          git config user.email "scraper-bot@users.noreply.github.com"
-
-          git add -A scraper
-
-          if ! git diff --cached --quiet; then
-            git commit -m "Update scraper output ($(date +'%Y-%m-%d'))"
-            git push
-          else
-            echo "No changes to commit"
-          fi
-

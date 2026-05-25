@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
+import 'package:cenko/shared/widgets/bullet_point.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -201,7 +202,7 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            for (final bullet in bullets) _BulletPoint(bullet),
+            for (final bullet in bullets) BulletPoint(bullet),
           ],
         ),
       ),
@@ -209,32 +210,4 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _BulletPoint extends StatelessWidget {
-  const _BulletPoint(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 7),
-            child: Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
-        ],
-      ),
-    );
-  }
-}
+// Replaced by shared BulletPoint widget in lib/shared/widgets/bullet_point.dart

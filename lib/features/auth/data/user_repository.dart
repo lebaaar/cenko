@@ -1,40 +1,29 @@
 import 'package:cenko/features/auth/data/user_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserRepository {
-  final _users = FirebaseFirestore.instance.collection('users');
+  final _client = Supabase.instance.client;
 
-  Future<void> saveUser(UserModel user) async {
-    await _users.doc(user.userId).set(user.toMap());
+  Future<UserModel?> getUser(String id) async {
+    final data = await _client.from('user').select().eq('id', id).maybeSingle();
+    if (data == null) return null;
+    return UserModel.fromMap(data);
   }
 
-  Future<UserModel?> getUser(String uid) async {
-    final doc = await _users.doc(uid).get();
-    if (!doc.exists) return null;
-    return UserModel.fromFirestore(doc);
+  Future<void> updateDisplayName(String id, String name) async {
+    await _client.from('user').update({'display_name': name.trim()}).eq('id', id);
   }
 
-  Stream<UserModel?> watchUser(String uid) {
-    return _users.doc(uid).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return UserModel.fromFirestore(doc);
-    });
+  Future<void> updateEmail(String id, String email) async {
+    await _client.from('user').update({'email': email.trim()}).eq('id', id);
   }
 
-  Future<void> updateDisplayName(String uid, String name) async {
-    await _users.doc(uid).update({'name': name.trim()});
-  }
-
-  Future<void> updateEmail(String uid, String email) async {
-    await _users.doc(uid).update({'email': email.trim()});
-  }
-
-  Future<void> updateSettings(String uid, UserSettings settings) async {
-    await _users.doc(uid).update({'settings': settings.toMap()});
-  }
-
-  Future<bool> userExists(String uid) async {
-    final doc = await _users.doc(uid).get();
-    return doc.exists;
+  Future<void> updateSettings(String id, {String? theme, String? lang, bool? notificationsEnabled}) async {
+    final updates = <String, dynamic>{};
+    if (theme != null) updates['theme'] = theme;
+    if (lang != null) updates['lang'] = lang;
+    if (notificationsEnabled != null) updates['notifications_enabled'] = notificationsEnabled;
+    if (updates.isEmpty) return;
+    await _client.from('user').update(updates).eq('id', id);
   }
 }

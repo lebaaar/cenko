@@ -51,6 +51,11 @@ __pycache__
 # ai
 .codex
 
-#firebase
+# Keys and credentials
 firebase_key.json
 serviceAccountKey.json
+
+# Supabase
+supabase/.env.local
+supabase/.temp/
+supabase/.branches/

@@ -3,26 +3,29 @@ import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-final _receiptDocProvider =
-    StreamProvider.autoDispose.family<DocumentSnapshot<Map<String, dynamic>>, ({String uid, String receiptId})>((ref, args) {
-  return FirebaseFirestore.instance.collection('users').doc(args.uid).collection('receipts').doc(args.receiptId).snapshots();
+final _receiptRowProvider = FutureProvider.autoDispose.family<Map<String, dynamic>?, ({String uid, String receiptId})>((ref, args) async {
+  final row = await Supabase.instance.client
+      .from('receipt')
+      .select('id, total, receipt_date, scanned_at, store:store_id(name)')
+      .eq('id', int.parse(args.receiptId))
+      .eq('user_id', args.uid)
+      .maybeSingle();
+  return row;
 });
 
-final _receiptItemsProvider =
-    StreamProvider.autoDispose.family<QuerySnapshot<Map<String, dynamic>>, ({String uid, String receiptId})>((ref, args) {
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(args.uid)
-      .collection('receipts')
-      .doc(args.receiptId)
-      .collection('items')
-      .orderBy('total_price', descending: true)
-      .snapshots();
+final _receiptItemsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, ({String uid, String receiptId})>((ref, args) async {
+  final rows = await Supabase.instance.client
+      .from('receipt_item')
+      .select('id, name, quantity, unit_price, total_price')
+      .eq('receipt_id', int.parse(args.receiptId))
+      .order('total_price', ascending: false);
+  return (rows as List).map((r) => r as Map<String, dynamic>).toList();
 });
 
 class ReceiptDetailScreen extends ConsumerWidget {
@@ -32,7 +35,7 @@ class ReceiptDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = ref.watch(authStateProvider).value?.uid;
+    final uid = ref.watch(authStateProvider).value?.user.id;
 
     if (uid == null) {
       return Scaffold(
@@ -42,7 +45,7 @@ class ReceiptDetailScreen extends ConsumerWidget {
     }
 
     final args = (uid: uid, receiptId: receiptId);
-    final receiptAsync = ref.watch(_receiptDocProvider(args));
+    final receiptAsync = ref.watch(_receiptRowProvider(args));
     final itemsAsync = ref.watch(_receiptItemsProvider(args));
 
     return receiptAsync.when(
@@ -50,23 +53,26 @@ class ReceiptDetailScreen extends ConsumerWidget {
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
-        body: Center(child: Text(e.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
-      data: (receiptDoc) {
-        if (!receiptDoc.exists) {
+      data: (row) {
+        if (row == null) {
           return Scaffold(
-            appBar: AppBar(title: Text(AppLocalizations.of(context)!.receiptTitle), leading: BackButton(onPressed: () => context.pop())),
+            appBar: AppBar(
+              title: Text(AppLocalizations.of(context)!.receiptTitle),
+              leading: BackButton(onPressed: () => context.pop()),
+            ),
             body: Center(child: Text(AppLocalizations.of(context)!.receiptNotFound)),
           );
         }
 
-        final data = receiptDoc.data()!;
-        final storeName = _parseStoreName(data);
-        final date = _parseDate(data['date']);
-        final scannedAt = _parseDate(data['created_at']);
-        final totalPriceCents = data['total_price'] is int ? data['total_price'] as int : 0;
+        final storeMap = row['store'] as Map<String, dynamic>?;
+        final storeName = _parseStoreName(storeMap);
+        final date = _parseDate(row['receipt_date']);
+        final scannedAt = _parseDate(row['scanned_at']);
+        final totalPriceCents = row['total'] is int ? row['total'] as int : 0;
 
         final colorScheme = Theme.of(context).colorScheme;
 
@@ -93,15 +99,17 @@ class ReceiptDetailScreen extends ConsumerWidget {
   }
 }
 
-String _parseStoreName(Map<String, dynamic> data) {
-  final s = (data['store_name'] as String?)?.trim();
+String _parseStoreName(Map<String, dynamic>? storeMap) {
+  final s = (storeMap?['name'] as String?)?.trim();
   return s == null || s.isEmpty ? 'Unknown store' : s;
 }
 
 DateTime _parseDate(dynamic value) {
-  if (value is Timestamp) return value.toDate().toLocal();
-  final parsed = DateTime.tryParse(value?.toString() ?? '');
-  return parsed?.toLocal() ?? DateTime.now();
+  if (value is String) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed.toLocal();
+  }
+  return DateTime.now();
 }
 
 String _timeLabel(DateTime date) {
@@ -147,10 +155,7 @@ class _ReceiptHeaderCard extends StatelessWidget {
               children: [
                 Text(storeName, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 3),
-                Text(
-                  '${displayWordedDate(date)} · ${_timeLabel(date)}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text('${displayWordedDate(date)} · ${_timeLabel(date)}', style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 2),
                 Text(
                   AppLocalizations.of(context)!.receiptScanned(displayWordedDate(scannedAt), _timeLabel(scannedAt)),
@@ -160,25 +165,22 @@ class _ReceiptHeaderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            formatCents(totalPriceCents),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          Text(formatCents(totalPriceCents), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
         ],
       ),
     );
   }
 }
 
-class _ItemsCard extends StatelessWidget {
+class _ItemsCard extends ConsumerWidget {
   const _ItemsCard({required this.itemsAsync, required this.uid, required this.receiptId});
 
-  final AsyncValue<QuerySnapshot<Map<String, dynamic>>> itemsAsync;
+  final AsyncValue<List<Map<String, dynamic>>> itemsAsync;
   final String uid;
   final String receiptId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -190,13 +192,8 @@ class _ItemsCard extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 20),
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => Text(
-          'Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        data: (snapshot) {
-          final items = snapshot.docs;
-
+        error: (_, _) => Text(AppLocalizations.of(context)!.errorFailedToLoadItems, style: Theme.of(context).textTheme.bodyMedium),
+        data: (items) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -211,12 +208,7 @@ class _ItemsCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 for (int i = 0; i < items.length; i++) ...[
                   if (i > 0) Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.15), height: 1),
-                  _ItemRow(
-                    itemId: items[i].id,
-                    data: items[i].data(),
-                    uid: uid,
-                    receiptId: receiptId,
-                  ),
+                  _ItemRow(itemId: items[i]['id'].toString(), data: items[i], uid: uid, receiptId: receiptId),
                 ],
               ],
             ],
@@ -239,9 +231,7 @@ class _ItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final name = (data['name'] as String?)?.trim().isNotEmpty == true
-        ? (data['name'] as String).trim()
-        : ((data['raw_name'] as String?)?.trim().isNotEmpty == true ? (data['raw_name'] as String).trim() : 'Unknown item');
+    final name = (data['name'] as String?)?.trim().isNotEmpty == true ? (data['name'] as String).trim() : 'Unknown item';
     final quantity = (data['quantity'] as num?)?.toDouble() ?? 1.0;
     final unitPriceCents = data['unit_price'] is int ? data['unit_price'] as int : 0;
     final totalPriceCents = data['total_price'] is int ? data['total_price'] as int : 0;
@@ -256,14 +246,8 @@ class _ItemRow extends StatelessWidget {
         useRootNavigator: true,
         showDragHandle: true,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (_) => _EditItemSheet(
-          uid: uid,
-          receiptId: receiptId,
-          itemId: itemId,
-          name: name,
-          unitPriceCents: unitPriceCents,
-          quantity: quantity,
-        ),
+        builder: (_) =>
+            _EditItemSheet(uid: uid, receiptId: receiptId, itemId: itemId, name: name, unitPriceCents: unitPriceCents, quantity: quantity),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -284,10 +268,7 @@ class _ItemRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              formatCents(totalPriceCents),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            Text(formatCents(totalPriceCents), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -295,7 +276,7 @@ class _ItemRow extends StatelessWidget {
   }
 }
 
-class _EditItemSheet extends StatefulWidget {
+class _EditItemSheet extends ConsumerStatefulWidget {
   const _EditItemSheet({
     required this.uid,
     required this.receiptId,
@@ -313,10 +294,10 @@ class _EditItemSheet extends StatefulWidget {
   final double quantity;
 
   @override
-  State<_EditItemSheet> createState() => _EditItemSheetState();
+  ConsumerState<_EditItemSheet> createState() => _EditItemSheetState();
 }
 
-class _EditItemSheetState extends State<_EditItemSheet> {
+class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _priceCtrl;
@@ -353,47 +334,41 @@ class _EditItemSheetState extends State<_EditItemSheet> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _saving = true;
       _formError = null;
     });
 
+    final supabase = Supabase.instance.client;
     final name = _nameCtrl.text.trim();
     final unitPriceCents = _parseCents(_priceCtrl.text);
     final quantity = widget.quantity > 1 ? _parseQty(_qtyCtrl.text) : widget.quantity;
     final totalPriceCents = (quantity * unitPriceCents).round();
-
-    final itemRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.uid)
-        .collection('receipts')
-        .doc(widget.receiptId)
-        .collection('items')
-        .doc(widget.itemId);
-
-    final receiptRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.uid)
-        .collection('receipts')
-        .doc(widget.receiptId);
+    final receiptIdInt = int.parse(widget.receiptId);
 
     try {
-      await itemRef.update({'name': name, 'unit_price': unitPriceCents, 'quantity': quantity, 'total_price': totalPriceCents});
+      await supabase
+          .from('receipt_item')
+          .update({'name': name, 'unit_price': unitPriceCents, 'quantity': quantity.round(), 'total_price': totalPriceCents})
+          .eq('id', int.parse(widget.itemId));
 
-      final itemsSnap = await receiptRef.collection('items').get();
-      final newReceiptTotal = itemsSnap.docs.fold<int>(0, (acc, doc) {
-        final price = doc.data()['total_price'];
-        return acc + (price is int ? price : 0);
-      });
-      await receiptRef.update({'total_price': newReceiptTotal});
+      // Recompute receipt total from items
+      final itemRows = await supabase.from('receipt_item').select('total_price').eq('receipt_id', receiptIdInt);
+      final newTotal = (itemRows as List).fold<int>(0, (acc, r) => acc + (r['total_price'] is int ? r['total_price'] as int : 0));
+      await supabase.from('receipt').update({'total': newTotal}).eq('id', receiptIdInt).eq('user_id', widget.uid);
 
+      final args = (uid: widget.uid, receiptId: widget.receiptId);
+      ref.invalidate(_receiptItemsProvider(args));
+      ref.invalidate(_receiptRowProvider(args));
+      ref.read(receiptRevisionProvider.notifier).increment();
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         setState(() {
           _saving = false;
-          _formError = 'Failed to save: ${e.toString().replaceFirst('Exception: ', '')}';
+          _formError = l10n.errorFailedToSaveItem;
         });
       }
     }
@@ -413,10 +388,7 @@ class _EditItemSheetState extends State<_EditItemSheet> {
             const SizedBox(height: 4),
             Text(AppLocalizations.of(context)!.receiptEditItemSubtitle, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
-            if (_formError != null) ...[
-              Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              const SizedBox(height: 12),
-            ],
+            if (_formError != null) ...[Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 12)],
             TextFormField(
               controller: _nameCtrl,
               autofocus: true,
@@ -445,8 +417,12 @@ class _EditItemSheetState extends State<_EditItemSheet> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listQuantity),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return AppLocalizations.of(context)!.receiptQuantityRequired;
-                  if (double.tryParse(v.replaceAll(',', '.')) == null) return AppLocalizations.of(context)!.receiptInvalidQuantity;
+                  if (v == null || v.trim().isEmpty) {
+                    return AppLocalizations.of(context)!.receiptQuantityRequired;
+                  }
+                  if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                    return AppLocalizations.of(context)!.receiptInvalidQuantity;
+                  }
                   return null;
                 },
               ),

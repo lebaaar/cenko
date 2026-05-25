@@ -6,12 +6,12 @@ import 'package:cenko/shared/widgets/auth_locale_button.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart' show GoogleSignInException, GoogleSignInExceptionCode;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -42,20 +42,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _googleSignIn() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       await ref.read(authNotifierProvider).signInWithGoogle();
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _error = authErrorMessage(e.code));
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _error = authErrorMessage(e.message));
     } on GoogleSignInException catch (e) {
       if (mounted && e.code != GoogleSignInExceptionCode.canceled) {
-        setState(() => _error = 'Google Sign-In failed: ${e.code.name}');
+        setState(() => _error = l10n.authErrorGoogleSignInFailed);
       }
-    } on Exception catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } on Exception {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -74,8 +75,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
     try {
       await ref.read(authNotifierProvider).registerWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text, _nameCtrl.text.trim());
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _error = authErrorMessage(e.code));
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _error = authErrorMessage(e.message));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

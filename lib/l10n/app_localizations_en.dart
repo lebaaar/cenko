@@ -73,7 +73,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noShoppingListsCreate =>
-      'No shopping lists found. Create one first.';
+      'No shopping lists found. Create one first';
 
   @override
   String get continueWithGoogle => 'Continue with Google';
@@ -95,11 +95,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
-  String get settingsTitle => 'Settings';
+  String get settingsTitle => 'Account';
 
   @override
   String get settingsAccountSubtitle =>
       'Manage your account settings and preferences';
+
+  @override
+  String get preferencesTitle => 'Preferences';
+
+  @override
+  String get preferencesAccountSubtitle =>
+      'Customize app settings and preferences';
 
   @override
   String get settingsDisplayName => 'Display name';
@@ -156,6 +163,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccountTitle => 'Delete account';
 
   @override
+  String get deleteAccountFailedTitle => 'Failed to delete account';
+
+  @override
   String get deleteAccountContent =>
       'This will permanently delete your account and all associated data. This cannot be undone';
 
@@ -164,7 +174,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountTransferMsg =>
-      'You are the owner of shared lists. Transfer ownership before deleting your account.';
+      'You are the owner of shared lists, so you must transfer ownership before deleting your account. Lists where you are owner:';
 
   @override
   String get deleteAccountTransferTitle => 'To transfer ownership:';
@@ -219,7 +229,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mustAgreeToTerms =>
-      'You must agree to the terms and conditions before creating an account.';
+      'You must agree to the terms and conditions before creating an account';
 
   @override
   String get passwordMin6Chars => 'At least 6 characters';
@@ -238,7 +248,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPasswordBody =>
-      'Enter your email and we\'ll send you a link to reset your password.';
+      'Enter your email and we\'ll send you a link to reset your password';
 
   @override
   String get sendResetLink => 'Send reset link';
@@ -277,10 +287,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeFromShoppingLists => 'From your shopping lists';
+  String get homeEmptyState =>
+      'Below you will see personalized deals based on your shopping lists';
 
   @override
-  String get homeBasedOnHabits => 'Based on your shopping habits';
+  String get homeFromShoppingLists => 'From your shopping lists';
 
   @override
   String get homeEmptyShoppingListDeals =>
@@ -291,18 +302,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Based on the items you have in your shopping lists, these are on sale right now';
 
   @override
-  String get homeEmptyHabitsDeals =>
-      'Scan more receipts to get personalized deals based on the products you buy often';
-
-  @override
-  String get homeHabitsDealsMessage =>
-      'Based on the products that show up often in your receipts, these are on sale right now';
-
-  @override
   String get homeGoToShoppingLists => 'Go to shopping lists';
-
-  @override
-  String get homeScanAReceipt => 'Scan a receipt';
 
   @override
   String get homeShowAllDeals => 'Show all deals';
@@ -449,11 +449,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listPrivate => 'Private list';
 
   @override
-  String get listEmpty => 'Empty';
+  String get listEmpty => 'Empty list';
 
   @override
-  String listItemsRemainingBought(int remaining, int bought) {
-    return '$remaining remaining · $bought bought';
+  String listRemainingCount(int count) {
+    return '$count remaining';
+  }
+
+  @override
+  String listBoughtCount(int count) {
+    return '$count bought';
   }
 
   @override
@@ -471,13 +476,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shoppingListEmptyState =>
-      'No shopping lists yet.\nTap + to create one.';
+      'No shopping lists yet.\nTap + to create one';
 
   @override
   String get shoppingListYourLists => 'Your lists';
 
   @override
   String get shoppingListCreateTitle => 'New shopping list';
+
+  @override
+  String get shoppingListDefaultName => 'My shopping list';
 
   @override
   String get shoppingListNameLabel => 'List name';
@@ -561,6 +569,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listNoCategory => 'No category';
+
+  @override
+  String get categoryFruitsAndVegetables => 'Fruits & Vegetables';
+
+  @override
+  String get categoryMeat => 'Meat';
+
+  @override
+  String get categoryFishAndSeafood => 'Fish & Seafood';
+
+  @override
+  String get categoryDairyProducts => 'Dairy Products';
+
+  @override
+  String get categoryEggs => 'Eggs';
+
+  @override
+  String get categoryBakery => 'Bakery';
+
+  @override
+  String get categoryPantryStaples => 'Pantry Staples';
+
+  @override
+  String get categoryCansAndJars => 'Cans & Jars';
+
+  @override
+  String get categorySeasoningsSaucesAndCondiments =>
+      'Seasonings, Sauces & Condiments';
+
+  @override
+  String get categoryFrozenFoods => 'Frozen Foods';
+
+  @override
+  String get categorySnacksAndSweets => 'Snacks & Sweets';
+
+  @override
+  String get categoryDrinks => 'Drinks';
+
+  @override
+  String get categoryCoffeeAndTea => 'Coffee & Tea';
+
+  @override
+  String get categoryBabyProducts => 'Baby Products';
+
+  @override
+  String get categoryPetSupplies => 'Pet Supplies';
+
+  @override
+  String get categoryPersonalCare => 'Personal Care';
+
+  @override
+  String get categoryHouseholdSupplies => 'Household Supplies';
+
+  @override
+  String get categoryCleaningSupplies => 'Cleaning Supplies';
+
+  @override
+  String get categoryHomeAndGarden => 'Home & Garden';
+
+  @override
+  String get categoryOther => 'Other';
 
   @override
   String get listRenameTitle => 'Rename list';
@@ -746,7 +815,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutDescription =>
-      'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most.';
+      'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most';
 
   @override
   String get aboutSupport => 'Support';
@@ -827,7 +896,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactMessageSent => 'Message sent successfully!';
 
   @override
-  String get contactFailedToSend => 'Failed to send message. Please try again.';
+  String get contactFailedToSend => 'Failed to send message. Please try again';
 
   @override
   String get scanBarcodeTab => 'Barcode';
@@ -908,6 +977,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanAlmostDone => 'Almost done';
 
   @override
+  String get scanReceiptCapturedParsing => 'Receipt captured';
+
+  @override
+  String get scanNoBarcodeInImage => 'No barcode detected in selected image';
+
+  @override
+  String get scanFailedToAddToList =>
+      'Failed to add product to shopping list. Please try again';
+
+  @override
   String get authErrorUserNotFound => 'No account found for this email';
 
   @override
@@ -927,9 +1006,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorNetwork => 'Network error. Check your connection';
-
-  @override
-  String get authErrorGeneric => 'Something went wrong. Please try again';
 
   @override
   String get authErrorAccountSetupFailed =>
@@ -1000,6 +1076,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Something went wrong. Please try again';
 
   @override
+  String get errorFailedToTransferOwnership =>
+      'Failed to transfer list ownership';
+
+  @override
+  String get errorFailedToRemoveMember => 'Failed to remove member from list';
+
+  @override
+  String get errorFailedToCancelInvitation => 'Failed to cancel invitation';
+
+  @override
+  String get errorFailedToAcceptInvitation =>
+      'Failed to accept or decline invitation';
+
+  @override
   String listItemLimitReached(int max) {
     return 'This list has reached the maximum of $max items';
   }
@@ -1061,7 +1151,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalQuestionsBody =>
-      'If you want to ask about this page or how data is handled, send a message through support.';
+      'If you want to ask about this page or how data is handled, send a message through support';
 
   @override
   String get legalContactUs => 'Contact us';

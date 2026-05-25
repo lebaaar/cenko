@@ -6,25 +6,14 @@ import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final personalizedDealsRepositoryProvider = Provider<PersonalizedDealsRepository>((ref) {
-  final repository = PersonalizedDealsRepository(
+  return PersonalizedDealsRepository(
     catalogDealsRepository: ref.watch(catalogDealsRepositoryProvider),
     dealTextMatcherService: ref.watch(dealTextMatcherServiceProvider),
   );
-  ref.onDispose(repository.dispose);
-  return repository;
 });
 
-final shoppingListOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
+final shoppingListOnSaleProvider = FutureProvider.autoDispose.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
   ref.watch(internetStatusProvider);
-  return ref.watch(personalizedDealsRepositoryProvider).watchShoppingListOnSale(uid);
+  return ref.read(personalizedDealsRepositoryProvider).fetchShoppingListOnSale(uid);
 });
 
-final commonBoughtProductsOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
-  ref.watch(internetStatusProvider);
-  return ref.watch(personalizedDealsRepositoryProvider).watchCommonBoughtProductsOnSale(uid);
-});
-
-final spendingHabitsOnSaleProvider = StreamProvider.family<List<PersonalizedDealCardItem>, String>((ref, uid) {
-  ref.watch(internetStatusProvider);
-  return ref.watch(personalizedDealsRepositoryProvider).watchFromSpendingHabitsOnSale(uid);
-});

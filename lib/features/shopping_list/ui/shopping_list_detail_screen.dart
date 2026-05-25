@@ -3,6 +3,7 @@ import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/shopping_list/data/category.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
@@ -39,7 +40,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   bool _saving = false;
   String? _formError;
   String? _editingItemId;
-  String? _selectedCategory;
+  int? _selectedCategoryId;
 
   @override
   void dispose() {
@@ -54,15 +55,16 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final uid = authState.asData?.value?.uid;
+    final uid = authState.asData?.value?.user.id;
     final listAsync = ref.watch(shoppingListProvider(widget.listId));
     final itemsAsync = uid == null ? const AsyncLoading<List<ShoppingListItem>>() : ref.watch(shoppingListItemsProvider(widget.listId));
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final currentUser = ref.watch(currentUserProvider).asData?.value;
 
     final list = listAsync.asData?.value;
+    final items = itemsAsync.asData?.value;
     final pendingInviteCount = uid != null && list != null && list.ownerId == uid && list.members.length <= 1
-        ? ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0
+        ? (ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0)
         : 0;
 
     final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -76,8 +78,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               padding: EdgeInsets.only(bottom: fabBottomInset),
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  if (currentUser?.plan == kFreePlanPlan && list != null && list.itemCount >= kMaxNumberOfItemsPerList) {
-                    SnackBarService.show('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
+                  if (currentUser?.isFreePlan == true && (items?.length ?? 0) >= kMaxNumberOfItemsPerList) {
+                    SnackBarService.show(AppLocalizations.of(context)!.listItemLimitReached(kMaxNumberOfItemsPerList));
                     return;
                   }
                   _showAddActions(context, uid);
@@ -109,7 +111,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     ? Center(child: Text(AppLocalizations.of(context)!.listSignInPrompt))
                     : listAsync.when(
                         loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Failed to load list: ${e.toString().replaceFirst('Exception: ', '')}')),
+                        error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
                         data: (list) {
                           if (list == null) {
                             // loading spinner is shown for 2 seconds, then "List not found" if list is still null
@@ -200,7 +202,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     _nameCtrl.text = item?.name ?? '';
     _quantityCtrl.text = item != null && item.quantity > 1 ? item.quantity.toString() : '';
     _unitCtrl.text = item?.unit ?? '';
-    _selectedCategory = item?.category;
+    _selectedCategoryId = item?.categoryId;
     _formError = null;
     _formKey.currentState?.reset();
 
@@ -221,9 +223,15 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.listEditItemTitle, style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.listEditItemTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 4),
-                    Text(item == null ? AppLocalizations.of(context)!.listAddItemSubtitle : AppLocalizations.of(context)!.listEditItemSubtitle, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      item == null ? AppLocalizations.of(context)!.listAddItemSubtitle : AppLocalizations.of(context)!.listEditItemSubtitle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                     const SizedBox(height: 16),
                     if (_formError != null) ...[
                       Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -270,19 +278,27 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       ],
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      initialValue: _selectedCategory,
-                      decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listCategory),
-                      items: [
-                        DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.of(context)!.listNoCategory)),
-                        ..._categoryIcons.keys.map(
-                          (c) => DropdownMenuItem<String?>(
-                            value: c,
-                            child: Row(children: [Icon(_categoryIcons[c], size: 16), const SizedBox(width: 8), Text(c)]),
-                          ),
-                        ),
-                      ],
-                      onChanged: (value) => setModalState(() => _selectedCategory = value),
+                    Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context)!;
+                        final categories = ref.watch(categoriesProvider).asData?.value ?? [];
+                        return DropdownButtonFormField<int?>(
+                          initialValue: _selectedCategoryId,
+                          decoration: InputDecoration(labelText: l10n.listCategory),
+                          items: [
+                            DropdownMenuItem<int?>(value: null, child: Text(l10n.listNoCategory)),
+                            ...categories.map(
+                              (c) => DropdownMenuItem<int?>(
+                                value: c.id,
+                                child: Row(
+                                  children: [Icon(c.iconData, size: 16), const SizedBox(width: 8), Text(categoryLocalizedName(l10n, c.slug))],
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) => setModalState(() => _selectedCategoryId = value),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -307,6 +323,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
   Future<void> _saveItemForm({required String uid, required StateSetter setModalState, required BuildContext sheetContext}) async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setModalState(() {
       _saving = true;
@@ -326,17 +343,27 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
           name: _nameCtrl.text,
           quantity: quantity,
           unit: unit,
-          category: _selectedCategory,
+          categoryId: _selectedCategoryId,
         );
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, category: _selectedCategory);
+        await repo.addItem(
+          listId: widget.listId,
+          addedBy: uid,
+          name: _nameCtrl.text,
+          quantity: quantity,
+          unit: unit,
+          categoryId: _selectedCategoryId,
+          isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true,
+        );
       }
 
+      ref.invalidate(shoppingListItemsProvider(widget.listId));
+      ref.invalidate(userShoppingListsProvider(uid));
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     } catch (e) {
       if (mounted) {
         setModalState(() {
-          _formError = 'Failed to save item: ${e.toString().replaceFirst('Exception: ', '')}';
+          _formError = l10n.errorFailedToSaveItem;
           _saving = false;
         });
       }
@@ -374,7 +401,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(AppLocalizations.of(context)!.listDeleteItemTitle(item.name), style: Theme.of(context).textTheme.titleLarge)),
+                          Expanded(
+                            child: Text(AppLocalizations.of(context)!.listDeleteItemTitle(item.name), style: Theme.of(context).textTheme.titleLarge),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -401,14 +430,17 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                   : () async {
                                       setDialogState(() => deleting = true);
                                       try {
+                                        final uid = ref.read(authStateProvider).asData?.value?.user.id;
                                         await ref
                                             .read(sharedShoppingListRepositoryProvider)
                                             .deleteItem(listId: widget.listId, itemId: item.id, wasBought: item.isBought);
+                                        ref.invalidate(shoppingListItemsProvider(widget.listId));
+                                        if (uid != null) ref.invalidate(userShoppingListsProvider(uid));
                                         if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
                                         setDialogState(() => deleting = false);
-                                        SnackBarService.show('Failed to delete item: ${e.toString().replaceFirst('Exception: ', '')}');
+                                        SnackBarService.show(AppLocalizations.of(context)!.errorFailedToDeleteItem);
                                       }
                                     },
                               child: deleting
@@ -434,9 +466,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     setState(() => _updatingBought = true);
     try {
       await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
+      ref.invalidate(shoppingListItemsProvider(widget.listId));
+      ref.invalidate(userShoppingListsProvider(uid));
     } catch (e) {
       if (!mounted) return;
-      SnackBarService.show('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}');
+      SnackBarService.show(AppLocalizations.of(context)!.errorFailedToUpdateItem);
     } finally {
       if (mounted) setState(() => _updatingBought = false);
     }
@@ -458,21 +492,24 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 setDialogState(() => error = AppLocalizations.of(context)!.listNameRequired);
                 return;
               }
+              final renameError = AppLocalizations.of(context)!.errorFailedToRenameList;
               setDialogState(() {
                 saving = true;
                 error = null;
               });
               ref
                   .read(sharedShoppingListRepositoryProvider)
-                  .renameList(listId: widget.listId, name: name, memberUids: list.members.map((m) => m.userId).toList())
+                  .renameList(listId: widget.listId, name: name)
                   .then((_) {
+                    ref.invalidate(shoppingListProvider(widget.listId));
+                    ref.invalidate(userShoppingListsProvider(ref.read(authStateProvider).asData?.value?.user.id ?? ''));
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   })
-                  .catchError((e) {
+                  .catchError((_) {
                     if (mounted) {
                       setDialogState(() {
                         saving = false;
-                        error = 'Failed to rename list: ${e.toString().replaceFirst('Exception: ', '')}';
+                        error = renameError;
                       });
                     }
                   });
@@ -550,7 +587,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 setDialogState(() => error = AppLocalizations.of(context)!.listEmailRequired);
                 return;
               }
-              final currentEmail = ref.read(authStateProvider).asData?.value?.email ?? '';
+              final currentEmail = ref.read(authStateProvider).asData?.value?.user.email ?? '';
               if (email.toLowerCase() == currentEmail.toLowerCase()) {
                 setDialogState(() => error = AppLocalizations.of(context)!.listCannotInviteSelf);
                 return;
@@ -559,24 +596,26 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 inviting = true;
                 error = null;
               });
+              final invitedMsg = AppLocalizations.of(context)!.invitationSentTo(email);
+              final inviteError = AppLocalizations.of(context)!.errorGeneric;
               ref
                   .read(sharedShoppingListRepositoryProvider)
                   .inviteByEmail(
                     listId: widget.listId,
                     listName: list.name,
                     invitedByUid: uid,
-                    invitedByName: currentUser?.name ?? 'Unknown',
+                    invitedByName: currentUser?.displayName ?? 'Unknown',
                     email: email,
                   )
                   .then((_) {
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                    SnackBarService.show('Invitation sent to $email');
+                    SnackBarService.show(invitedMsg);
                   })
-                  .catchError((e) {
+                  .catchError((_) {
                     if (mounted) {
                       setDialogState(() {
                         inviting = false;
-                        error = e.toString().replaceFirst('Exception: ', '');
+                        error = inviteError;
                       });
                     }
                   });
@@ -686,20 +725,24 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             onMakeOwner: () async {
                               try {
                                 await repo.transferOwnership(listId: list.id, currentOwnerUid: ownerUid, newOwnerUid: member.userId);
+                                ref.invalidate(shoppingListProvider(list.id));
+                                ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToTransferOwnership);
                                 }
                               }
                             },
                             onRemove: () async {
                               try {
                                 await repo.removeMember(listId: list.id, memberUid: member.userId);
+                                ref.invalidate(shoppingListProvider(list.id));
+                                ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToRemoveMember);
                                 }
                               }
                             },
@@ -722,7 +765,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                 setDialogState(() => pendingInvitations.remove(inv));
                               } catch (e) {
                                 if (context.mounted) {
-                                  SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));
+                                  SnackBarService.show(AppLocalizations.of(context)!.errorFailedToCancelInvitation);
                                 }
                               }
                             },
@@ -758,9 +801,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final isOwner = list.ownerId == uid;
     final actionLabel = isOwner ? l10n.delete : l10n.listLeaveListMenu;
     final titleText = isOwner ? l10n.listDeleteListTitle : l10n.listLeaveListTitle;
-    final description = isOwner
-        ? l10n.listDeleteListDescription(list.name)
-        : l10n.listLeaveListDescription(list.name);
+    final description = isOwner ? l10n.listDeleteListDescription(list.name) : l10n.listLeaveListDescription(list.name);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -830,17 +871,16 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     try {
       if (isOwner) {
-        await ref
-            .read(sharedShoppingListRepositoryProvider)
-            .deleteList(listId: widget.listId, memberUids: list.members.map((m) => m.userId).toList());
+        await ref.read(sharedShoppingListRepositoryProvider).deleteList(listId: widget.listId);
       } else {
         await ref.read(sharedShoppingListRepositoryProvider).leaveList(uid: uid, listId: widget.listId);
       }
+      ref.invalidate(userShoppingListsProvider(uid));
       if (!mounted) return;
       context.go('/list');
     } catch (e) {
       if (!mounted) return;
-      SnackBarService.show('Failed to ${isOwner ? 'delete' : 'leave'} list: ${e.toString().replaceFirst('Exception: ', '')}');
+      SnackBarService.show(isOwner ? AppLocalizations.of(context)!.errorFailedToDeleteList : AppLocalizations.of(context)!.errorFailedToLeaveList);
     }
   }
 }
@@ -887,7 +927,11 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           if (list != null) ...[
-            IconButton(icon: const Icon(Icons.person_add_rounded), onPressed: onInvite, tooltip: AppLocalizations.of(context)!.listInvitePeopleTooltip),
+            IconButton(
+              icon: const Icon(Icons.person_add_rounded),
+              onPressed: onInvite,
+              tooltip: AppLocalizations.of(context)!.listInvitePeopleTooltip,
+            ),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
@@ -904,7 +948,10 @@ class _TopBar extends StatelessWidget {
                 PopupMenuItem(value: 'rename', child: Text(AppLocalizations.of(context)!.listRenameListMenu)),
                 PopupMenuItem(
                   value: 'leave',
-                  child: Text(isOwner ? AppLocalizations.of(context)!.listDeleteListMenu : AppLocalizations.of(context)!.listLeaveListMenu, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Text(
+                    isOwner ? AppLocalizations.of(context)!.listDeleteListMenu : AppLocalizations.of(context)!.listLeaveListMenu,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 ),
               ],
             ),
@@ -988,21 +1035,28 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
 
   String _itemSortLabel(_ItemSortOption option, AppLocalizations l10n) {
     switch (option) {
-      case _ItemSortOption.newestFirst: return l10n.itemSortNewestFirst;
-      case _ItemSortOption.oldestFirst: return l10n.itemSortOldestFirst;
-      case _ItemSortOption.alphabeticalAZ: return l10n.itemSortAlphaAZ;
-      case _ItemSortOption.alphabeticalZA: return l10n.itemSortAlphaZA;
-      case _ItemSortOption.unboughtFirst: return l10n.itemSortUnboughtFirst;
-      case _ItemSortOption.boughtFirst: return l10n.itemSortBoughtFirst;
+      case _ItemSortOption.newestFirst:
+        return l10n.itemSortNewestFirst;
+      case _ItemSortOption.oldestFirst:
+        return l10n.itemSortOldestFirst;
+      case _ItemSortOption.alphabeticalAZ:
+        return l10n.itemSortAlphaAZ;
+      case _ItemSortOption.alphabeticalZA:
+        return l10n.itemSortAlphaZA;
+      case _ItemSortOption.unboughtFirst:
+        return l10n.itemSortUnboughtFirst;
+      case _ItemSortOption.boughtFirst:
+        return l10n.itemSortBoughtFirst;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final categories = ref.watch(categoriesProvider).asData?.value ?? [];
     return widget.itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
+      error: (_, _) => Center(child: Text(l10n.errorFailedToLoadItems)),
       data: (items) {
         if (items.isEmpty) {
           return Center(
@@ -1056,7 +1110,6 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(shoppingListItemsProvider(widget.listId));
-                  await ref.read(shoppingListItemsProvider(widget.listId).future);
                 },
                 child: ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -1081,6 +1134,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                         onPointerDown: (event) => pressPosition = event.position,
                         child: _ShoppingItemTile(
                           item: item,
+                          category: _findCategory(categories, item.categoryId),
                           bestDeal: bestDealById[item.id],
                           onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
                           onEdit: () => widget.onEdit(item),
@@ -1149,33 +1203,26 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
   }
 }
 
-const Map<String, IconData> _categoryIcons = {
-  'Fruits & Vegetables': Icons.eco_rounded,
-  'Meat': Icons.lunch_dining_rounded,
-  'Fish & Seafood': Icons.phishing_rounded,
-  'Dairy Products': Icons.local_drink_rounded,
-  'Eggs': Icons.egg_alt_rounded,
-  'Bakery': Icons.bakery_dining_rounded,
-  'Pantry Staples': Icons.rice_bowl_rounded,
-  'Cans & Jars': Icons.inventory_2_rounded,
-  'Seasonings, Sauces & Condiments': Icons.soup_kitchen_rounded,
-  'Frozen Foods': Icons.ac_unit_rounded,
-  'Snacks & Sweets': Icons.cookie_rounded,
-  'Drinks': Icons.water_drop_rounded,
-  'Coffee & Tea': Icons.coffee_rounded,
-  'Baby Products': Icons.child_friendly_rounded,
-  'Pet Supplies': Icons.pets_rounded,
-  'Personal Care': Icons.spa_rounded,
-  'Household Supplies': Icons.home_rounded,
-  'Cleaning Supplies': Icons.clean_hands_rounded,
-  'Home & Garden': Icons.yard_rounded,
-  'Other': Icons.category_rounded,
-};
+Category? _findCategory(List<Category> categories, int? id) {
+  if (id == null) return null;
+  for (final c in categories) {
+    if (c.id == id) return c;
+  }
+  return null;
+}
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit, this.onLongPress});
+  const _ShoppingItemTile({
+    required this.item,
+    required this.category,
+    required this.bestDeal,
+    required this.onToggleBought,
+    required this.onEdit,
+    this.onLongPress,
+  });
 
   final ShoppingListItem item;
+  final Category? category;
   final CatalogDealItem? bestDeal;
   final ValueChanged<bool>? onToggleBought;
   final VoidCallback onEdit;
@@ -1243,18 +1290,21 @@ class _ShoppingItemTile extends StatelessWidget {
                       ),
                     ),
                     if (_quantityUnitText() != null) ...[const SizedBox(height: 2), Text(_quantityUnitText()!, style: subtitleStyle)],
-                    if (item.category != null) ...[
+                    if (category != null) ...[
                       const SizedBox(height: 2),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_categoryIcons[item.category] ?? Icons.category_rounded, size: 12, color: subtitleStyle?.color),
+                          Icon(category!.iconData, size: 12, color: subtitleStyle?.color),
                           const SizedBox(width: 4),
-                          Text(item.category!, style: subtitleStyle),
+                          Text(categoryLocalizedName(AppLocalizations.of(context)!, category!.slug), style: subtitleStyle),
                         ],
                       ),
                     ],
-                    if (_subtitleText(AppLocalizations.of(context)!) != null) ...[const SizedBox(height: 2), Text(_subtitleText(AppLocalizations.of(context)!)!, style: subtitleStyle)],
+                    if (_subtitleText(AppLocalizations.of(context)!) != null) ...[
+                      const SizedBox(height: 2),
+                      Text(_subtitleText(AppLocalizations.of(context)!)!, style: subtitleStyle),
+                    ],
                   ],
                 ),
               ),
@@ -1264,7 +1314,6 @@ class _ShoppingItemTile extends StatelessWidget {
       ),
     );
   }
-
 
   String? _quantityUnitText() {
     final hasQty = item.quantity > 1;
@@ -1304,7 +1353,10 @@ class _MemberRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isSelf ? '$name${AppLocalizations.of(context)!.listMemberYouSuffix}' : name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  isSelf ? '$name${AppLocalizations.of(context)!.listMemberYouSuffix}' : name,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 Text(
                   isOwner ? AppLocalizations.of(context)!.listMemberOwner : AppLocalizations.of(context)!.listMemberMember,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -1355,7 +1407,10 @@ class _PendingInvitationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(email, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                Text(AppLocalizations.of(context)!.listPending, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(
+                  AppLocalizations.of(context)!.listPending,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ShoppingListMember {
   const ShoppingListMember({
     required this.userId,
@@ -14,57 +12,48 @@ class ShoppingListMember {
   final String role; // 'owner' | 'member'
 
   factory ShoppingListMember.fromMap(Map<String, dynamic> m) {
+    final userMap = m['user'] as Map<String, dynamic>?;
     return ShoppingListMember(
       userId: m['user_id'] as String? ?? '',
-      name: m['name'] as String? ?? 'Unknown',
-      joinedAt: (m['joined_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      name: userMap?['display_name'] as String? ?? 'Unknown',
+      joinedAt: m['joined_at'] != null ? DateTime.parse(m['joined_at'] as String) : DateTime.now(),
       role: m['role'] as String? ?? 'member',
     );
   }
-
-  Map<String, dynamic> toMap() => {
-    'user_id': userId,
-    'name': name,
-    'joined_at': Timestamp.fromDate(joinedAt),
-    'role': role,
-  };
 }
 
 class ShoppingList {
   const ShoppingList({
     required this.id,
     required this.name,
-    required this.ownerId,
+    required this.createdByUserId,
     required this.createdAt,
     required this.updatedAt,
-    required this.itemCount,
-    required this.boughtCount,
     required this.members,
   });
 
   final String id;
   final String name;
-  final String ownerId;
+  final String createdByUserId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int itemCount;
-  final int boughtCount;
   final List<ShoppingListMember> members;
 
-  factory ShoppingList.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
-    final members = (data['members'] as List<dynamic>? ?? [])
-        .map((m) => ShoppingListMember.fromMap(m as Map<String, dynamic>))
+  /// Compatibility getter — maps to createdByUserId.
+  String get ownerId => createdByUserId;
+
+  factory ShoppingList.fromMap(Map<String, dynamic> m) {
+    final rawMembers = m['shopping_list_member'] as List<dynamic>? ?? [];
+    final members = rawMembers
+        .map((mem) => ShoppingListMember.fromMap(mem as Map<String, dynamic>))
         .toList();
 
     return ShoppingList(
-      id: doc.id,
-      name: data['name'] as String? ?? 'Shopping List',
-      ownerId: data['owner_id'] as String? ?? '',
-      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updated_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      itemCount: data['item_count'] as int? ?? 0,
-      boughtCount: data['bought_count'] as int? ?? 0,
+      id: m['id'].toString(),
+      name: m['name'] as String? ?? 'Shopping List',
+      createdByUserId: m['created_by_user_id'] as String,
+      createdAt: DateTime.parse(m['created_at'] as String),
+      updatedAt: DateTime.parse(m['updated_at'] as String),
       members: members,
     );
   }

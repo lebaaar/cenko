@@ -1,16 +1,15 @@
 import 'dart:async';
 
-import 'package:cenko/features/auth/data/user_model.dart';
 import 'package:cenko/features/auth/data/user_repository.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cenko/shared/widgets/bullet_point.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -43,33 +42,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _saveDisplayName(String uid, String value) async {
+    final l10n = AppLocalizations.of(context)!;
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
     try {
       await _repo.updateDisplayName(uid, trimmed);
+      ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } on FirebaseException catch (e) {
-      if (mounted) setState(() => _error = e.message ?? e.code);
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
   Future<void> _saveEmail(String uid, String value) async {
+    final l10n = AppLocalizations.of(context)!;
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
     try {
       await _repo.updateEmail(uid, trimmed);
+      ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } on FirebaseException catch (e) {
-      if (mounted) setState(() => _error = e.message ?? e.code);
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
   Future<void> _savePreferences(String uid) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
-      await _repo.updateSettings(uid, UserSettings(theme: _theme, notificationsEnabled: _notificationsEnabled, language: _language));
+      await _repo.updateSettings(uid, theme: _theme, lang: _language, notificationsEnabled: _notificationsEnabled);
+      ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } on FirebaseException catch (e) {
-      if (mounted) setState(() => _error = e.message ?? e.code);
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
@@ -112,80 +117,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _deleteLoading = true);
     try {
       await ref.read(authNotifierProvider).deleteAccount();
-    } on FirebaseFunctionsException catch (e) {
+    } on OwnedSharedListsException catch (e) {
       if (!mounted) return;
       setState(() => _deleteLoading = false);
-      if (e.code == 'failed-precondition') {
-        final ownedLists = (e.details?['ownedLists'] as List?)?.cast<String>() ?? [];
-        if (!mounted) return;
-        await showDialog<void>(
-          context: context,
-          builder: (ctx) {
-            final dl10n = AppLocalizations.of(ctx)!;
-            return AlertDialog(
-              title: Text(dl10n.deleteAccountCannotTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(dl10n.deleteAccountTransferMsg),
-                  if (ownedLists.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ...ownedLists.map(
-                      (name) => Padding(
-                        padding: const EdgeInsets.only(left: 8, bottom: 4),
-                        child: Text('• $name', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ),
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.deleteAccountCannotTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.deleteAccountTransferMsg),
+                const SizedBox(height: 12),
+                ...e.listNames.map((name) => BulletPoint(name)),
+                const SizedBox(height: 4),
+                Text(l10n.deleteAccountTransferTitle, style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                BulletPoint(l10n.deleteAccountStep1),
+                BulletPoint.widget(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: l10n.deleteAccountStep2Pre),
+                        const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                        TextSpan(text: l10n.deleteAccountStep2Post),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 12),
-                  Text(dl10n.deleteAccountTransferTitle),
-                  const SizedBox(height: 6),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('1. ${dl10n.deleteAccountStep1}'),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text('2. ${dl10n.deleteAccountStep2Pre}'),
-                          const Icon(Icons.more_vert, size: 16),
-                          Text(dl10n.deleteAccountStep2Post),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text('3. ${dl10n.deleteAccountStep3}'),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [Text('4. ${dl10n.deleteAccountStep4Pre}'), const Icon(Icons.more_vert, size: 16)],
-                      ),
-                      const SizedBox(height: 6),
-                      Text('5. ${dl10n.deleteAccountStep5}'),
-                    ],
+                    style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
-                ],
-              ),
-              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(dl10n.close))],
-            );
-          },
-        );
-      } else {
-        setState(() => _error = e.message ?? e.code);
-      }
-    } catch (e) {
+                ),
+                BulletPoint(l10n.deleteAccountStep3),
+                BulletPoint.widget(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: l10n.deleteAccountStep4Pre),
+                        const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                      ],
+                    ),
+                    style: Theme.of(ctx).textTheme.bodyMedium,
+                  ),
+                ),
+                BulletPoint(l10n.deleteAccountStep5),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _deleteLoading = false;
-        _error = e.toString();
-      });
+      setState(() => _deleteLoading = false);
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.deleteAccountFailedTitle),
+          content: Text(l10n.errorGeneric),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
     }
   }
 
   Future<void> _resetPassword() async {
     final l10n = AppLocalizations.of(context)!;
-    final email = FirebaseAuth.instance.currentUser?.email;
+    final email = Supabase.instance.client.auth.currentUser?.email;
     if (email == null || email.isEmpty) {
       setState(() => _error = l10n.settingsNoEmailForReset);
       return;
@@ -193,16 +203,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() => _resetPasswordLoading = true);
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await ref.read(authNotifierProvider).sendPasswordResetEmail(email);
       if (!mounted) return;
       setState(() => _error = null);
       SnackBarService.show(l10n.settingsPasswordResetSent(email), duration: const Duration(seconds: 5));
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message ?? e.code);
-    } catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = l10n.errorGeneric);
     } finally {
       if (mounted) setState(() => _resetPasswordLoading = false);
     }
@@ -217,20 +227,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         appBar: AppBar(title: const Text('Settings')),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Settings')),
-        body: Center(child: Text(error.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
       data: (user) {
-        final hasPasswordProvider = FirebaseAuth.instance.currentUser?.providerData.any((provider) => provider.providerId == 'password') ?? false;
+        final hasPasswordProvider = user?.authProvider == 'email';
         final l10n = AppLocalizations.of(context)!;
 
         if (!_initialized && user != null) {
-          _nameCtrl.text = user.name;
+          _nameCtrl.text = user.displayName;
           _emailCtrl.text = user.email;
-          _theme = UserSettings.normalizeTheme(user.settings.theme);
-          _language = user.settings.language;
-          _notificationsEnabled = user.settings.notificationsEnabled;
+          _theme = user.theme;
+          _language = user.lang;
+          _notificationsEnabled = user.notificationsEnabled;
           _initialized = true;
         }
 
@@ -262,18 +272,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             TextFormField(
                               controller: _nameCtrl,
                               textInputAction: TextInputAction.next,
-                              onChanged: user == null ? null : (value) => _onNameChanged(user.userId, value),
+                              onChanged: user == null ? null : (value) => _onNameChanged(user.id, value),
                               decoration: InputDecoration(labelText: l10n.settingsDisplayName),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _emailCtrl,
                               textInputAction: TextInputAction.next,
-                              onChanged: user == null ? null : (value) => _onEmailChanged(user.userId, value),
+                              onChanged: user == null ? null : (value) => _onEmailChanged(user.id, value),
                               decoration: InputDecoration(labelText: l10n.email),
                               enabled: false, // TODO
                             ),
                             const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(24)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.preferencesTitle, style: Theme.of(context).textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            Text(l10n.preferencesAccountSubtitle, style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
                               initialValue: _theme,
                               decoration: InputDecoration(labelText: l10n.settingsThemeLabel),
@@ -286,7 +311,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 if (value == null) return;
                                 setState(() => _theme = value);
                                 if (user != null) {
-                                  _savePreferences(user.userId);
+                                  _savePreferences(user.id);
                                 }
                               },
                             ),
@@ -301,7 +326,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               onChanged: (value) {
                                 if (value == null) return;
                                 setState(() => _language = value);
-                                if (user != null) _savePreferences(user.userId);
+                                if (user != null) _savePreferences(user.id);
                               },
                             ),
                             const SizedBox(height: 20),
@@ -313,7 +338,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               onChanged: (value) {
                                 setState(() => _notificationsEnabled = value);
                                 if (user != null) {
-                                  _savePreferences(user.userId);
+                                  _savePreferences(user.id);
                                 }
                               },
                             ),

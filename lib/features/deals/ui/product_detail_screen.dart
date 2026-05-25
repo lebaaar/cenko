@@ -7,15 +7,21 @@ import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _dealByIdProvider = FutureProvider.autoDispose.family<CatalogDealItem?, String>((ref, dealId) async {
-  final doc = await FirebaseFirestore.instance.collection('products').doc(dealId).get();
-  if (!doc.exists) return null;
-  return CatalogDealItem.fromFirestore(doc);
+  final id = int.tryParse(dealId);
+  if (id == null) return null;
+  final row = await Supabase.instance.client
+      .from('product')
+      .select('*, store:store_id(name)')
+      .eq('id', id)
+      .maybeSingle();
+  if (row == null) return null;
+  return CatalogDealItem.fromMap(row);
 });
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -73,7 +79,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           (list) => ListTile(
                             leading: const Icon(Icons.checklist_rounded),
                             title: Text(list.name),
-                            subtitle: Text(AppLocalizations.of(context)!.productItemCount(list.itemCount)),
+                            subtitle: Text(list.members.length == 1 ? AppLocalizations.of(context)!.listPrivate : list.members.map((m) => m.name).join(', ')),
                             onTap: () => Navigator.of(sheetContext).pop(list.id),
                           ),
                         ),
@@ -109,7 +115,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final dealAsync = ref.watch(_dealByIdProvider(widget.dealId));
     final user = ref.watch(currentUserProvider).asData?.value;
-    final uid = user?.userId;
+    final uid = user?.id;
     final lists = uid != null ? (ref.watch(userShoppingListsProvider(uid)).asData?.value ?? const []) : const <ShoppingList>[];
 
     return dealAsync.when(
@@ -117,9 +123,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
-        body: Center(child: Text(e.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
       data: (deal) {
         if (deal == null) {

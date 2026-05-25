@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import argparse
 import os
 
-from scripts.db import sync_discounted_products
+from scripts.db import sync_store
 
 
 def main() -> None:
-    service_account_path = os.path.expandvars("$RUNNER_TEMP/firebase-key.json")
-    collection_name = os.getenv("FIRESTORE_COLLECTION", "products")
-    written = sync_discounted_products(
-        service_account_path=service_account_path,
-        collection_name=collection_name,
+    parser = argparse.ArgumentParser(description="Scrape discounted products for one store.")
+    parser.add_argument(
+        "--store",
+        required=True,
+        help="Store directory name to scrape (lidl, mercator, tusdrogerija, spar)",
     )
-    print(f"Upserted {written} discounted products into Firestore collection '{collection_name}'.")
+    args = parser.parse_args()
+
+    database_url = os.getenv("DATABASE_URL")
+    written = sync_store(store=args.store, database_url=database_url)
+    print(f"Upserted {written} products for {args.store}.")
 
 
 if __name__ == "__main__":

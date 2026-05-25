@@ -77,10 +77,10 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final userAsync = ref.watch(currentUserProvider);
-    final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.settings.theme), orElse: () => ThemeMode.system);
+    final themeMode = userAsync.maybeWhen(data: (user) => _themeModeFromSettings(user?.theme), orElse: () => ThemeMode.system);
     final authLocale = ref.watch(authLocaleProvider);
     final locale = userAsync.maybeWhen(
-      data: (user) => _localeFromSettings(user?.settings.language ?? authLocale),
+      data: (user) => _localeFromSettings(user?.lang ?? authLocale),
       orElse: () => _localeFromSettings(authLocale),
     );
 

@@ -29,11 +29,10 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            final uid = ref.read(currentUserProvider).asData?.value?.userId;
+            final uid = ref.read(currentUserProvider).asData?.value?.id;
             if (uid != null) {
               ref.invalidate(shoppingListOnSaleProvider(uid));
-              ref.invalidate(commonBoughtProductsOnSaleProvider(uid));
-              await Future.wait([ref.read(shoppingListOnSaleProvider(uid).future), ref.read(commonBoughtProductsOnSaleProvider(uid).future)]);
+              await ref.read(shoppingListOnSaleProvider(uid).future);
             }
           },
           child: SingleChildScrollView(
@@ -44,18 +43,14 @@ class HomeScreen extends ConsumerWidget {
                 height: MediaQuery.of(context).size.height - 100,
                 child: const Center(child: CircularProgressIndicator()),
               ),
-              error: (error, _) => Center(child: Text(error.toString())),
+              error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
               data: (user) {
-                final name = user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'there';
+                final name = user?.displayName.trim().isNotEmpty == true ? user!.displayName.trim() : 'there';
                 final secondaryBodyStyle = Theme.of(context).textTheme.bodyMedium;
                 final shoppingListDealsAsync = user == null
                     ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                    : ref.watch(shoppingListOnSaleProvider(user.userId));
-                final commonBoughtProductsDealsAsync = user == null
-                    ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                    : ref.watch(commonBoughtProductsOnSaleProvider(user.userId));
+                    : ref.watch(shoppingListOnSaleProvider(user.id));
                 final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length ?? 0;
-                final commonBoughtProductsSaleCount = commonBoughtProductsDealsAsync.asData?.value.length ?? 0;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,23 +58,27 @@ class HomeScreen extends ConsumerWidget {
                     const MainTopBar(title: kAppName),
                     Text('${_greeting(l10n)}, $name', style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 12),
-                    Text.rich(
-                      TextSpan(
-                        style: secondaryBodyStyle,
-                        children: [
-                          TextSpan(
-                            text: '${shoppingListSaleCount + commonBoughtProductsSaleCount}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
-                          ),
-                          TextSpan(
-                            text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount + commonBoughtProductsSaleCount),
-                            style: secondaryBodyStyle,
-                          ),
-                        ],
-                      ),
-                    ),
+                    if (shoppingListSaleCount > 0)
+                      Text.rich(
+                        TextSpan(
+                          style: secondaryBodyStyle,
+                          children: [
+                            TextSpan(
+                              text: '$shoppingListSaleCount',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800, height: 1.4),
+                            ),
+                            TextSpan(
+                              text: l10n.homeItemsOnSaleSuffix(shoppingListSaleCount),
+                              style: secondaryBodyStyle,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(l10n.homeEmptyState, style: secondaryBodyStyle),
                     const SizedBox(height: 18),
-                    const SizedBox(height: 6),
                     _SectionHeader(title: l10n.homeFromShoppingLists),
                     const SizedBox(height: 14),
                     _DealsList(
@@ -91,18 +90,6 @@ class HomeScreen extends ConsumerWidget {
                       emptyActionRoute: '/list',
                       onDealTap: (item) => context.push('/deal/${item.dealId}'),
                     ),
-                    const SizedBox(height: 30),
-                    _SectionHeader(title: l10n.homeBasedOnHabits),
-                    const SizedBox(height: 14),
-                    _DealsList(
-                      asyncDeals: commonBoughtProductsDealsAsync,
-                      emptyMessage: l10n.homeEmptyHabitsDeals,
-                      message: l10n.homeHabitsDealsMessage,
-                      emptyActionLabel: l10n.homeScanAReceipt,
-                      emptyActionIcon: Icons.document_scanner_rounded,
-                      emptyActionRoute: '/scan',
-                      onDealTap: (item) => context.push('/deal/${item.dealId}'),
-                    ),
                     const SizedBox(height: 14),
                     Center(
                       child: TextButton.icon(
@@ -110,7 +97,9 @@ class HomeScreen extends ConsumerWidget {
                         icon: const Icon(Icons.arrow_forward_rounded),
                         label: Text(
                           l10n.homeShowAllDeals,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -182,9 +171,9 @@ class _DealsListState extends State<_DealsList> {
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => Padding(
+      error: (_, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('Failed to load deals: ${error.toString().replaceFirst('Exception: ', '')}', style: Theme.of(context).textTheme.bodySmall),
+        child: Text(AppLocalizations.of(context)!.errorFailedToLoadDeals, style: Theme.of(context).textTheme.bodySmall),
       ),
       data: (items) {
         if (items.isEmpty) {

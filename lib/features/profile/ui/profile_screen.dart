@@ -6,14 +6,14 @@ import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
-import 'package:cenko/shared/services/receipt_analytics_service.dart';
+import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _MonthReceiptQuery {
   const _MonthReceiptQuery({required this.uid, required this.month, this.limit = 20});
@@ -68,32 +68,33 @@ class _MonthReceiptPage {
   final bool hasMore;
 }
 
-final _monthReceiptsProvider = StreamProvider.family<QuerySnapshot<Map<String, dynamic>>, _MonthReceiptQuery>((ref, query) {
-  final monthStartLocal = DateTime(query.month.year, query.month.month);
-  final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
+final _monthReceiptsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, _MonthReceiptQuery>((ref, query) async {
+  ref.watch(receiptRevisionProvider); // re-fetch when a receipt is saved or pull-to-refresh
+  final year = query.month.year;
+  final month = query.month.month;
+  final monthStart = '$year-${month.toString().padLeft(2, '0')}-01';
+  final nextMonth = DateTime(year, month + 1);
+  final nextMonthStart = '${nextMonth.year}-${nextMonth.month.toString().padLeft(2, '0')}-01';
 
-  final monthStart = Timestamp.fromDate(monthStartLocal.toUtc());
-  final nextMonthStart = Timestamp.fromDate(nextMonthStartLocal.toUtc());
-
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(query.uid)
-      .collection('receipts')
-      .where('date', isGreaterThanOrEqualTo: monthStart)
-      .where('date', isLessThan: nextMonthStart)
-      .orderBy('date', descending: true)
-      .limit(query.limit)
-      .snapshots();
+  final rows = await Supabase.instance.client
+      .from('receipt')
+      .select('id, total, receipt_date, scanned_at, store:store_id(name), receipt_item(id)')
+      .eq('user_id', query.uid)
+      .gte('receipt_date', monthStart)
+      .lt('receipt_date', nextMonthStart)
+      .order('receipt_date', ascending: false)
+      .limit(query.limit);
+  return (rows as List).map((r) => r as Map<String, dynamic>).toList();
 });
 
-_MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot) {
+_MonthSpendingStats _monthSpendingStatsFromRows(List<Map<String, dynamic>> rows) {
   var spentCents = 0;
   final byStore = <String, _StoreMonthSpend>{};
 
-  for (final doc in snapshot.docs) {
-    final data = doc.data();
-    final storeName = (data['store_name'] as String?)?.trim().isNotEmpty == true ? (data['store_name'] as String).trim() : 'Unknown store';
-    final totalPrice = data['total_price'] is int ? data['total_price'] as int : 0;
+  for (final r in rows) {
+    final storeMap = r['store'] as Map<String, dynamic>?;
+    final storeName = (storeMap?['name'] as String?)?.trim().isNotEmpty == true ? (storeMap!['name'] as String).trim() : 'Unknown store';
+    final totalPrice = r['total'] is int ? r['total'] as int : 0;
 
     spentCents += totalPrice;
 
@@ -110,38 +111,25 @@ _MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dy
   }
 
   final stores = byStore.values.toList()..sort((a, b) => b.spentCents.compareTo(a.spentCents));
-  return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: snapshot.size, stores: stores);
+  return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: rows.length, stores: stores);
 }
 
-_MonthReceiptPage _monthReceiptPageFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot, int limit) {
-  final receipts = snapshot.docs
-      .map((doc) {
-        final data = doc.data();
+_MonthReceiptPage _monthReceiptPageFromRows(List<Map<String, dynamic>> rows, int limit) {
+  final receipts = rows
+      .map((r) {
+        final storeMap = r['store'] as Map<String, dynamic>?;
+        final storeName = (storeMap?['name'] as String?)?.trim().isNotEmpty == true ? (storeMap!['name'] as String).trim() : 'Unknown store';
         return _MonthReceiptItem(
-          id: doc.id,
-          storeName: _monthReceiptStoreName(data),
-          totalPriceCents: data['total_price'] is int ? data['total_price'] as int : 0,
-          itemCount: data['item_count'] is int ? data['item_count'] as int : 0,
-          date: _monthReceiptDate(data['date']),
+          id: r['id'].toString(),
+          storeName: storeName,
+          totalPriceCents: r['total'] is int ? r['total'] as int : 0,
+          itemCount: (r['receipt_item'] as List?)?.length ?? 0,
+          date: DateTime.tryParse(r['receipt_date'] as String? ?? '')?.toLocal() ?? DateTime.now(),
         );
       })
       .toList(growable: false);
 
-  return _MonthReceiptPage(receipts: receipts, hasMore: snapshot.docs.length > limit);
-}
-
-String _monthReceiptStoreName(Map<String, dynamic> data) {
-  final storeName = (data['store_name'] as String?)?.trim();
-  return storeName == null || storeName.isEmpty ? 'Unknown store' : storeName;
-}
-
-DateTime _monthReceiptDate(dynamic value) {
-  if (value is Timestamp) {
-    return value.toDate().toLocal();
-  }
-
-  final parsed = DateTime.tryParse(value?.toString() ?? '');
-  return parsed?.toLocal() ?? DateTime.now();
+  return _MonthReceiptPage(receipts: receipts, hasMore: rows.length > limit);
 }
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -161,7 +149,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _monthAnimationDirection = 1;
   double _spendingCardDragDx = 0;
   late final List<DateTime> _monthOptions;
-  final ReceiptAnalyticsService _receiptAnalyticsService = ReceiptAnalyticsService();
   final Map<String, int> _visibleReceiptsByMonth = <String, int>{};
 
   @override
@@ -266,7 +253,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               children: [
                 MainTopBar(title: l10n.navProfile),
-                Expanded(child: Center(child: Text(error.toString()))),
+                Expanded(child: Center(child: Text(l10n.errorGeneric))),
               ],
             ),
           ),
@@ -309,322 +296,328 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: 20)));
+        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.id, month: _selectedMonth, limit: 100)));
         final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
 
         final colorScheme = Theme.of(context).colorScheme;
-        final initials = user.name.trim().isEmpty
+        final initials = user.displayName.trim().isEmpty
             ? 'U'
-            : user.name.trim().split(RegExp(r'\s+')).take(2).map((part) => part.isNotEmpty ? part[0] : '').join().toUpperCase();
+            : user.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part.isNotEmpty ? part[0] : '').join().toUpperCase();
         final selectedMonthIndex = _monthOptions.indexWhere((m) => _isSameMonth(m, _selectedMonth));
 
         return Scaffold(
           body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MainTopBar(title: l10n.navProfile),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => context.push('/settings'),
-                    child: Container(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.read(receiptRevisionProvider.notifier).increment();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MainTopBar(title: l10n.navProfile),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => context.push('/settings'),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.primary.withValues(alpha: 0.28)),
+                              child: Text(initials, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(user.displayName, style: Theme.of(context).textTheme.titleLarge),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    l10n.profileMemberSince(displayDate(user.joinedAt)),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.primary.withValues(alpha: 0.28)),
-                            child: Text(initials, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                          IconButton(
+                            onPressed: selectedMonthIndex > 0 ? () => _shiftMonth(-1) : null,
+                            icon: const Icon(Icons.chevron_left_rounded),
+                            tooltip: l10n.profilePreviousMonth,
                           ),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(user.name, style: Theme.of(context).textTheme.titleLarge),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.profileMemberSince(displayDate(user.createdAt)),
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
+                            child: Center(child: Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleMedium)),
+                          ),
+                          IconButton(
+                            onPressed: selectedMonthIndex < _monthOptions.length - 1 ? () => _shiftMonth(1) : null,
+                            icon: const Icon(Icons.chevron_right_rounded),
+                            tooltip: l10n.profileNextMonth,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: selectedMonthIndex > 0 ? () => _shiftMonth(-1) : null,
-                          icon: const Icon(Icons.chevron_left_rounded),
-                          tooltip: l10n.profilePreviousMonth,
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onHorizontalDragUpdate: _onSpendingsCardHorizontalDragUpdate,
+                      onHorizontalDragEnd: _onSpendingsCardHorizontalDragEnd,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.profileSpendings,
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 14),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 280),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder: (child, animation) {
+                                final slide = Tween<Offset>(
+                                  begin: Offset(0.2 * _monthAnimationDirection, 0),
+                                  end: Offset.zero,
+                                ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+                                return FadeTransition(
+                                  opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                                  child: SlideTransition(position: slide, child: child),
+                                );
+                              },
+                              child: Column(
+                                key: ValueKey(_monthKey(_selectedMonth)),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  monthReceiptsSnapshotAsync.when(
+                                    loading: () => const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 18),
+                                      child: Center(child: CircularProgressIndicator()),
+                                    ),
+                                    error: (error, _) => Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      child: Text(
+                                        l10n.errorFailedToLoadSpendings,
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                    data: (rows) {
+                                      final monthStats = _monthSpendingStatsFromRows(rows);
+                                      final monthReceiptsPage = _monthReceiptPageFromRows(rows, visibleReceiptCount);
+                                      final stores = monthStats.stores;
+                                      final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
+                                      final hasReceiptScans = monthStats.receiptsScanned > 0;
+                                      final shouldShowFirstScanButton = !hasReceiptScans;
+
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleLarge),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      l10n.profileReceiptsScanned(monthStats.receiptsScanned),
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Text(
+                                                formatCents(monthStats.spentCents),
+                                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                                              ),
+                                            ],
+                                          ),
+                                          if (shouldShowFirstScanButton) ...[
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              l10n.profileScanFirstReceiptPrompt,
+                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: FilledButton.icon(
+                                                onPressed: () => context.go('/scan?mode=receipt'),
+                                                style: FilledButton.styleFrom(foregroundColor: Colors.white),
+                                                icon: const Icon(Icons.receipt_long_rounded),
+                                                label: Text(l10n.profileScanFirstReceiptBtn),
+                                              ),
+                                            ),
+                                          ],
+                                          if (!hasReceiptScans && !shouldShowFirstScanButton) ...[
+                                            const SizedBox(height: 16),
+                                            Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium),
+                                          ],
+                                          if (hasReceiptScans) ...[
+                                            const SizedBox(height: 12),
+                                            Divider(color: colorScheme.surfaceContainerHighest),
+                                            const SizedBox(height: 10),
+                                            Text(l10n.profileSpendingsByStore, style: Theme.of(context).textTheme.titleMedium),
+                                            const SizedBox(height: 8),
+                                            if (stores.isEmpty)
+                                              Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
+                                            else
+                                              Column(
+                                                children: [
+                                                  for (final store in stores.take(4))
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(bottom: 8),
+                                                      child: _StoreSpendRow(
+                                                        storeName: store.storeName,
+                                                        progress: maxSpend == 0 ? 0 : store.spentCents / maxSpend,
+                                                        amountLabel: formatCents(store.spentCents),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            const SizedBox(height: 16),
+                                            Divider(color: colorScheme.surfaceContainerHighest),
+                                            const SizedBox(height: 10),
+                                            Text(l10n.profileRecentReceipts, style: Theme.of(context).textTheme.titleMedium),
+                                            const SizedBox(height: 8),
+                                            if (monthReceiptsPage.receipts.isEmpty)
+                                              Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
+                                            else
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  ListView.separated(
+                                                    itemCount: monthReceiptsPage.receipts.length,
+                                                    shrinkWrap: true,
+                                                    physics: const NeverScrollableScrollPhysics(),
+                                                    separatorBuilder: (_, _) => const SizedBox(height: 1),
+                                                    itemBuilder: (context, index) {
+                                                      final receipt = monthReceiptsPage.receipts[index];
+                                                      Offset? pressPosition;
+                                                      return Dismissible(
+                                                        key: ValueKey(receipt.id),
+                                                        direction: DismissDirection.endToStart,
+                                                        movementDuration: const Duration(milliseconds: 180),
+                                                        resizeDuration: const Duration(milliseconds: 180),
+                                                        confirmDismiss: (_) =>
+                                                            _confirmDeleteReceipt(context: context, uid: user.id, receipt: receipt),
+                                                        background: Container(
+                                                          alignment: Alignment.centerRight,
+                                                          padding: const EdgeInsets.only(right: 18),
+                                                          decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
+                                                          child: const Icon(Icons.delete_rounded, color: AppColors.onError),
+                                                        ),
+                                                        child: Listener(
+                                                          behavior: HitTestBehavior.translucent,
+                                                          onPointerDown: (event) => pressPosition = event.position,
+                                                          child: ClipRRect(
+                                                            borderRadius: BorderRadius.circular(16),
+                                                            child: _MonthReceiptTile(
+                                                              storeName: receipt.storeName,
+                                                              dateLabel: displayDate(receipt.date),
+                                                              totalLabel: formatCents(receipt.totalPriceCents),
+                                                              itemLabel: l10n.profileReceiptItemCount(receipt.itemCount),
+                                                              onTap: () => context.push('/receipt/${receipt.id}'),
+                                                              onLongPress: () =>
+                                                                  _showReceiptContextMenu(context, user.id, receipt, pressPosition ?? Offset.zero),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  if (monthReceiptsPage.hasMore) ...[
+                                                    const SizedBox(height: 12),
+                                                    SizedBox(
+                                                      width: double.infinity,
+                                                      child: OutlinedButton(
+                                                        onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
+                                                        child: Text(l10n.loadMore),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                          ],
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: Center(child: Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleMedium)),
-                        ),
-                        IconButton(
-                          onPressed: selectedMonthIndex < _monthOptions.length - 1 ? () => _shiftMonth(1) : null,
-                          icon: const Icon(Icons.chevron_right_rounded),
-                          tooltip: l10n.profileNextMonth,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onHorizontalDragUpdate: _onSpendingsCardHorizontalDragUpdate,
-                    onHorizontalDragEnd: _onSpendingsCardHorizontalDragEnd,
-                    child: Container(
+                    // TODO - premium plan details and benefits page
+                    // const SizedBox(height: 30),
+                    // Container(
+                    //   width: double.infinity,
+                    //   decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                    //   child: Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       Padding(
+                    //         padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                    //         child: Text(
+                    //           'PLAN',
+                    //           style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
+                    //         ),
+                    //       ),
+                    //       _SettingsRow(label: 'Upgrade to Premium', onTap: () => context.push('/premium')),
+                    //     ],
+                    //   ),
+                    // ),
+                    const SizedBox(height: 30),
+                    Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            l10n.profileSpendings,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 14),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 280),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            transitionBuilder: (child, animation) {
-                              final slide = Tween<Offset>(
-                                begin: Offset(0.2 * _monthAnimationDirection, 0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-                              return FadeTransition(
-                                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                                child: SlideTransition(position: slide, child: child),
-                              );
-                            },
-                            child: Column(
-                              key: ValueKey(_monthKey(_selectedMonth)),
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                monthReceiptsSnapshotAsync.when(
-                                  loading: () => const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 18),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  ),
-                                  error: (error, _) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text(
-                                      'Failed to load spendings: ${error.toString().replaceFirst('Exception: ', '')}',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  data: (monthSnapshot) {
-                                    final monthStats = _monthSpendingStatsFromSnapshot(monthSnapshot);
-                                    final monthReceiptsPage = _monthReceiptPageFromSnapshot(monthSnapshot, visibleReceiptCount);
-                                    final stores = monthStats.stores;
-                                    final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
-                                    final hasReceiptScans = monthStats.receiptsScanned > 0;
-                                    final shouldShowFirstScanButton = !hasReceiptScans && user.stats.receiptsScanned == 0;
-
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(_monthLabel(_selectedMonth), style: Theme.of(context).textTheme.titleLarge),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    l10n.profileReceiptsScanned(monthStats.receiptsScanned),
-                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Text(
-                                              formatCents(monthStats.spentCents),
-                                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                                            ),
-                                          ],
-                                        ),
-                                        if (shouldShowFirstScanButton) ...[
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            l10n.profileScanFirstReceiptPrompt,
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: FilledButton.icon(
-                                              onPressed: () => context.go('/scan?mode=receipt'),
-                                              style: FilledButton.styleFrom(foregroundColor: Colors.white),
-                                              icon: const Icon(Icons.receipt_long_rounded),
-                                              label: Text(l10n.profileScanFirstReceiptBtn),
-                                            ),
-                                          ),
-                                        ],
-                                        if (!hasReceiptScans && !shouldShowFirstScanButton) ...[
-                                          const SizedBox(height: 16),
-                                          Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium),
-                                        ],
-                                        if (hasReceiptScans) ...[
-                                          const SizedBox(height: 12),
-                                          Divider(color: colorScheme.surfaceContainerHighest),
-                                          const SizedBox(height: 10),
-                                          Text(l10n.profileSpendingsByStore, style: Theme.of(context).textTheme.titleMedium),
-                                          const SizedBox(height: 8),
-                                          if (stores.isEmpty)
-                                            Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
-                                          else
-                                            Column(
-                                              children: [
-                                                for (final store in stores.take(4))
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(bottom: 8),
-                                                    child: _StoreSpendRow(
-                                                      storeName: store.storeName,
-                                                      progress: maxSpend == 0 ? 0 : store.spentCents / maxSpend,
-                                                      amountLabel: formatCents(store.spentCents),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          const SizedBox(height: 16),
-                                          Divider(color: colorScheme.surfaceContainerHighest),
-                                          const SizedBox(height: 10),
-                                          Text(l10n.profileRecentReceipts, style: Theme.of(context).textTheme.titleMedium),
-                                          const SizedBox(height: 8),
-                                          if (monthReceiptsPage.receipts.isEmpty)
-                                            Text(l10n.profileNoReceiptsThisMonth, style: Theme.of(context).textTheme.bodyMedium)
-                                          else
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                ListView.separated(
-                                                  itemCount: monthReceiptsPage.receipts.length,
-                                                  shrinkWrap: true,
-                                                  physics: const NeverScrollableScrollPhysics(),
-                                                  separatorBuilder: (_, _) => const SizedBox(height: 1),
-                                                  itemBuilder: (context, index) {
-                                                    final receipt = monthReceiptsPage.receipts[index];
-                                                    Offset? pressPosition;
-                                                    return Dismissible(
-                                                      key: ValueKey(receipt.id),
-                                                      direction: DismissDirection.endToStart,
-                                                      movementDuration: const Duration(milliseconds: 180),
-                                                      resizeDuration: const Duration(milliseconds: 180),
-                                                      confirmDismiss: (_) =>
-                                                          _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
-                                                      background: Container(
-                                                        alignment: Alignment.centerRight,
-                                                        padding: const EdgeInsets.only(right: 18),
-                                                        decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
-                                                        child: const Icon(Icons.delete_rounded, color: AppColors.onError),
-                                                      ),
-                                                      child: Listener(
-                                                        behavior: HitTestBehavior.translucent,
-                                                        onPointerDown: (event) => pressPosition = event.position,
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.circular(16),
-                                                          child: _MonthReceiptTile(
-                                                            storeName: receipt.storeName,
-                                                            dateLabel: displayDate(receipt.date),
-                                                            totalLabel: formatCents(receipt.totalPriceCents),
-                                                            itemLabel: l10n.profileReceiptItemCount(receipt.itemCount),
-                                                            onTap: () => context.push('/receipt/${receipt.id}'),
-                                                            onLongPress: () =>
-                                                                _showReceiptContextMenu(context, user.userId, receipt, pressPosition ?? Offset.zero),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                                if (monthReceiptsPage.hasMore) ...[
-                                                  const SizedBox(height: 12),
-                                                  SizedBox(
-                                                    width: double.infinity,
-                                                    child: OutlinedButton(
-                                                      onPressed: () => _loadMoreReceiptsForMonth(_selectedMonth),
-                                                      child: Text(l10n.loadMore),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                        ],
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
+                          _SettingsRow(label: l10n.settingsTitle, onTap: () => context.push('/settings')),
+                          _SettingsRow(label: l10n.profileAbout, onTap: () => context.push('/about')),
+                          _SettingsRow(label: l10n.profileLegal, onTap: () => context.push('/legal')),
                         ],
                       ),
                     ),
-                  ),
-                  // TODO - premium plan details and benefits page
-                  // const SizedBox(height: 30),
-                  // Container(
-                  //   width: double.infinity,
-                  //   decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                  //   child: Column(
-                  //     crossAxisAlignment: CrossAxisAlignment.start,
-                  //     children: [
-                  //       Padding(
-                  //         padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                  //         child: Text(
-                  //           'PLAN',
-                  //           style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.2, color: colorScheme.onSurfaceVariant),
-                  //         ),
-                  //       ),
-                  //       _SettingsRow(label: 'Upgrade to Premium', onTap: () => context.push('/premium')),
-                  //     ],
-                  //   ),
-                  // ),
-                  const SizedBox(height: 30),
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SettingsRow(label: l10n.settingsTitle, onTap: () => context.push('/settings')),
-                        _SettingsRow(label: l10n.profileAbout, onTap: () => context.push('/about')),
-                        _SettingsRow(label: l10n.profileLegal, onTap: () => context.push('/legal')),
-                      ],
+                    const SizedBox(height: 10),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => ref.read(authNotifierProvider).signOut(),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                        child: Text(l10n.profileLogOut, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.error)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => ref.read(authNotifierProvider).signOut(),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
-                      child: Text(l10n.profileLogOut, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.error)),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -691,7 +684,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   : () async {
                                       setDialogState(() => deleting = true);
                                       try {
-                                        await _receiptAnalyticsService.deleteReceiptAndResyncCommonProducts(uid: uid, receiptId: receipt.id);
+                                        await Supabase.instance.client.from('receipt').delete().eq('id', int.parse(receipt.id)).eq('user_id', uid);
+                                        ref.read(receiptRevisionProvider.notifier).increment();
                                         if (dialogContext.mounted) {
                                           Navigator.of(dialogContext).pop(true);
                                         }
@@ -706,7 +700,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           return;
                                         }
                                         setDialogState(() => deleting = false);
-                                        SnackBarService.show('Failed to delete receipt: ${error.toString().replaceFirst('Exception: ', '')}');
+                                        SnackBarService.show(l10n.errorFailedToDeleteReceipt);
                                       }
                                     },
                               child: deleting
@@ -756,6 +750,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ],
     ).then((value) {
       if (value == 'remove') {
+        // TODO
+        // ignore: use_build_context_synchronously
         _confirmDeleteReceipt(context: context, uid: uid, receipt: receipt);
       }
     });

@@ -1,76 +1,100 @@
-import 'dart:async';
-
 import 'package:cenko/core/constants/constants.dart';
-import 'package:cenko/core/utils/user_util.dart';
+import 'package:cenko/features/shopping_list/data/category.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SharedShoppingListRepository {
-  SharedShoppingListRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final _client = Supabase.instance.client;
 
-  final FirebaseFirestore _firestore;
+  static const _listSelect =
+      'id, name, created_by_user_id, created_at, updated_at, '
+      'shopping_list_member(user_id, role, joined_at, user:user_id(display_name))';
 
-  CollectionReference<Map<String, dynamic>> get _lists => _firestore.collection('shopping_lists');
+  static const _invitationSelect =
+      'id, invited_user_id, invited_by_user_id, shopping_list_id, sent_at, '
+      'shopping_list(name), '
+      'invited_by:user!invited_by_user_id(display_name), '
+      'invited:user!invited_user_id(email, display_name)';
 
-  CollectionReference<Map<String, dynamic>> get _invitations => _firestore.collection('shopping_list_invitations');
+  // ── Lists ────────────────────────────────────────────────────────────────
 
-  CollectionReference<Map<String, dynamic>> _memberships(String uid) =>
-      _firestore.collection('users').doc(uid).collection('shopping_lists_memberships');
+  Future<ShoppingList?> getList(String listId) async {
+    final row = await _client.from('shopping_list').select(_listSelect).eq('id', int.parse(listId)).maybeSingle();
+    return row == null ? null : ShoppingList.fromMap(row);
+  }
 
-  CollectionReference<Map<String, dynamic>> _items(String listId) => _lists.doc(listId).collection('items');
-
-  Future<String> createList({required String ownerUid, required String ownerName, required String name}) async {
-    if (await isFreePlan(_firestore, ownerUid)) {
-      final existing = await getUserLists(ownerUid);
-      if (existing.length >= kMaxNumberOfShoppingLists) {
+  Future<String> createList({required String ownerUid, required String ownerName, required String name, bool isFreePlan = false}) async {
+    if (isFreePlan) {
+      final rows = await _client.from('shopping_list_member').select('shopping_list_id').eq('user_id', ownerUid);
+      if ((rows as List).length >= kMaxNumberOfShoppingLists) {
         throw Exception('You have reached the maximum of $kMaxNumberOfShoppingLists shopping lists');
       }
     }
 
-    final listRef = _lists.doc();
-    final now = Timestamp.now();
     final trimmedName = name.trim();
+    final listRow = await _client.from('shopping_list').insert({'name': trimmedName, 'created_by_user_id': ownerUid}).select('id').single();
 
-    final batch = _firestore.batch();
+    final listId = listRow['id'] as int;
 
-    batch.set(listRef, {
-      'name': trimmedName,
-      'owner_id': ownerUid,
-      'created_at': now,
-      'updated_at': now,
-      'item_count': 0,
-      'bought_count': 0,
-      'members': [
-        {'user_id': ownerUid, 'name': ownerName, 'joined_at': now, 'role': 'owner'},
-      ],
-      'member_uids': [ownerUid],
-    });
+    await _client.from('shopping_list_member').insert({'shopping_list_id': listId, 'user_id': ownerUid, 'role': 'owner'});
 
-    batch.set(_memberships(ownerUid).doc(listRef.id), {'list_id': listRef.id, 'name': trimmedName, 'joined_at': now});
-
-    await batch.commit();
-    return listRef.id;
+    return listId.toString();
   }
 
-  /// Streams all lists the user is a member of, in real-time.
-  /// Internally merges the membership subcollection stream with individual list document streams.
-  Stream<List<ShoppingList>> watchUserLists(String uid) {
-    return _lists.where('member_uids', arrayContains: uid).snapshots().map((snap) => snap.docs.map(ShoppingList.fromDoc).toList());
+  Future<void> renameList({required String listId, required String name}) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+    await _client.from('shopping_list').update({'name': trimmedName}).eq('id', int.parse(listId));
   }
 
-  Stream<ShoppingList?> watchList(String listId) {
-    return _lists.doc(listId).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return ShoppingList.fromDoc(doc);
-    });
+  Future<void> deleteList({required String listId}) async {
+    // ON DELETE CASCADE removes shopping_list_member and shopping_list_item rows.
+    await _client.from('shopping_list').delete().eq('id', int.parse(listId));
   }
 
-  Stream<List<ShoppingListItem>> watchItems(String listId) {
-    return _items(
-      listId,
-    ).orderBy('added_at', descending: false).snapshots().map((snap) => snap.docs.map(ShoppingListItem.fromDoc).toList(growable: false));
+  Future<void> leaveList({required String uid, required String listId}) async {
+    await _client.from('shopping_list_member').delete().eq('shopping_list_id', int.parse(listId)).eq('user_id', uid);
+  }
+
+  Future<void> removeMember({required String listId, required String memberUid}) async {
+    await _client.from('shopping_list_member').delete().eq('shopping_list_id', int.parse(listId)).eq('user_id', memberUid);
+  }
+
+  Future<void> transferOwnership({required String listId, required String currentOwnerUid, required String newOwnerUid}) async {
+    final id = int.parse(listId);
+    await _client.from('shopping_list_member').update({'role': 'member'}).eq('shopping_list_id', id).eq('user_id', currentOwnerUid);
+    await _client.from('shopping_list_member').update({'role': 'owner'}).eq('shopping_list_id', id).eq('user_id', newOwnerUid);
+    await _client.from('shopping_list').update({'created_by_user_id': newOwnerUid}).eq('id', id);
+  }
+
+  Future<List<ShoppingList>> getUserLists(String uid) async {
+    final memberRows = await _client.from('shopping_list_member').select('shopping_list_id').eq('user_id', uid);
+    if ((memberRows as List).isEmpty) return [];
+    final listIds = memberRows.map((r) => r['shopping_list_id']).toList();
+    final rows = await _client.from('shopping_list').select(_listSelect).inFilter('id', listIds);
+    return (rows as List).map((r) => ShoppingList.fromMap(r as Map<String, dynamic>)).toList();
+  }
+
+  Future<String?> getPrimaryListId(String uid) async {
+    final rows = await _client.from('shopping_list_member').select('shopping_list_id').eq('user_id', uid).order('joined_at').limit(1);
+    if ((rows as List).isEmpty) return null;
+    return rows.first['shopping_list_id'].toString();
+  }
+
+  // ── Categories ───────────────────────────────────────────────────────────
+
+  Future<List<Category>> getCategories() async {
+    final rows = await _client.from('category').select().order('id', ascending: true);
+    return (rows as List).map((r) => Category.fromMap(r as Map<String, dynamic>)).toList();
+  }
+
+  // ── Items ────────────────────────────────────────────────────────────────
+
+  Future<List<ShoppingListItem>> getItems(String listId) async {
+    final rows = await _client.from('shopping_list_item').select().eq('shopping_list_id', int.parse(listId)).order('added_at', ascending: false);
+    return (rows as List).map((r) => ShoppingListItem.fromMap(r as Map<String, dynamic>)).toList();
   }
 
   Future<void> addItem({
@@ -79,39 +103,31 @@ class SharedShoppingListRepository {
     required String name,
     int quantity = 1,
     String? unit,
-    String? category,
+    int? categoryId,
+    bool isFreePlan = false,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
-    if (await isFreePlan(_firestore, addedBy)) {
-      final listDoc = await _lists.doc(listId).get();
-      final itemCount = (listDoc.data()?['item_count'] as int?) ?? 0;
-      if (itemCount >= kMaxNumberOfItemsPerList) {
+    if (isFreePlan) {
+      final rows = await _client.from('shopping_list_item').select('id').eq('shopping_list_id', int.parse(listId));
+      if ((rows as List).length >= kMaxNumberOfItemsPerList) {
         throw Exception('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
       }
     }
 
     final trimmedUnit = unit?.trim();
-    final trimmedCategory = category?.trim();
 
-    final batch = _firestore.batch();
-    final itemRef = _items(listId).doc();
-
-    batch.set(itemRef, {
+    await _client.from('shopping_list_item').insert({
       'name': trimmedName,
+      'shopping_list_id': int.parse(listId),
+      'added_by_user_id': addedBy,
       'quantity': quantity,
-      'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
-      'category': (trimmedCategory == null || trimmedCategory.isEmpty) ? null : trimmedCategory,
-      'is_bought': false,
-      'added_by': addedBy,
-      'added_at': FieldValue.serverTimestamp(),
-      'bought_at': null,
+      if (trimmedUnit != null && trimmedUnit.isNotEmpty) 'unit': trimmedUnit,
+      'category_id': ?categoryId,
     });
 
-    batch.update(_lists.doc(listId), {'item_count': FieldValue.increment(1), 'updated_at': FieldValue.serverTimestamp()});
-
-    await batch.commit();
+    await _client.from('shopping_list').update({'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', int.parse(listId));
   }
 
   Future<void> updateItem({
@@ -120,117 +136,47 @@ class SharedShoppingListRepository {
     required String name,
     int? quantity,
     String? unit,
-    String? category,
+    int? categoryId,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
 
     final trimmedUnit = unit?.trim();
-    final trimmedCategory = category?.trim();
 
-    final updates = <String, dynamic>{
-      'name': trimmedName,
-      'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
-      'category': (trimmedCategory == null || trimmedCategory.isEmpty) ? null : trimmedCategory,
-    };
-    if (quantity != null) updates['quantity'] = quantity;
-
-    await _items(listId).doc(itemId).update(updates);
+    await _client
+        .from('shopping_list_item')
+        .update({
+          'name': trimmedName,
+          'quantity': ?quantity,
+          'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
+          'category_id': categoryId,
+          'edited_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', int.parse(itemId));
   }
 
   Future<void> setBought({required String listId, required String itemId, required bool bought}) async {
-    final batch = _firestore.batch();
-
-    batch.update(_items(listId).doc(itemId), {'is_bought': bought, 'bought_at': bought ? FieldValue.serverTimestamp() : null});
-
-    batch.update(_lists.doc(listId), {'bought_count': FieldValue.increment(bought ? 1 : -1)});
-
-    await batch.commit();
+    await _client
+        .from('shopping_list_item')
+        .update({'is_bought': bought, 'bought_at': bought ? DateTime.now().toUtc().toIso8601String() : null})
+        .eq('id', int.parse(itemId));
   }
 
   Future<void> deleteItem({required String listId, required String itemId, required bool wasBought}) async {
-    final batch = _firestore.batch();
-
-    batch.delete(_items(listId).doc(itemId));
-    batch.update(_lists.doc(listId), {
-      'item_count': FieldValue.increment(-1),
-      if (wasBought) 'bought_count': FieldValue.increment(-1),
-      'updated_at': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
+    await _client.from('shopping_list_item').delete().eq('id', int.parse(itemId));
+    await _client.from('shopping_list').update({'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', int.parse(listId));
   }
 
-  Future<void> renameList({required String listId, required String name, required List<String> memberUids}) async {
-    final trimmedName = name.trim();
-    if (trimmedName.isEmpty) return;
+  // ── Invitations ──────────────────────────────────────────────────────────
 
-    final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {'name': trimmedName});
-
-    for (final uid in memberUids) {
-      batch.update(_memberships(uid).doc(listId), {'name': trimmedName});
-    }
-
-    await batch.commit();
+  Future<List<ShoppingListInvitation>> getPendingInvitations(String userId) async {
+    final rows = await _client.from('shopping_list_invitation').select(_invitationSelect).eq('invited_user_id', userId);
+    return (rows as List).map((r) => ShoppingListInvitation.fromMap(r as Map<String, dynamic>)).toList();
   }
 
-  Future<void> deleteList({required String listId, required List<String> memberUids}) async {
-    // Firestore doesn't auto-delete subcollections; delete items first
-    final itemsSnap = await _items(listId).get();
-    final batch = _firestore.batch();
-
-    for (final doc in itemsSnap.docs) {
-      batch.delete(doc.reference);
-    }
-
-    batch.delete(_lists.doc(listId));
-
-    for (final uid in memberUids) {
-      batch.delete(_memberships(uid).doc(listId));
-    }
-
-    await batch.commit();
-  }
-
-  Future<void> leaveList({required String uid, required String listId}) async {
-    final listDoc = await _lists.doc(listId).get();
-    final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>().where((m) => m['user_id'] != uid).toList();
-
-    final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {
-      'members': members,
-      'member_uids': FieldValue.arrayRemove([uid]),
-    });
-    batch.delete(_memberships(uid).doc(listId));
-    await batch.commit();
-  }
-
-  Future<void> removeMember({required String listId, required String memberUid}) async {
-    final listDoc = await _lists.doc(listId).get();
-    final members = (listDoc.data()?['members'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>()
-        .where((m) => m['user_id'] != memberUid)
-        .toList();
-
-    final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {
-      'members': members,
-      'member_uids': FieldValue.arrayRemove([memberUid]),
-    });
-    batch.delete(_memberships(memberUid).doc(listId));
-    await batch.commit();
-  }
-
-  Future<void> transferOwnership({required String listId, required String currentOwnerUid, required String newOwnerUid}) async {
-    final listDoc = await _lists.doc(listId).get();
-    final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>().map((m) {
-      if (m['user_id'] == currentOwnerUid) return {...m, 'role': 'member'};
-      if (m['user_id'] == newOwnerUid) return {...m, 'role': 'owner'};
-      return m;
-    }).toList();
-
-    await _lists.doc(listId).update({'owner_id': newOwnerUid, 'members': members});
+  Future<List<ShoppingListInvitation>> getListPendingInvitations(String listId) async {
+    final rows = await _client.from('shopping_list_invitation').select(_invitationSelect).eq('shopping_list_id', int.parse(listId));
+    return (rows as List).map((r) => ShoppingListInvitation.fromMap(r as Map<String, dynamic>)).toList();
   }
 
   Future<void> inviteByEmail({
@@ -239,131 +185,75 @@ class SharedShoppingListRepository {
     required String invitedByUid,
     required String invitedByName,
     required String email,
+    bool isFreePlan = false,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
+    final id = int.parse(listId);
 
-    // Verify the email belongs to a registered user
-    final userQuery = await _firestore.collection('users').where('email', isEqualTo: normalizedEmail).limit(1).get();
-    if (userQuery.docs.isEmpty) {
+    // Resolve email -> user id
+    final userRows = await _client.from('user').select('id').eq('email', normalizedEmail).limit(1);
+    if ((userRows as List).isEmpty) {
       throw Exception('No user with that email address was found');
     }
-    final invitedUid = userQuery.docs.first.id;
+    final invitedUid = userRows.first['id'] as String;
 
-    // Check member limit and whether already a member
-    final listDoc = await _lists.doc(listId).get();
-    final members = (listDoc.data()?['members'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    // Current members
+    final memberRows = await _client.from('shopping_list_member').select('user_id').eq('shopping_list_id', id);
+    final members = memberRows as List;
 
     if (members.any((m) => m['user_id'] == invitedUid)) {
       throw Exception('User is already a member of this list');
     }
-
     if (members.length >= kMaxNumbberOfMembersPerSharedList) {
       throw Exception('This list has reached the maximum of $kMaxNumbberOfMembersPerSharedList members');
     }
 
-    final pendingInvitations = await getListPendingInvitations(listId);
-    if (members.length + pendingInvitations.length >= kMaxNumbberOfMembersPerSharedList) {
+    // Pending invitations
+    final pendingRows = await _client.from('shopping_list_invitation').select('id').eq('shopping_list_id', id);
+    if (members.length + (pendingRows as List).length >= kMaxNumbberOfMembersPerSharedList) {
       throw Exception(
-        'List has too many pending invitations - cancel some or wait for them to be accepted first (maximum is $kMaxNumbberOfMembersPerSharedList members per list)',
+        'List has too many pending invitations — cancel some first '
+        '(maximum is $kMaxNumbberOfMembersPerSharedList members per list)',
       );
     }
 
-    if (await isFreePlan(_firestore, invitedByUid)) {
-      final invitorLists = await getUserLists(invitedByUid);
-      final invitorSharedCount = invitorLists.where((l) => l.members.length > 1).length;
-      if (invitorSharedCount >= kMaxNumberOfSharedShoppingLists) {
-        throw Exception('You have reached the maximum of $kMaxNumberOfSharedShoppingLists shared shopping lists');
-      }
-    }
-
-    // Check for existing pending invitation
-    final existing = await _invitations.where('list_id', isEqualTo: listId).where('invited_email', isEqualTo: normalizedEmail).limit(1).get();
-
-    if (existing.docs.isNotEmpty) {
+    // Duplicate invitation check
+    final existing = await _client
+        .from('shopping_list_invitation')
+        .select('id')
+        .eq('shopping_list_id', id)
+        .eq('invited_user_id', invitedUid)
+        .limit(1);
+    if ((existing as List).isNotEmpty) {
       throw Exception('User has already been invited to this list');
     }
 
-    final now = Timestamp.now();
-    await _invitations.add({
-      'list_id': listId,
-      'list_name': listName,
-      'invited_uid': invitedUid,
-      'invited_email': normalizedEmail,
+    await _client.from('shopping_list_invitation').insert({
+      'shopping_list_id': id,
       'invited_by_user_id': invitedByUid,
-      'invited_by_name': invitedByName,
-      'status': 'pending',
-      'sent_at': now,
-      'responded_at': null,
-      'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+      'invited_user_id': invitedUid,
+      'expires_at': DateTime.now().toUtc().add(const Duration(days: 7)).toIso8601String(),
     });
   }
 
-  // All docs in the collection are pending — completed ones are deleted
-  Stream<List<ShoppingListInvitation>> watchPendingInvitations(String email) {
-    return _invitations
-        .where('invited_email', isEqualTo: email.toLowerCase())
-        .snapshots()
-        .map((snap) => snap.docs.map(ShoppingListInvitation.fromDoc).toList());
-  }
-
-  Stream<List<ShoppingListInvitation>> watchListPendingInvitations(String listId) {
-    return _invitations.where('list_id', isEqualTo: listId).snapshots().map((snap) => snap.docs.map(ShoppingListInvitation.fromDoc).toList());
-  }
-
-  Future<void> acceptInvitation({
-    required String invitationId,
-    required String listId,
-    required String listName,
-    required String uid,
-    required String userName,
-  }) async {
-    if (await isFreePlan(_firestore, uid)) {
-      final userLists = await getUserLists(uid);
-      if (userLists.length >= kMaxNumberOfShoppingLists) {
+  Future<void> acceptInvitation({required String invitationId, required String listId, required String uid, bool isFreePlan = false}) async {
+    if (isFreePlan) {
+      final rows = await _client.from('shopping_list_member').select('shopping_list_id').eq('user_id', uid);
+      if ((rows as List).length >= kMaxNumberOfShoppingLists) {
         throw Exception('You have reached the maximum of $kMaxNumberOfShoppingLists shopping lists');
-      }
-      final sharedCount = userLists.where((l) => l.members.length > 1).length;
-      if (sharedCount >= kMaxNumberOfSharedShoppingLists) {
-        throw Exception('You have reached the maximum of $kMaxNumberOfSharedShoppingLists shared shopping lists');
       }
     }
 
-    final now = Timestamp.now();
-    final memberEntry = {'user_id': uid, 'name': userName, 'joined_at': now, 'role': 'member'};
-    final batch = _firestore.batch();
-    batch.update(_lists.doc(listId), {
-      'members': FieldValue.arrayUnion([memberEntry]),
-      'member_uids': FieldValue.arrayUnion([uid]),
-    });
-    batch.set(_memberships(uid).doc(listId), {'list_id': listId, 'name': listName, 'joined_at': now});
-    batch.delete(_invitations.doc(invitationId));
+    await _client.from('shopping_list_member').insert({'shopping_list_id': int.parse(listId), 'user_id': uid, 'role': 'member'});
 
-    await batch.commit();
-  }
-
-  Future<List<ShoppingList>> getUserLists(String uid) async {
-    final membershipSnap = await _memberships(uid).get();
-    if (membershipSnap.docs.isEmpty) return [];
-    final docs = await Future.wait(membershipSnap.docs.map((m) => _lists.doc(m.id).get()));
-    return docs.where((d) => d.exists).map(ShoppingList.fromDoc).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-  }
-
-  Future<String?> getPrimaryListId(String uid) async {
-    final snap = await _memberships(uid).orderBy('joined_at').limit(1).get();
-    if (snap.docs.isEmpty) return null;
-    return snap.docs.first.id;
+    await _client.from('shopping_list_invitation').delete().eq('id', int.parse(invitationId));
   }
 
   Future<void> declineInvitation(String invitationId) async {
-    await _invitations.doc(invitationId).delete();
-  }
-
-  Future<List<ShoppingListInvitation>> getListPendingInvitations(String listId) async {
-    final snap = await _invitations.where('list_id', isEqualTo: listId).get();
-    return snap.docs.map(ShoppingListInvitation.fromDoc).toList();
+    await _client.from('shopping_list_invitation').delete().eq('id', int.parse(invitationId));
   }
 
   Future<void> cancelInvitation(String invitationId) async {
-    await _invitations.doc(invitationId).delete();
+    await _client.from('shopping_list_invitation').delete().eq('id', int.parse(invitationId));
   }
 }

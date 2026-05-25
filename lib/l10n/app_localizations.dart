@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// Error when no lists exist
   ///
   /// In en, this message translates to:
-  /// **'No shopping lists found. Create one first.'**
+  /// **'No shopping lists found. Create one first'**
   String get noShoppingListsCreate;
 
   /// Google sign-in button
@@ -269,7 +269,7 @@ abstract class AppLocalizations {
   /// Settings screen title
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
+  /// **'Account'**
   String get settingsTitle;
 
   /// Account section subtitle
@@ -277,6 +277,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage your account settings and preferences'**
   String get settingsAccountSubtitle;
+
+  /// Preferences screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesTitle;
+
+  /// Preferences section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Customize app settings and preferences'**
+  String get preferencesAccountSubtitle;
 
   /// Display name field label
   ///
@@ -380,6 +392,12 @@ abstract class AppLocalizations {
   /// **'Delete account'**
   String get deleteAccountTitle;
 
+  /// Error dialog title when account deletion fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete account'**
+  String get deleteAccountFailedTitle;
+
   /// Delete account dialog body
   ///
   /// In en, this message translates to:
@@ -395,7 +413,7 @@ abstract class AppLocalizations {
   /// Transfer ownership message
   ///
   /// In en, this message translates to:
-  /// **'You are the owner of shared lists. Transfer ownership before deleting your account.'**
+  /// **'You are the owner of shared lists, so you must transfer ownership before deleting your account. Lists where you are owner:'**
   String get deleteAccountTransferMsg;
 
   /// Transfer instructions heading
@@ -503,7 +521,7 @@ abstract class AppLocalizations {
   /// Error when terms not agreed
   ///
   /// In en, this message translates to:
-  /// **'You must agree to the terms and conditions before creating an account.'**
+  /// **'You must agree to the terms and conditions before creating an account'**
   String get mustAgreeToTerms;
 
   /// Password min length validation
@@ -539,7 +557,7 @@ abstract class AppLocalizations {
   /// Forgot password instructions
   ///
   /// In en, this message translates to:
-  /// **'Enter your email and we\'ll send you a link to reset your password.'**
+  /// **'Enter your email and we\'ll send you a link to reset your password'**
   String get forgotPasswordBody;
 
   /// Send reset link button
@@ -596,17 +614,17 @@ abstract class AppLocalizations {
   /// **' {count, plural, one{item} other{items}} you might be interested in are on sale right now!'**
   String homeItemsOnSaleSuffix(int count);
 
+  /// Home empty state message
+  ///
+  /// In en, this message translates to:
+  /// **'Below you will see personalized deals based on your shopping lists'**
+  String get homeEmptyState;
+
   /// Home section header
   ///
   /// In en, this message translates to:
   /// **'From your shopping lists'**
   String get homeFromShoppingLists;
-
-  /// Home section header
-  ///
-  /// In en, this message translates to:
-  /// **'Based on your shopping habits'**
-  String get homeBasedOnHabits;
 
   /// Empty shopping list deals
   ///
@@ -620,29 +638,11 @@ abstract class AppLocalizations {
   /// **'Based on the items you have in your shopping lists, these are on sale right now'**
   String get homeShoppingListDealsMessage;
 
-  /// Empty habit deals
-  ///
-  /// In en, this message translates to:
-  /// **'Scan more receipts to get personalized deals based on the products you buy often'**
-  String get homeEmptyHabitsDeals;
-
-  /// Habit deals message
-  ///
-  /// In en, this message translates to:
-  /// **'Based on the products that show up often in your receipts, these are on sale right now'**
-  String get homeHabitsDealsMessage;
-
   /// Go to shopping lists button
   ///
   /// In en, this message translates to:
   /// **'Go to shopping lists'**
   String get homeGoToShoppingLists;
-
-  /// Scan a receipt button
-  ///
-  /// In en, this message translates to:
-  /// **'Scan a receipt'**
-  String get homeScanAReceipt;
 
   /// Show all deals button
   ///
@@ -893,14 +893,20 @@ abstract class AppLocalizations {
   /// Empty list label
   ///
   /// In en, this message translates to:
-  /// **'Empty'**
+  /// **'Empty list'**
   String get listEmpty;
 
-  /// Items remaining and bought
+  /// Remaining item count on list card
   ///
   /// In en, this message translates to:
-  /// **'{remaining} remaining · {bought} bought'**
-  String listItemsRemainingBought(int remaining, int bought);
+  /// **'{count} remaining'**
+  String listRemainingCount(int count);
+
+  /// Bought item count on list card
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bought'**
+  String listBoughtCount(int count);
 
   /// Shopping lists screen title
   ///
@@ -929,7 +935,7 @@ abstract class AppLocalizations {
   /// Empty lists state
   ///
   /// In en, this message translates to:
-  /// **'No shopping lists yet.\nTap + to create one.'**
+  /// **'No shopping lists yet.\nTap + to create one'**
   String get shoppingListEmptyState;
 
   /// Your lists section header
@@ -943,6 +949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New shopping list'**
   String get shoppingListCreateTitle;
+
+  /// Default name pre-filled in new list dialog
+  ///
+  /// In en, this message translates to:
+  /// **'My shopping list'**
+  String get shoppingListDefaultName;
 
   /// List name field label
   ///
@@ -1105,6 +1117,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No category'**
   String get listNoCategory;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Fruits & Vegetables'**
+  String get categoryFruitsAndVegetables;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Meat'**
+  String get categoryMeat;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Fish & Seafood'**
+  String get categoryFishAndSeafood;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Dairy Products'**
+  String get categoryDairyProducts;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Eggs'**
+  String get categoryEggs;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Bakery'**
+  String get categoryBakery;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Pantry Staples'**
+  String get categoryPantryStaples;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Cans & Jars'**
+  String get categoryCansAndJars;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonings, Sauces & Condiments'**
+  String get categorySeasoningsSaucesAndCondiments;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen Foods'**
+  String get categoryFrozenFoods;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Snacks & Sweets'**
+  String get categorySnacksAndSweets;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Drinks'**
+  String get categoryDrinks;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee & Tea'**
+  String get categoryCoffeeAndTea;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Baby Products'**
+  String get categoryBabyProducts;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Pet Supplies'**
+  String get categoryPetSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Care'**
+  String get categoryPersonalCare;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Household Supplies'**
+  String get categoryHouseholdSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning Supplies'**
+  String get categoryCleaningSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Home & Garden'**
+  String get categoryHomeAndGarden;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get categoryOther;
 
   /// Rename list dialog title
   ///
@@ -1421,7 +1553,7 @@ abstract class AppLocalizations {
   /// About screen description
   ///
   /// In en, this message translates to:
-  /// **'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most.'**
+  /// **'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most'**
   String get aboutDescription;
 
   /// Support section title
@@ -1583,7 +1715,7 @@ abstract class AppLocalizations {
   /// Failed to send snackbar
   ///
   /// In en, this message translates to:
-  /// **'Failed to send message. Please try again.'**
+  /// **'Failed to send message. Please try again'**
   String get contactFailedToSend;
 
   /// Barcode tab label
@@ -1736,53 +1868,65 @@ abstract class AppLocalizations {
   /// **'Almost done'**
   String get scanAlmostDone;
 
-  /// Firebase auth error: user not found
+  /// Snackbar when receipt photo is taken
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt captured'**
+  String get scanReceiptCapturedParsing;
+
+  /// Snackbar when no barcode found in gallery image
+  ///
+  /// In en, this message translates to:
+  /// **'No barcode detected in selected image'**
+  String get scanNoBarcodeInImage;
+
+  /// Snackbar error when adding scanned product to list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add product to shopping list. Please try again'**
+  String get scanFailedToAddToList;
+
+  /// Auth error: user not found
   ///
   /// In en, this message translates to:
   /// **'No account found for this email'**
   String get authErrorUserNotFound;
 
-  /// Firebase auth error: wrong password / invalid credential
+  /// Auth error: wrong password / invalid credential
   ///
   /// In en, this message translates to:
   /// **'Incorrect email or password'**
   String get authErrorWrongPassword;
 
-  /// Firebase auth error: email already in use
+  /// Auth error: email already in use
   ///
   /// In en, this message translates to:
   /// **'An account already exists for this email'**
   String get authErrorEmailInUse;
 
-  /// Firebase auth error: weak password
+  /// Auth error: weak password
   ///
   /// In en, this message translates to:
   /// **'Password is too weak'**
   String get authErrorWeakPassword;
 
-  /// Firebase auth error: invalid email
+  /// Auth error: invalid email
   ///
   /// In en, this message translates to:
   /// **'Invalid email address'**
   String get authErrorInvalidEmail;
 
-  /// Firebase auth error: too many requests
+  /// Auth error: too many requests
   ///
   /// In en, this message translates to:
   /// **'Too many attempts. Try again later'**
   String get authErrorTooManyRequests;
 
-  /// Firebase auth error: network failure
+  /// Auth error: network failure
   ///
   /// In en, this message translates to:
   /// **'Network error. Check your connection'**
   String get authErrorNetwork;
-
-  /// Firebase auth error: fallback
-  ///
-  /// In en, this message translates to:
-  /// **'Something went wrong. Please try again'**
-  String get authErrorGeneric;
 
   /// Firestore permission denied on account setup
   ///
@@ -1910,6 +2054,30 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again'**
   String get errorGeneric;
 
+  /// Error when transfer ownership fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to transfer list ownership'**
+  String get errorFailedToTransferOwnership;
+
+  /// Error when removing member fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove member from list'**
+  String get errorFailedToRemoveMember;
+
+  /// Error when cancelling invitation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel invitation'**
+  String get errorFailedToCancelInvitation;
+
+  /// Error when accepting/declining invitation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept or decline invitation'**
+  String get errorFailedToAcceptInvitation;
+
   /// Snackbar when item limit hit
   ///
   /// In en, this message translates to:
@@ -2015,7 +2183,7 @@ abstract class AppLocalizations {
   /// Legal page questions section body
   ///
   /// In en, this message translates to:
-  /// **'If you want to ask about this page or how data is handled, send a message through support.'**
+  /// **'If you want to ask about this page or how data is handled, send a message through support'**
   String get legalQuestionsBody;
 
   /// Legal page contact us button
