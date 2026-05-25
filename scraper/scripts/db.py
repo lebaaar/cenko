@@ -20,6 +20,14 @@ DISCOUNT_SCRIPT_PATHS = [
     Path("stores/spar/discounted_items.py"),
 ]
 
+# Maps CLI --store arg (directory name) → script path
+STORE_SCRIPT_MAP: dict[str, Path] = {
+    "lidl": Path("stores/lidl/discounted_items.py"),
+    "mercator": Path("stores/mercator/discounted_items.py"),
+    "tusdrogerija": Path("stores/tusdrogerija/discounted_items.py"),
+    "spar": Path("stores/spar/discounted_items.py"),
+}
+
 # Maps scraper STORE_NAME -> DB store_id (matches seeded store table)
 STORE_ID_MAP: dict[str, int] = {
     "spar": 1,
@@ -182,6 +190,61 @@ def dedupe_products_per_store(products: Iterable[dict[str, Any]]) -> list[dict[s
             )
         unique[(store_name, product_id)] = product
     return list(unique.values())
+
+
+def sync_store(store: str, database_url: str | None = None) -> int:
+    """Scrape one store and upsert its products. Exits 1 on scrape failure."""
+    script_relative = STORE_SCRIPT_MAP.get(store)
+    if script_relative is None:
+        raise ValueError(f"Unknown store {store!r}. Known: {list(STORE_SCRIPT_MAP)}")
+
+    root = Path(__file__).resolve().parent
+    script_path = (root / script_relative).resolve()
+
+    started_at = time.monotonic()
+    _log_event("store_scrape_started", store=store, script=str(script_path))
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=str(script_path.parent),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        _log_event(
+            "store_scrape_failed",
+            store=store,
+            script=str(script_path),
+            exit_code=exc.returncode,
+            duration_seconds=round(time.monotonic() - started_at, 3),
+            stdout=exc.stdout,
+            stderr=exc.stderr,
+        )
+        raise SystemExit(1) from exc
+
+    parsed = json.loads(result.stdout)
+    if not isinstance(parsed, list):
+        raise ValueError(
+            f"Expected a list from {script_path}, got: {type(parsed).__name__}"
+        )
+
+    products = [item for item in parsed if isinstance(item, dict)]
+    _log_event(
+        "store_scrape_succeeded",
+        store=store,
+        script=str(script_path),
+        product_count=len(products),
+        duration_seconds=round(time.monotonic() - started_at, 3),
+    )
+
+    conn = get_db_connection(database_url=database_url)
+    try:
+        unique = dedupe_products_per_store(products)
+        return upsert_products(conn=conn, products=unique)
+    finally:
+        conn.close()
 
 
 def sync_discounted_products(database_url: str | None = None) -> int:
