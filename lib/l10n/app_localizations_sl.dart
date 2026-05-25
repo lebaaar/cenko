@@ -154,7 +154,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String settingsPasswordResetSent(String email) {
-    return 'E-pošta za ponastavitev gesla je bila poslana na $email. Preverite mapo Prejeto in neželeno pošto';
+    return 'E-pošta za ponastavitev gesla je bila poslana na $email';
   }
 
   @override

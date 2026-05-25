@@ -383,7 +383,7 @@ abstract class AppLocalizations {
   /// Password reset sent snackbar
   ///
   /// In en, this message translates to:
-  /// **'Password reset email has been sent to {email}. Check your inbox and spam folder'**
+  /// **'Password reset email has been sent to {email}'**
   String settingsPasswordResetSent(String email);
 
   /// Delete account dialog title

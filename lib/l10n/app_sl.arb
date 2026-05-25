@@ -50,7 +50,7 @@
   "settingsResetPassword": "Ponastavi geslo",
   "settingsDeleteAccount": "Izbriši račun",
   "settingsNoEmailForReset": "Za ta račun ni najdene e-pošte",
-  "settingsPasswordResetSent": "E-pošta za ponastavitev gesla je bila poslana na {email}. Preverite mapo Prejeto in neželeno pošto",
+  "settingsPasswordResetSent": "E-pošta za ponastavitev gesla je bila poslana na {email}",
 
   "deleteAccountTitle": "Izbriši račun",
   "deleteAccountFailedTitle": "Brisanje računa ni uspelo",

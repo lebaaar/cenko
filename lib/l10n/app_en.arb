@@ -97,7 +97,7 @@
   "@settingsDeleteAccount": { "description": "Delete account button" },
   "settingsNoEmailForReset": "No email found for this account",
   "@settingsNoEmailForReset": { "description": "Error when no email for password reset" },
-  "settingsPasswordResetSent": "Password reset email has been sent to {email}. Check your inbox and spam folder",
+  "settingsPasswordResetSent": "Password reset email has been sent to {email}",
   "@settingsPasswordResetSent": {
     "description": "Password reset sent snackbar",
     "placeholders": { "email": { "type": "String" } }

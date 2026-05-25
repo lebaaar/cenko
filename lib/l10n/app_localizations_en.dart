@@ -156,7 +156,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsPasswordResetSent(String email) {
-    return 'Password reset email has been sent to $email. Check your inbox and spam folder';
+    return 'Password reset email has been sent to $email';
   }
 
   @override
