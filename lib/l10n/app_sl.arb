@@ -33,6 +33,8 @@
 
   "settingsTitle": "Nastavitve",
   "settingsAccountSubtitle": "Upravljajte nastavitve računa",
+    "preferencesTitle": "Personalizacija",
+  "preferencesAccountSubtitle": "Prilagodite nastavitve apliakcije",
   "settingsDisplayName": "Prikazno ime",
   "settingsThemeLabel": "Tema",
   "settingsThemeSystem": "Sistemska",
@@ -86,7 +88,7 @@
   "backToSignIn": "Nazaj na prijavo",
 
   "goodMorning": "Dobro jutro",
-  "goodAfternoon": "Dober dan",
+  "goodAfternoon": "Pozdravljeni",
   "goodEvening": "Dober večer",
   "homeItemsOnSaleSuffix": " artiklov, ki bi vas morda zanimali, je trenutno v akciji!",
   "homeFromShoppingLists": "Iz nakupovalnih seznamov",
@@ -145,6 +147,10 @@
   "listEmpty": "Prazno",
   "listItemsRemainingBought": "{remaining} preostalo · {bought} kupljeno",
 
+  "listAllDone": "Vse opravljeno!",
+  "listRemainingCount": "{count} preostalo",
+  "listBoughtCount": "{count} kupljeno",
+
   "shoppingListsTitle": "Nakupovalni seznami",
   "shoppingListNewTooltip": "Nov seznam",
   "shoppingListSignInPrompt": "Prijavite se za ogled nakupovalnih seznamov",
@@ -186,7 +192,7 @@
   "listInviteTitle": "Povabi na seznam",
   "listInviteSubtitle": "Povabite uporabnika na nakupovalni seznam",
   "listEmailRequired": "E-pošta je obvezna",
-  "listCannotInviteSelf": "Ne morete povabiti sebe",
+  "listCannotInviteSelf": "Ne morete povabiti samega sebe",
   "listEmailAddress": "E-poštni naslov",
   "listManageMembersTitle": "Upravljaj člane",
   "listMemberCount": "{count, plural, one{{count} član} two{{count} člana} few{{count} člani} other{{count} članov}}",
@@ -197,7 +203,7 @@
   "listManageMembersMenu": "Upravljaj člane",
   "listRenameListMenu": "Preimenuj seznam",
   "listDeleteListMenu": "Izbriši seznam",
-  "listLeaveListMenu": "Zapusti seznam",
+  "listLeaveListMenu": "Zapusti",
   "listDeleteListTitle": "Izbriši seznam?",
   "listLeaveListTitle": "Zapusti seznam?",
   "listDeleteListDescription": "To bo trajno izbrisalo {name} in vse njegove artikle za vse člane",

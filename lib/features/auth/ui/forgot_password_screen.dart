@@ -3,11 +3,11 @@ import 'package:cenko/core/utils/auth_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -38,8 +38,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     try {
       await ref.read(authNotifierProvider).sendPasswordResetEmail(_emailCtrl.text.trim());
       setState(() => _sent = true);
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = authErrorMessage(e.code));
+    } on AuthException catch (e) {
+      setState(() => _error = authErrorMessage(e.message));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

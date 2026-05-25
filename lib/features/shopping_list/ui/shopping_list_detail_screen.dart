@@ -54,15 +54,16 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final uid = authState.asData?.value?.uid;
+    final uid = authState.asData?.value?.user.id;
     final listAsync = ref.watch(shoppingListProvider(widget.listId));
     final itemsAsync = uid == null ? const AsyncLoading<List<ShoppingListItem>>() : ref.watch(shoppingListItemsProvider(widget.listId));
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final currentUser = ref.watch(currentUserProvider).asData?.value;
 
     final list = listAsync.asData?.value;
+    final items = itemsAsync.asData?.value;
     final pendingInviteCount = uid != null && list != null && list.ownerId == uid && list.members.length <= 1
-        ? ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0
+        ? (ref.watch(listPendingInvitationsProvider(widget.listId)).asData?.value.length ?? 0)
         : 0;
 
     final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -76,7 +77,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               padding: EdgeInsets.only(bottom: fabBottomInset),
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  if (currentUser?.plan == kFreePlanPlan && list != null && list.itemCount >= kMaxNumberOfItemsPerList) {
+                  if (currentUser?.isFreePlan == true && (items?.length ?? 0) >= kMaxNumberOfItemsPerList) {
                     SnackBarService.show('This list has reached the maximum of $kMaxNumberOfItemsPerList items');
                     return;
                   }
@@ -329,9 +330,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
           category: _selectedCategory,
         );
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, category: _selectedCategory);
+        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, category: _selectedCategory, isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true);
       }
 
+      ref.invalidate(shoppingListItemsProvider(widget.listId));
+      ref.invalidate(userShoppingListsProvider(uid));
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     } catch (e) {
       if (mounted) {
@@ -401,9 +404,12 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                                   : () async {
                                       setDialogState(() => deleting = true);
                                       try {
+                                        final uid = ref.read(authStateProvider).asData?.value?.user.id;
                                         await ref
                                             .read(sharedShoppingListRepositoryProvider)
                                             .deleteItem(listId: widget.listId, itemId: item.id, wasBought: item.isBought);
+                                        ref.invalidate(shoppingListItemsProvider(widget.listId));
+                                        if (uid != null) ref.invalidate(userShoppingListsProvider(uid));
                                         if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
@@ -434,6 +440,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     setState(() => _updatingBought = true);
     try {
       await ref.read(sharedShoppingListRepositoryProvider).setBought(listId: widget.listId, itemId: itemId, bought: bought);
+      ref.invalidate(shoppingListItemsProvider(widget.listId));
+      ref.invalidate(userShoppingListsProvider(uid));
     } catch (e) {
       if (!mounted) return;
       SnackBarService.show('Failed to update item: ${e.toString().replaceFirst('Exception: ', '')}');
@@ -464,8 +472,10 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
               });
               ref
                   .read(sharedShoppingListRepositoryProvider)
-                  .renameList(listId: widget.listId, name: name, memberUids: list.members.map((m) => m.userId).toList())
+                  .renameList(listId: widget.listId, name: name)
                   .then((_) {
+                    ref.invalidate(shoppingListProvider(widget.listId));
+                    ref.invalidate(userShoppingListsProvider(ref.read(authStateProvider).asData?.value?.user.id ?? ''));
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   })
                   .catchError((e) {
@@ -550,7 +560,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 setDialogState(() => error = AppLocalizations.of(context)!.listEmailRequired);
                 return;
               }
-              final currentEmail = ref.read(authStateProvider).asData?.value?.email ?? '';
+              final currentEmail = ref.read(authStateProvider).asData?.value?.user.email ?? '';
               if (email.toLowerCase() == currentEmail.toLowerCase()) {
                 setDialogState(() => error = AppLocalizations.of(context)!.listCannotInviteSelf);
                 return;
@@ -565,7 +575,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     listId: widget.listId,
                     listName: list.name,
                     invitedByUid: uid,
-                    invitedByName: currentUser?.name ?? 'Unknown',
+                    invitedByName: currentUser?.displayName ?? 'Unknown',
                     email: email,
                   )
                   .then((_) {
@@ -686,6 +696,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             onMakeOwner: () async {
                               try {
                                 await repo.transferOwnership(listId: list.id, currentOwnerUid: ownerUid, newOwnerUid: member.userId);
+                                ref.invalidate(shoppingListProvider(list.id));
+                                ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
@@ -696,6 +708,8 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             onRemove: () async {
                               try {
                                 await repo.removeMember(listId: list.id, memberUid: member.userId);
+                                ref.invalidate(shoppingListProvider(list.id));
+                                ref.invalidate(userShoppingListsProvider(ownerUid));
                                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                               } catch (e) {
                                 if (context.mounted) {
@@ -830,12 +844,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
     try {
       if (isOwner) {
-        await ref
-            .read(sharedShoppingListRepositoryProvider)
-            .deleteList(listId: widget.listId, memberUids: list.members.map((m) => m.userId).toList());
+        await ref.read(sharedShoppingListRepositoryProvider).deleteList(listId: widget.listId);
       } else {
         await ref.read(sharedShoppingListRepositoryProvider).leaveList(uid: uid, listId: widget.listId);
       }
+      ref.invalidate(userShoppingListsProvider(uid));
       if (!mounted) return;
       context.go('/list');
     } catch (e) {
@@ -1056,7 +1069,6 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(shoppingListItemsProvider(widget.listId));
-                  await ref.read(shoppingListItemsProvider(widget.listId).future);
                 },
                 child: ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),

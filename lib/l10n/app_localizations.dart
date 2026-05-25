@@ -269,7 +269,7 @@ abstract class AppLocalizations {
   /// Settings screen title
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
+  /// **'Account'**
   String get settingsTitle;
 
   /// Account section subtitle
@@ -277,6 +277,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage your account settings and preferences'**
   String get settingsAccountSubtitle;
+
+  /// Preferences screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesTitle;
+
+  /// Preferences section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Customize app settings and preferences'**
+  String get preferencesAccountSubtitle;
 
   /// Display name field label
   ///
@@ -901,6 +913,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{remaining} remaining · {bought} bought'**
   String listItemsRemainingBought(int remaining, int bought);
+
+  /// All items bought
+  ///
+  /// In en, this message translates to:
+  /// **'All done!'**
+  String get listAllDone;
+
+  /// Remaining item count on list card
+  ///
+  /// In en, this message translates to:
+  /// **'{count} remaining'**
+  String listRemainingCount(int count);
+
+  /// Bought item count on list card
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bought'**
+  String listBoughtCount(int count);
 
   /// Shopping lists screen title
   ///

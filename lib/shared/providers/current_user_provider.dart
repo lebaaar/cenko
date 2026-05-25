@@ -8,11 +8,10 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository();
 });
 
-final currentUserProvider = StreamProvider<UserModel?>((ref) {
+final currentUserProvider = FutureProvider.autoDispose<UserModel?>((ref) {
   ref.watch(internetStatusProvider);
   final authState = ref.watch(authStateProvider);
-  final user = authState.asData?.value;
-  if (user == null) return Stream.value(null);
-
-  return ref.watch(userRepositoryProvider).watchUser(user.uid);
+  final session = authState.asData?.value;
+  if (session == null) return Future.value(null);
+  return ref.read(userRepositoryProvider).getUser(session.user.id);
 });

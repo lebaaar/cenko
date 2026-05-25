@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class CatalogDealItem {
   final String id;
   final String productId;
@@ -53,39 +51,31 @@ class CatalogDealItem {
     return true;
   }
 
-  factory CatalogDealItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? <String, dynamic>{};
-    final productName = _stringValue(data['product_name']) ?? _stringValue(data['name']) ?? 'Unknown product';
-    final storeName = _normalizedStoreName(_stringValue(data['store_name']) ?? 'Unknown store');
-    final scrapedFromUrl = _stringValue(data['scraped_from_url']) ?? '';
-    final brand = _stringValue(data['brand']);
-    final category = _stringValue(data['category']);
-    final rawImage = _stringValue(data['image_url']) ?? _stringValue(data['image']);
-    final originalPrice = _intValue(data['original_price']) ?? 0;
-    final salePrice = _intValue(data['sale_price']) ?? 0;
-    final discountPercent = _intValue(data['discount_pct']) ?? _derivedDiscountPercent(originalPrice: originalPrice, salePrice: salePrice);
+  /// Constructs from a Supabase `product` row (with embedded `store:store_id(name)`).
+  factory CatalogDealItem.fromMap(Map<String, dynamic> m) {
+    final storeMap = m['store'] as Map<String, dynamic>?;
+    final storeName = _normalizedStoreName(storeMap?['name'] as String? ?? 'Unknown store');
+    final originalPrice = _intValue(m['original_price']) ?? 0;
+    final salePrice = _intValue(m['sale_price']) ?? 0;
+    final discountPercent = _intValue(m['discount_pct']) ??
+        _derivedDiscountPercent(originalPrice: originalPrice, salePrice: salePrice);
 
     return CatalogDealItem(
-      id: doc.id,
-      productId: (data['product_id'] as String?) ?? doc.id,
-      scrapedFromUrl: scrapedFromUrl,
-      productName: productName,
+      id: m['id'].toString(),
+      productId: m['id'].toString(),
+      scrapedFromUrl: '',
+      productName: m['name'] as String? ?? 'Unknown product',
       storeName: storeName,
-      brand: brand,
-      category: category,
-      imageUrl: rawImage,
+      brand: null,
+      category: null,
+      imageUrl: m['image_url'] as String?,
       originalPrice: originalPrice,
       salePrice: salePrice,
       discountPercent: discountPercent,
-      validFrom: _dateValue(data['valid_from']),
-      validUntil: _dateValue(data['valid_until']),
-      scrapedAt: _dateValue(data['scraped_at']),
+      validFrom: _dateValue(m['valid_from']),
+      validUntil: _dateValue(m['valid_to']),
+      scrapedAt: _dateValue(m['scraped_at']),
     );
-  }
-
-  static String? _stringValue(dynamic value) {
-    final stringValue = value is String ? value.trim() : null;
-    return stringValue == null || stringValue.isEmpty ? null : stringValue;
   }
 
   static int? _intValue(dynamic value) {
@@ -96,16 +86,14 @@ class CatalogDealItem {
   }
 
   static DateTime? _dateValue(dynamic value) {
-    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
     if (value is DateTime) return value;
     return null;
   }
 
   static String _normalizedStoreName(String value) {
     final normalized = value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (normalized == 'tus_drogrija') {
-      return 'tus_drogerija';
-    }
+    if (normalized == 'tus_drogrija') return 'tus_drogerija';
     return normalized;
   }
 

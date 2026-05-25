@@ -101,6 +101,12 @@ class AppLocalizationsSl extends AppLocalizations {
   String get settingsAccountSubtitle => 'Upravljajte nastavitve računa';
 
   @override
+  String get preferencesTitle => 'Personalizacija';
+
+  @override
+  String get preferencesAccountSubtitle => 'Prilagodite nastavitve apliakcije';
+
+  @override
   String get settingsDisplayName => 'Prikazno ime';
 
   @override
@@ -260,7 +266,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get goodMorning => 'Dobro jutro';
 
   @override
-  String get goodAfternoon => 'Dober dan';
+  String get goodAfternoon => 'Pozdravljeni';
 
   @override
   String get goodEvening => 'Dober večer';
@@ -455,6 +461,19 @@ class AppLocalizationsSl extends AppLocalizations {
   }
 
   @override
+  String get listAllDone => 'Vse opravljeno!';
+
+  @override
+  String listRemainingCount(int count) {
+    return '$count preostalo';
+  }
+
+  @override
+  String listBoughtCount(int count) {
+    return '$count kupljeno';
+  }
+
+  @override
   String get shoppingListsTitle => 'Nakupovalni seznami';
 
   @override
@@ -577,7 +596,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listEmailRequired => 'E-pošta je obvezna';
 
   @override
-  String get listCannotInviteSelf => 'Ne morete povabiti sebe';
+  String get listCannotInviteSelf => 'Ne morete povabiti samega sebe';
 
   @override
   String get listEmailAddress => 'E-poštni naslov';
@@ -622,7 +641,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listDeleteListMenu => 'Izbriši seznam';
 
   @override
-  String get listLeaveListMenu => 'Zapusti seznam';
+  String get listLeaveListMenu => 'Zapusti';
 
   @override
   String get listDeleteListTitle => 'Izbriši seznam?';

@@ -95,11 +95,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
-  String get settingsTitle => 'Settings';
+  String get settingsTitle => 'Account';
 
   @override
   String get settingsAccountSubtitle =>
       'Manage your account settings and preferences';
+
+  @override
+  String get preferencesTitle => 'Preferences';
+
+  @override
+  String get preferencesAccountSubtitle =>
+      'Customize app settings and preferences';
 
   @override
   String get settingsDisplayName => 'Display name';
@@ -454,6 +461,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String listItemsRemainingBought(int remaining, int bought) {
     return '$remaining remaining · $bought bought';
+  }
+
+  @override
+  String get listAllDone => 'All done!';
+
+  @override
+  String listRemainingCount(int count) {
+    return '$count remaining';
+  }
+
+  @override
+  String listBoughtCount(int count) {
+    return '$count bought';
   }
 
   @override

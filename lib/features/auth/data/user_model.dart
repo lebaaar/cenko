@@ -1,33 +1,42 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+class UserModel {
+  final String id;
+  final int planId;
+  final String displayName;
+  final String email;
+  final DateTime joinedAt;
+  final String authProvider;
+  final String? googleId;
+  final String theme;
+  final String lang;
+  final bool notificationsEnabled;
 
-class UserStats {
-  final int totalSpent;
-  final int receiptsScanned;
-  final List<Statistics> mostVisitedStores;
+  const UserModel({
+    required this.id,
+    required this.planId,
+    required this.displayName,
+    required this.email,
+    required this.joinedAt,
+    required this.authProvider,
+    this.googleId,
+    this.theme = 'system',
+    this.lang = 'en',
+    this.notificationsEnabled = true,
+  });
 
-  const UserStats({this.totalSpent = 0, this.receiptsScanned = 0, this.mostVisitedStores = const []});
-
-  factory UserStats.fromMap(Map<String, dynamic> m) => UserStats(
-    totalSpent: m['total_spent'] as int? ?? 0,
-    receiptsScanned: m['receipts_scanned'] as int? ?? 0,
-    mostVisitedStores: (m['most_visited_stores'] as List<dynamic>? ?? []).map((e) => Statistics.fromMap(e as Map<String, dynamic>)).toList(),
+  factory UserModel.fromMap(Map<String, dynamic> m) => UserModel(
+    id: m['id'] as String,
+    planId: m['plan_id'] as int,
+    displayName: m['display_name'] as String,
+    email: m['email'] as String,
+    joinedAt: DateTime.parse(m['joined_at'] as String),
+    authProvider: m['auth_provider'] as String,
+    googleId: m['google_id'] as String?,
+    theme: _normalizeTheme(m['theme'] as String?),
+    lang: m['lang'] as String? ?? 'en',
+    notificationsEnabled: m['notifications_enabled'] as bool? ?? true,
   );
 
-  Map<String, dynamic> toMap() => {
-    'total_spent': totalSpent,
-    'receipts_scanned': receiptsScanned,
-    'most_visited_stores': mostVisitedStores.map((s) => s.toMap()).toList(),
-  };
-}
-
-class UserSettings {
-  final String theme;
-  final bool notificationsEnabled;
-  final String language;
-
-  const UserSettings({this.theme = 'system', this.notificationsEnabled = true, this.language = 'en'});
-
-  static String normalizeTheme(String? theme) {
+  static String _normalizeTheme(String? theme) {
     switch (theme) {
       case 'light':
       case 'dark':
@@ -38,74 +47,5 @@ class UserSettings {
     }
   }
 
-  factory UserSettings.fromMap(Map<String, dynamic> m) => UserSettings(
-    theme: normalizeTheme(m['theme'] as String?),
-    notificationsEnabled: m['notificationsEnabled'] as bool? ?? true,
-    language: m['language'] as String? ?? 'en',
-  );
-
-  Map<String, dynamic> toMap() => {'theme': theme, 'notificationsEnabled': notificationsEnabled, 'language': language};
-}
-
-class UserModel {
-  final String userId;
-  final String name;
-  final String email;
-  final DateTime createdAt;
-  final String authProvider;
-  final String? googleId;
-  final UserSettings settings;
-  final UserStats stats;
-  final String plan;
-
-  const UserModel({
-    required this.userId,
-    required this.name,
-    required this.email,
-    required this.createdAt,
-    required this.authProvider,
-    this.googleId,
-    this.settings = const UserSettings(),
-    this.stats = const UserStats(),
-    this.plan = 'free',
-  });
-
-  factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final m = doc.data() as Map<String, dynamic>;
-    return UserModel(
-      userId: m['user_id'] as String,
-      name: m['name'] as String,
-      email: m['email'] as String,
-      createdAt: (m['created_at'] as Timestamp).toDate(),
-      authProvider: m['auth_provider'] as String,
-      googleId: m['google_id'] as String?,
-      settings: UserSettings.fromMap(m['settings'] as Map<String, dynamic>),
-      stats: UserStats.fromMap(m['stats'] as Map<String, dynamic>),
-      plan: m['plan'] as String? ?? 'free',
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-    'user_id': userId,
-    'name': name,
-    'email': email,
-    'created_at': Timestamp.fromDate(createdAt),
-    'auth_provider': authProvider,
-    'google_id': googleId,
-    'settings': settings.toMap(),
-    'stats': stats.toMap(),
-    'plan': plan,
-  };
-}
-
-class Statistics {
-  final String storeName;
-  final int visitCount;
-
-  const Statistics({required this.storeName, required this.visitCount});
-
-  factory Statistics.fromMap(Map<String, dynamic> m) =>
-      Statistics(storeName: m['store_name'] as String? ?? 'Unknown store', visitCount: m['visit_count'] as int? ?? 0);
-
-  Map<String, dynamic> toMap() => {'store_name': storeName, 'visit_count': visitCount};
+  bool get isFreePlan => planId == 1;
 }

@@ -29,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            final uid = ref.read(currentUserProvider).asData?.value?.userId;
+            final uid = ref.read(currentUserProvider).asData?.value?.id;
             if (uid != null) {
               ref.invalidate(shoppingListOnSaleProvider(uid));
               ref.invalidate(commonBoughtProductsOnSaleProvider(uid));
@@ -46,14 +46,14 @@ class HomeScreen extends ConsumerWidget {
               ),
               error: (error, _) => Center(child: Text(error.toString())),
               data: (user) {
-                final name = user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'there';
+                final name = user?.displayName.trim().isNotEmpty == true ? user!.displayName.trim() : 'there';
                 final secondaryBodyStyle = Theme.of(context).textTheme.bodyMedium;
                 final shoppingListDealsAsync = user == null
                     ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                    : ref.watch(shoppingListOnSaleProvider(user.userId));
+                    : ref.watch(shoppingListOnSaleProvider(user.id));
                 final commonBoughtProductsDealsAsync = user == null
                     ? const AsyncValue<List<PersonalizedDealCardItem>>.data([])
-                    : ref.watch(commonBoughtProductsOnSaleProvider(user.userId));
+                    : ref.watch(commonBoughtProductsOnSaleProvider(user.id));
                 final shoppingListSaleCount = shoppingListDealsAsync.asData?.value.length ?? 0;
                 final commonBoughtProductsSaleCount = commonBoughtProductsDealsAsync.asData?.value.length ?? 0;
 

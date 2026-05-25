@@ -3,7 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  cloud_firestore
+  app_links
   connectivity_plus
   file_selector_windows
   firebase_app_check

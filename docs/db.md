@@ -4,8 +4,9 @@ Cenko uses PostgreSQL relational database hosted on Supabase.
 Database schema is available at [dbdiagram.io](https://dbdiagram.io/d/cenko-69cc2d8e78c6c4bc7ab354da), copu paste can be found bellow:
 
 ```dbml
+
 Table user {
-  id int [primary key, increment]
+  id uuid [primary key, note: "matches auth.users(id)"]
   plan_id int [not null]
   display_name varchar(500) [not null]
   email varchar(320) [unique, not null]
@@ -30,7 +31,7 @@ Table plan {
 
 Table shopping_list {
   id int [primary key, increment]
-  created_by_user_id int [not null]
+  created_by_user_id uuid [not null]
   name varchar(500) [not null]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
@@ -41,10 +42,11 @@ Table shopping_list_item {
   id int [primary key, increment]
   name varchar(500) [not null]
   shopping_list_id int [not null]
-  added_by_user_id int [not null]
+  added_by_user_id uuid [not null]
   is_bought bool [not null]
-  bought_by_user_id int [null]
+  bought_by_user_id uuid [null]
   bought_at timestamptz [null]
+  category varchar(100) [null]
   quantity int [null]
   unit varchar(100) [null]
   added_at timestamptz [not null]
@@ -60,7 +62,7 @@ Ref: shopping_list_item.added_by_user_id > user.id
 
 Table shopping_list_member {
   id int [primary key, increment]
-  user_id int [not null]
+  user_id uuid [not null]
   shopping_list_id int [not null]
   role varchar(20) [not null, note: "use enum: owner | member. v1 supports only member, can be promoted to owner manually later."]
   joined_at timestamptz [not null]
@@ -75,8 +77,8 @@ Ref: shopping_list_member.user_id > user.id
 
 Table shopping_list_invitation [note: "Only pending entries live in this table. Accepted or declined get removed from table "] {
   id int [primary key, increment]
-  invited_by_user_id int [not null]
-  invited_user_id int [not null]
+  invited_by_user_id uuid [not null]
+  invited_user_id uuid [not null]
   shopping_list_id int [not null]
   sent_at timestamptz [not null]
   expires_at timestamptz [not null]
@@ -93,7 +95,7 @@ Ref: shopping_list_invitation.invited_user_id > user.id
 
 Table receipt {
   id int [primary key, increment]
-  user_id int [not null]
+  user_id uuid [not null]
   store_id int [null, note: "null if store is unrecognized"]
   total int [not null, note: "in cents"]
   receipt_date date [not null]

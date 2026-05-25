@@ -1,43 +1,42 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ShoppingListInvitation {
   const ShoppingListInvitation({
     required this.id,
     required this.listId,
     required this.listName,
+    required this.invitedUserId,
     required this.invitedEmail,
     required this.invitedByUserId,
     required this.invitedByName,
-    required this.status,
     required this.sentAt,
-    this.respondedAt,
-    this.expiresAt,
   });
 
   final String id;
   final String listId;
   final String listName;
-  final String invitedEmail;
+  final String invitedUserId;
+  final String invitedEmail; // from join with "user" table
   final String invitedByUserId;
-  final String invitedByName;
-  final String status; // 'pending' | 'accepted' | 'declined'
+  final String invitedByName; // from join with "user" table
   final DateTime sentAt;
-  final DateTime? respondedAt;
-  final DateTime? expiresAt;
 
-  factory ShoppingListInvitation.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+  factory ShoppingListInvitation.fromMap(Map<String, dynamic> m) {
+    final listMap = m['shopping_list'] as Map<String, dynamic>?;
+    // Alias 'invited_by' is used when embedding inviting user
+    final invitedByMap = m['invited_by'] as Map<String, dynamic>?;
+    // Alias 'invited' is used when embedding invited user
+    final invitedMap = m['invited'] as Map<String, dynamic>?;
+
     return ShoppingListInvitation(
-      id: doc.id,
-      listId: data['list_id'] as String? ?? '',
-      listName: data['list_name'] as String? ?? 'Shopping List',
-      invitedEmail: data['invited_email'] as String? ?? '',
-      invitedByUserId: data['invited_by_user_id'] as String? ?? '',
-      invitedByName: data['invited_by_name'] as String? ?? 'Someone',
-      status: data['status'] as String? ?? 'pending',
-      sentAt: (data['sent_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      respondedAt: (data['responded_at'] as Timestamp?)?.toDate(),
-      expiresAt: (data['expires_at'] as Timestamp?)?.toDate(),
+      id: m['id'].toString(),
+      listId: m['shopping_list_id'].toString(),
+      listName: listMap?['name'] as String? ?? 'Shopping List',
+      invitedUserId: m['invited_user_id'] as String? ?? '',
+      invitedEmail: invitedMap?['email'] as String? ?? '',
+      invitedByUserId: m['invited_by_user_id'] as String? ?? '',
+      invitedByName: invitedByMap?['display_name'] as String? ?? 'Someone',
+      sentAt: m['sent_at'] != null
+          ? DateTime.parse(m['sent_at'] as String)
+          : DateTime.now(),
     );
   }
 }

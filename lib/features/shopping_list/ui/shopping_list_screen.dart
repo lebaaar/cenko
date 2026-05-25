@@ -29,7 +29,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final uid = authState.asData?.value?.uid;
+    final uid = authState.asData?.value?.user.id;
 
     return Scaffold(
       body: SafeArea(
@@ -80,8 +80,9 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               final router = GoRouter.of(context);
               ref
                   .read(sharedShoppingListRepositoryProvider)
-                  .createList(ownerUid: uid, ownerName: currentUser?.name ?? 'Unknown', name: name)
+                  .createList(ownerUid: uid, ownerName: currentUser?.displayName ?? 'Unknown', name: name, isFreePlan: currentUser?.isFreePlan == true)
                   .then((listId) {
+                    ref.invalidate(userShoppingListsProvider(uid));
                     if (dialogContext.mounted) {
                       Navigator.of(dialogContext).pop();
                     }
@@ -166,9 +167,7 @@ class _Body extends ConsumerStatefulWidget {
 enum SortOption {
   alphabeticalAZ('Alphabetical (A-Z)'),
   alphabeticalZA('Alphabetical (Z-A)'),
-  recentlyUpdated('Recently updated'),
-  mostItems('Most items'),
-  leastItems('Least items');
+  recentlyUpdated('Recently updated');
 
   final String label;
   const SortOption(this.label);
@@ -190,19 +189,13 @@ class _BodyState extends ConsumerState<_Body> {
       case SortOption.recentlyUpdated:
         sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         break;
-      case SortOption.mostItems:
-        sorted.sort((a, b) => b.itemCount.compareTo(a.itemCount));
-        break;
-      case SortOption.leastItems:
-        sorted.sort((a, b) => a.itemCount.compareTo(b.itemCount));
-        break;
     }
     return sorted;
   }
 
   Future<void> _handleRefresh() async {
-    // Refresh is automatic via Riverpod's realtime listeners, but this allows the UI to show the refresh animation
-    await Future.delayed(const Duration(milliseconds: 500));
+    ref.invalidate(userShoppingListsProvider(widget.uid));
+    ref.invalidate(pendingInvitationsProvider(widget.uid));
   }
 
   String _sortOptionLabel(SortOption option, AppLocalizations l10n) {
@@ -213,19 +206,14 @@ class _BodyState extends ConsumerState<_Body> {
         return l10n.sortAlphaZA;
       case SortOption.recentlyUpdated:
         return l10n.sortRecentlyUpdated;
-      case SortOption.mostItems:
-        return l10n.sortMostItems;
-      case SortOption.leastItems:
-        return l10n.sortLeastItems;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final email = ref.watch(authStateProvider).asData?.value?.email ?? '';
     final listsAsync = ref.watch(userShoppingListsProvider(widget.uid));
-    final invitationsAsync = email.isEmpty ? const AsyncLoading<List<ShoppingListInvitation>>() : ref.watch(pendingInvitationsProvider(email));
+    final invitationsAsync = ref.watch(pendingInvitationsProvider(widget.uid));
 
     return Stack(
       children: [
@@ -320,17 +308,27 @@ class _BodyState extends ConsumerState<_Body> {
   }
 }
 
-class _ListCard extends StatelessWidget {
+class _ListCard extends ConsumerWidget {
   const _ListCard({required this.list});
 
   final ShoppingList list;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final isPrivate = list.members.length == 1;
     final memberNames = isPrivate ? l10n.listPrivate : list.members.map((m) => m.name).join(', ');
-    final remaining = list.itemCount - list.boughtCount;
+
+    // Watch items directly — this stream fires whenever items change (realtime),
+    // giving us live counts without needing watchUserLists to re-emit.
+    final itemsAsync = ref.watch(shoppingListItemsProvider(list.id));
+    final items = itemsAsync.asData?.value;
+    final total = items?.length ?? 0;
+    final bought = items?.where((i) => i.isBought).length ?? 0;
+    final remaining = total - bought;
+    final allDone = total > 0 && remaining == 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -339,41 +337,79 @@ class _ListCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(color: cs.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(list.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
+              Text(list.name, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(
                     isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded,
                     size: 14,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: cs.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       memberNames,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.checklist_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 4),
+              if (items != null) ...[
+                const SizedBox(height: 10),
+                if (total == 0)
                   Text(
-                    list.itemCount == 0 ? l10n.listEmpty : l10n.listItemsRemainingBought(remaining, list.boughtCount),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    l10n.listEmpty,
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  )
+                else ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: bought / total,
+                      minHeight: 4,
+                      backgroundColor: cs.surfaceContainerHighest,
+                      valueColor: AlwaysStoppedAnimation(allDone ? cs.primary : cs.primary.withValues(alpha: 0.65)),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      if (allDone)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 13, color: cs.primary),
+                            const SizedBox(width: 4),
+                            Text(l10n.listAllDone, style: tt.bodySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
+                          ],
+                        )
+                      else
+                        Text(
+                          l10n.listRemainingCount(remaining),
+                          style: tt.bodySmall?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w500),
+                        ),
+                      if (bought > 0) ...[
+                        const SizedBox(width: 8),
+                        Text('·', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                        const SizedBox(width: 8),
+                        Icon(Icons.check_rounded, size: 12, color: cs.onSurfaceVariant),
+                        const SizedBox(width: 3),
+                        Text(
+                          l10n.listBoughtCount(bought),
+                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
-              ),
+              ],
             ],
           ),
         ),
@@ -454,13 +490,14 @@ class _InvitationCardState extends ConsumerState<_InvitationCard> {
         await repo.acceptInvitation(
           invitationId: widget.invitation.id,
           listId: widget.invitation.listId,
-          listName: widget.invitation.listName,
           uid: widget.uid,
-          userName: currentUser?.name ?? 'Unknown',
+          isFreePlan: currentUser?.isFreePlan == true,
         );
       } else {
         await repo.declineInvitation(widget.invitation.id);
       }
+      ref.invalidate(pendingInvitationsProvider(widget.uid));
+      ref.invalidate(userShoppingListsProvider(widget.uid));
     } catch (e) {
       if (mounted) {
         SnackBarService.show(e.toString().replaceFirst('Exception: ', ''));

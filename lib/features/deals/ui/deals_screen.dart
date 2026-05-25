@@ -377,7 +377,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
                           (list) => ListTile(
                             leading: const Icon(Icons.checklist_rounded),
                             title: Text(list.name),
-                            subtitle: Text(AppLocalizations.of(context)!.productItemCount(list.itemCount)),
+                            subtitle: Text(list.members.length == 1 ? AppLocalizations.of(context)!.listPrivate : list.members.map((m) => m.name).join(', ')),
                             onTap: () => Navigator.of(sheetContext).pop(list.id),
                           ),
                         ),
@@ -412,7 +412,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final dealsAsync = ref.watch(allCatalogDealsProvider);
     final userAsync = ref.watch(currentUserProvider);
-    final uid = userAsync.asData?.value?.userId;
+    final uid = userAsync.asData?.value?.id;
     final primaryListId = uid == null ? null : ref.watch(primaryListIdProvider(uid));
     final shoppingListItemsAsync = primaryListId == null
         ? const AsyncValue<List<ShoppingListItem>>.data(<ShoppingListItem>[])

@@ -4,7 +4,7 @@ import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/services/discord_webhook_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -70,7 +70,7 @@ class _ContactScreenState extends State<ContactScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSending = true);
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
       final bugInfo = _selectedType == ContactType.bugReport ? await _collectBugInfo() : null;
 
       await DiscordWebhookService.send(

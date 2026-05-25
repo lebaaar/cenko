@@ -8,7 +8,6 @@ import 'package:cenko/shared/widgets/auth_locale_button.dart';
 import 'package:cenko/shared/widgets/google_button.dart';
 import 'package:cenko/shared/widgets/large_button.dart';
 import 'package:cenko/shared/widgets/or_divider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -47,10 +47,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(authNotifierProvider).signInWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text);
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = authErrorMessage(e.code));
-    } on FirebaseException catch (e) {
-      setState(() => _error = e.code == 'permission-denied' ? 'Account setup failed. Access denied' : e.message ?? e.code);
+    } on AuthException catch (e) {
+      setState(() => _error = authErrorMessage(e.message));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -63,12 +61,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(authNotifierProvider).signInWithGoogle();
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _error = authErrorMessage(e.code));
-    } on FirebaseException catch (e) {
-      if (mounted) {
-        setState(() => _error = e.code == 'permission-denied' ? 'Account setup failed. Access denied' : e.message ?? e.code);
-      }
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _error = authErrorMessage(e.message));
     } on GoogleSignInException catch (e) {
       if (mounted && e.code != GoogleSignInExceptionCode.canceled) {
         setState(() => _error = 'Google Sign-In failed: ${e.code.name}');

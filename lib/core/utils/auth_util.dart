@@ -6,24 +6,29 @@ String? validateEmail(String? v) {
   return null;
 }
 
-String authErrorMessage(String code) {
-  switch (code) {
-    case 'user-not-found':
-      return 'No account found for this email';
-    case 'wrong-password':
-    case 'invalid-credential':
-      return 'Incorrect email or password';
-    case 'email-already-in-use':
-      return 'An account already exists for this email';
-    case 'weak-password':
-      return 'Password is too weak';
-    case 'invalid-email':
-      return 'Invalid email address';
-    case 'too-many-requests':
-      return 'Too many attempts. Try again later';
-    case 'network-request-failed':
-      return 'Network error. Check your connection';
-    default:
-      return 'Something went wrong. Please try again';
+/// Maps Supabase AuthException messages to user-friendly strings.
+String authErrorMessage(String message) {
+  final m = message.toLowerCase();
+  if (m.contains('invalid login credentials') || m.contains('invalid credentials')) {
+    return 'Incorrect email or password';
   }
+  if (m.contains('user already registered') || m.contains('already been registered')) {
+    return 'An account already exists for this email';
+  }
+  if (m.contains('password should be at least') || m.contains('weak password')) {
+    return 'Password must be at least 6 characters';
+  }
+  if (m.contains('unable to validate email') || m.contains('invalid format')) {
+    return 'Invalid email address';
+  }
+  if (m.contains('email not confirmed')) {
+    return 'Please confirm your email before signing in';
+  }
+  if (m.contains('too many requests') || m.contains('rate limit')) {
+    return 'Too many attempts. Try again later';
+  }
+  if (m.contains('network') || m.contains('connection')) {
+    return 'Network error. Check your connection';
+  }
+  return 'Something went wrong. Please try again';
 }

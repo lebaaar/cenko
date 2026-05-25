@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void _setSystemUIOverlayStyle(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
@@ -40,6 +41,10 @@ void main() async {
   await FirebaseAppCheck.instance.activate(
     providerAndroid: kDebugMode ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
     providerApple: kDebugMode ? const AppleDebugProvider() : const AppleAppAttestProvider(),
+  );
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   await GoogleSignIn.instance.initialize();
   final introductionShown = await getIntroductionShown();

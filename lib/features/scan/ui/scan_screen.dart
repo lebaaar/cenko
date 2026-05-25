@@ -19,24 +19,21 @@ import 'package:cenko/features/shopping_list/data/shared_shopping_list_repositor
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
+import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cenko/shared/widgets/animated_dots.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 
-const _commonBoughtProductWindowDays = 90;
-const _commonBoughtProductInactivityDays = 45;
-const _commonBoughtProductMinPurchases = 4;
-
-class ScanScreen extends StatefulWidget {
+class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key, this.initialMode, this.returnTo, this.targetListId});
 
   final String? initialMode;
@@ -44,10 +41,10 @@ class ScanScreen extends StatefulWidget {
   final String? targetListId;
 
   @override
-  State<ScanScreen> createState() => _ScanScreenState();
+  ConsumerState<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
+class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProviderStateMixin {
   final MobileScannerController _controller = MobileScannerController(autoStart: false);
   final ImagePicker _imagePicker = ImagePicker();
   final SharedShoppingListRepository _shoppingListRepository = SharedShoppingListRepository();
@@ -926,7 +923,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                         (list) => ListTile(
                           leading: const Icon(Icons.checklist_rounded),
                           title: Text(list.name),
-                          subtitle: Text('${list.itemCount} items'),
+                          subtitle: Text(list.members.length == 1 ? 'Private' : list.members.map((m) => m.name).join(', ')),
                           onTap: () => Navigator.of(sheetContext).pop(list.id),
                         ),
                       ),
@@ -948,7 +945,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) {
       setState(() {
         _barcodeFlowState = _BarcodeFlowState.failure;
@@ -987,7 +984,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) {
       setState(() {
         _barcodeFlowState = _BarcodeFlowState.failure;
@@ -1851,6 +1848,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         return;
       }
 
+      ref.read(receiptRevisionProvider.notifier).increment();
+
       setState(() {
         _receiptFlowState = _ReceiptFlowState.success;
       });
@@ -1972,163 +1971,60 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _persistReceiptPayload(Map<String, dynamic> payload) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      throw StateError('You must be logged in to store a receipt');
-    }
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) throw StateError('You must be logged in to store a receipt');
 
     final receipt = payload['receipt'] as Map<String, dynamic>?;
     final items = payload['items'] as List<dynamic>?;
-    if (receipt == null) {
-      throw StateError('Receipt data is missing');
-    }
+    if (receipt == null) throw StateError('Receipt data is missing');
 
-    final firestore = FirebaseFirestore.instance;
-    final userRef = firestore.collection('users').doc(uid);
+    final supabase = Supabase.instance.client;
 
-    if (await isFreePlan(firestore, uid)) {
-      final receiptCount = (await userRef.collection('receipts').count().get()).count ?? 0;
-      if (receiptCount >= kMaxNumberOfReceipts) {
+    if (await isFreePlan(uid)) {
+      final rows = await supabase.from('receipt').select('id').eq('user_id', uid);
+      if ((rows as List).length >= kMaxNumberOfReceipts) {
         throw Exception(
           'You\'ve reached the limit of $kMaxNumberOfReceipts receipts. Please delete some old receipts in Profile page to add new ones.',
         );
       }
     }
 
-    final receiptRef = userRef.collection('receipts').doc();
-    final parsedDate = _parseDate(receipt['date']);
     final normalizedStoreName = _asString(receipt['store_name'], fallback: 'Unknown store');
+    final parsedDate = _parseDate(receipt['date']);
     final totalPrice = _asInt(receipt['total_price']);
+    final rawOcr = _asString(receipt['raw_ocr']);
 
-    await firestore.runTransaction((txn) async {
-      final userSnapshot = await txn.get(userRef);
-      final userData = userSnapshot.data() ?? <String, dynamic>{};
-      final statsData = userData['stats'] is Map<String, dynamic> ? userData['stats'] as Map<String, dynamic> : <String, dynamic>{};
-      final existingStores = statsData['most_visited_stores'] is List ? List<dynamic>.from(statsData['most_visited_stores'] as List) : <dynamic>[];
+    // Resolve store_id (null if store not found in DB)
+    final storeRows = await supabase
+        .from('store')
+        .select('id')
+        .ilike('name', normalizedStoreName)
+        .limit(1);
+    final storeId = (storeRows as List).isNotEmpty ? storeRows.first['id'] as int? : null;
 
-      final storeStats = existingStores.whereType<Map<String, dynamic>>().map((store) => Map<String, dynamic>.from(store)).toList();
+    // Insert receipt row
+    final receiptRow = await supabase.from('receipt').insert({
+      'user_id': uid,
+      if (storeId != null) 'store_id': storeId,
+      'total': totalPrice,
+      'receipt_date': parsedDate.toIso8601String().substring(0, 10),
+      'raw_ocr': rawOcr,
+    }).select('id').single();
 
-      final existingIndex = storeStats.indexWhere((store) => _normalizedStoreKey(store['store_name']) == _normalizedStoreKey(normalizedStoreName));
-      if (existingIndex == -1) {
-        storeStats.add({'store_name': normalizedStoreName, 'visit_count': 1});
-      } else {
-        final existingVisitCount = _asInt(storeStats[existingIndex]['visit_count']);
-        storeStats[existingIndex] = {...storeStats[existingIndex], 'store_name': normalizedStoreName, 'visit_count': existingVisitCount + 1};
-      }
-      storeStats.sort((a, b) => _asInt(b['visit_count']).compareTo(_asInt(a['visit_count'])));
+    final receiptId = receiptRow['id'] as int;
 
-      txn.set(receiptRef, {
-        'receipt_id': receiptRef.id,
-        'store_name': normalizedStoreName,
-        'total_price': totalPrice,
-        'item_count': _asInt(receipt['item_count'], fallback: (items ?? const <dynamic>[]).length),
-        'raw_ocr': _asString(receipt['raw_ocr']),
-        'date': Timestamp.fromDate(parsedDate),
-        'created_at': FieldValue.serverTimestamp(),
+    // Insert items
+    for (final rawItem in items ?? const <dynamic>[]) {
+      if (rawItem is! Map<String, dynamic>) continue;
+      final rawName = _asString(rawItem['raw_name'], fallback: 'Unknown item');
+      await supabase.from('receipt_item').insert({
+        'receipt_id': receiptId,
+        'name': rawName,
+        'unit_price': _asInt(rawItem['unit_price']),
+        'quantity': _asNum(rawItem['quantity']).round().clamp(1, 9999),
+        'total_price': _asInt(rawItem['total_price']),
       });
-
-      for (final rawItem in items ?? const <dynamic>[]) {
-        if (rawItem is! Map<String, dynamic>) {
-          continue;
-        }
-
-        final itemRef = receiptRef.collection('items').doc();
-        final rawName = _asString(rawItem['raw_name'], fallback: 'Unknown item');
-        txn.set(itemRef, {
-          'item_id': itemRef.id,
-          'raw_name': rawName,
-          'name': rawName,
-          'unit_price': _asInt(rawItem['unit_price']),
-          'quantity': _asNum(rawItem['quantity']),
-          'total_price': _asInt(rawItem['total_price']),
-          'created_at': FieldValue.serverTimestamp(),
-        });
-      }
-
-      txn.set(userRef, {
-        'stats': {
-          'total_spent': _asInt(statsData['total_spent']) + totalPrice,
-          'receipts_scanned': _asInt(statsData['receipts_scanned']) + 1,
-          'most_visited_stores': storeStats.take(10).toList(),
-        },
-      }, SetOptions(merge: true));
-    });
-
-    try {
-      await _syncCommonBoughtProducts(uid: uid);
-    } catch (error) {
-      debugPrint('Failed to update common bought products: ${error.toString().replaceFirst('Exception: ', '')}');
     }
-  }
-
-  Future<void> _syncCommonBoughtProducts({required String uid}) async {
-    final firestore = FirebaseFirestore.instance;
-    final userRef = firestore.collection('users').doc(uid);
-    final receiptsRef = userRef.collection('receipts');
-    final commonProductsRef = userRef.collection('common_products');
-
-    final now = DateTime.now().toUtc();
-    final recentReceiptCutoff = now.subtract(const Duration(days: _commonBoughtProductWindowDays));
-    final inactiveCutoff = now.subtract(const Duration(days: _commonBoughtProductInactivityDays));
-
-    final recentReceiptsSnapshot = await receiptsRef
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(recentReceiptCutoff))
-        .orderBy('date', descending: true)
-        .get();
-    final productStatsByKey = <String, _CommonBoughtProductStats>{};
-
-    for (final receiptDoc in recentReceiptsSnapshot.docs) {
-      final receiptData = receiptDoc.data();
-      final receiptDate = _dateFromReceipt(receiptData);
-      final receiptItemsSnapshot = await receiptDoc.reference.collection('items').get();
-      final keysSeenInReceipt = <String>{};
-
-      for (final itemDoc in receiptItemsSnapshot.docs) {
-        final rawName = _asString(itemDoc.data()['raw_name']);
-        final productKey = _normalizeCommonProductKey(rawName);
-        if (productKey.isEmpty || !keysSeenInReceipt.add(productKey)) {
-          continue;
-        }
-
-        final stats = productStatsByKey.putIfAbsent(productKey, () => _CommonBoughtProductStats(name: rawName, lastPurchasedAt: receiptDate));
-        stats.recordPurchase(candidateName: rawName, purchasedAt: receiptDate);
-      }
-    }
-
-    final existingCommonProductsSnapshot = await commonProductsRef.get();
-    final activeKeys = <String>{};
-    final batch = firestore.batch();
-
-    for (final entry in productStatsByKey.entries) {
-      final productKey = entry.key;
-      final stats = entry.value;
-      final qualifies = stats.purchaseCount >= _commonBoughtProductMinPurchases && !stats.lastPurchasedAt.isBefore(inactiveCutoff);
-      final docRef = commonProductsRef.doc(productKey);
-
-      if (!qualifies) {
-        continue;
-      }
-
-      activeKeys.add(productKey);
-      batch.set(docRef, {
-        'item_id': productKey,
-        'name': stats.name,
-        'brand': null,
-        'image_url': null,
-        'purchase_count': stats.purchaseCount,
-        'last_purchased_at': Timestamp.fromDate(stats.lastPurchasedAt),
-        'added_at': Timestamp.fromDate(stats.lastPurchasedAt),
-      }, SetOptions(merge: true));
-    }
-
-    for (final doc in existingCommonProductsSnapshot.docs) {
-      if (activeKeys.contains(doc.id)) {
-        continue;
-      }
-      batch.delete(doc.reference);
-    }
-
-    await batch.commit();
   }
 
   DateTime _parseDate(dynamic value) {
@@ -2138,22 +2034,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   String _normalizedStoreKey(dynamic value) {
     return _asString(value).toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  DateTime _dateFromReceipt(Map<String, dynamic> receiptData) {
-    final value = receiptData['date'];
-    if (value is Timestamp) {
-      return value.toDate().toUtc();
-    }
-    return _parseDate(value);
-  }
-
-  String _normalizeCommonProductKey(String value) {
-    final normalized = value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (normalized.isEmpty) {
-      return '';
-    }
-    return normalized.replaceAll(' ', '_');
   }
 
   Map<String, dynamic> _normalizeDbPayload(Map<String, dynamic> decoded, String fallbackRawOcr) {
@@ -2355,23 +2235,6 @@ class _ControlButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _CommonBoughtProductStats {
-  _CommonBoughtProductStats({required this.name, required this.lastPurchasedAt}) : purchaseCount = 0;
-
-  String name;
-  DateTime lastPurchasedAt;
-  int purchaseCount;
-
-  void recordPurchase({required String candidateName, required DateTime purchasedAt}) {
-    purchaseCount += 1;
-
-    if (purchasedAt.isAfter(lastPurchasedAt)) {
-      lastPurchasedAt = purchasedAt;
-      name = candidateName;
-    }
   }
 }
 

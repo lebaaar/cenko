@@ -6,10 +6,11 @@ import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
+import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/services/receipt_analytics_service.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
 import 'package:cenko/shared/widgets/top_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,32 +69,37 @@ class _MonthReceiptPage {
   final bool hasMore;
 }
 
-final _monthReceiptsProvider = StreamProvider.family<QuerySnapshot<Map<String, dynamic>>, _MonthReceiptQuery>((ref, query) {
-  final monthStartLocal = DateTime(query.month.year, query.month.month);
-  final nextMonthStartLocal = DateTime(query.month.year, query.month.month + 1);
+final _monthReceiptsProvider =
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, _MonthReceiptQuery>((ref, query) async {
+  ref.watch(receiptRevisionProvider); // re-fetch when a receipt is saved or pull-to-refresh
+  final year = query.month.year;
+  final month = query.month.month;
+  final monthStart = '$year-${month.toString().padLeft(2, '0')}-01';
+  final nextMonth = DateTime(year, month + 1);
+  final nextMonthStart =
+      '${nextMonth.year}-${nextMonth.month.toString().padLeft(2, '0')}-01';
 
-  final monthStart = Timestamp.fromDate(monthStartLocal.toUtc());
-  final nextMonthStart = Timestamp.fromDate(nextMonthStartLocal.toUtc());
-
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(query.uid)
-      .collection('receipts')
-      .where('date', isGreaterThanOrEqualTo: monthStart)
-      .where('date', isLessThan: nextMonthStart)
-      .orderBy('date', descending: true)
-      .limit(query.limit)
-      .snapshots();
+  final rows = await Supabase.instance.client
+      .from('receipt')
+      .select('id, total, receipt_date, scanned_at, store:store_id(name), receipt_item(id)')
+      .eq('user_id', query.uid)
+      .gte('receipt_date', monthStart)
+      .lt('receipt_date', nextMonthStart)
+      .order('receipt_date', ascending: false)
+      .limit(query.limit);
+  return (rows as List).map((r) => r as Map<String, dynamic>).toList();
 });
 
-_MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot) {
+_MonthSpendingStats _monthSpendingStatsFromRows(List<Map<String, dynamic>> rows) {
   var spentCents = 0;
   final byStore = <String, _StoreMonthSpend>{};
 
-  for (final doc in snapshot.docs) {
-    final data = doc.data();
-    final storeName = (data['store_name'] as String?)?.trim().isNotEmpty == true ? (data['store_name'] as String).trim() : 'Unknown store';
-    final totalPrice = data['total_price'] is int ? data['total_price'] as int : 0;
+  for (final r in rows) {
+    final storeMap = r['store'] as Map<String, dynamic>?;
+    final storeName = (storeMap?['name'] as String?)?.trim().isNotEmpty == true
+        ? (storeMap!['name'] as String).trim()
+        : 'Unknown store';
+    final totalPrice = r['total'] is int ? r['total'] as int : 0;
 
     spentCents += totalPrice;
 
@@ -110,38 +116,25 @@ _MonthSpendingStats _monthSpendingStatsFromSnapshot(QuerySnapshot<Map<String, dy
   }
 
   final stores = byStore.values.toList()..sort((a, b) => b.spentCents.compareTo(a.spentCents));
-  return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: snapshot.size, stores: stores);
+  return _MonthSpendingStats(spentCents: spentCents, receiptsScanned: rows.length, stores: stores);
 }
 
-_MonthReceiptPage _monthReceiptPageFromSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot, int limit) {
-  final receipts = snapshot.docs
-      .map((doc) {
-        final data = doc.data();
-        return _MonthReceiptItem(
-          id: doc.id,
-          storeName: _monthReceiptStoreName(data),
-          totalPriceCents: data['total_price'] is int ? data['total_price'] as int : 0,
-          itemCount: data['item_count'] is int ? data['item_count'] as int : 0,
-          date: _monthReceiptDate(data['date']),
-        );
-      })
-      .toList(growable: false);
+_MonthReceiptPage _monthReceiptPageFromRows(List<Map<String, dynamic>> rows, int limit) {
+  final receipts = rows.map((r) {
+    final storeMap = r['store'] as Map<String, dynamic>?;
+    final storeName = (storeMap?['name'] as String?)?.trim().isNotEmpty == true
+        ? (storeMap!['name'] as String).trim()
+        : 'Unknown store';
+    return _MonthReceiptItem(
+      id: r['id'].toString(),
+      storeName: storeName,
+      totalPriceCents: r['total'] is int ? r['total'] as int : 0,
+      itemCount: (r['receipt_item'] as List?)?.length ?? 0,
+      date: DateTime.tryParse(r['receipt_date'] as String? ?? '')?.toLocal() ?? DateTime.now(),
+    );
+  }).toList(growable: false);
 
-  return _MonthReceiptPage(receipts: receipts, hasMore: snapshot.docs.length > limit);
-}
-
-String _monthReceiptStoreName(Map<String, dynamic> data) {
-  final storeName = (data['store_name'] as String?)?.trim();
-  return storeName == null || storeName.isEmpty ? 'Unknown store' : storeName;
-}
-
-DateTime _monthReceiptDate(dynamic value) {
-  if (value is Timestamp) {
-    return value.toDate().toLocal();
-  }
-
-  final parsed = DateTime.tryParse(value?.toString() ?? '');
-  return parsed?.toLocal() ?? DateTime.now();
+  return _MonthReceiptPage(receipts: receipts, hasMore: rows.length > limit);
 }
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -309,23 +302,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.userId, month: _selectedMonth, limit: 20)));
+        final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.id, month: _selectedMonth, limit: 100)));
         final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
 
         final colorScheme = Theme.of(context).colorScheme;
-        final initials = user.name.trim().isEmpty
+        final initials = user.displayName.trim().isEmpty
             ? 'U'
-            : user.name.trim().split(RegExp(r'\s+')).take(2).map((part) => part.isNotEmpty ? part[0] : '').join().toUpperCase();
+            : user.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part.isNotEmpty ? part[0] : '').join().toUpperCase();
         final selectedMonthIndex = _monthOptions.indexWhere((m) => _isSameMonth(m, _selectedMonth));
 
         return Scaffold(
           body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MainTopBar(title: l10n.navProfile),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.read(receiptRevisionProvider.notifier).increment();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MainTopBar(title: l10n.navProfile),
                   InkWell(
                     borderRadius: BorderRadius.circular(14),
                     onTap: () => context.push('/settings'),
@@ -347,10 +345,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(user.name, style: Theme.of(context).textTheme.titleLarge),
+                                Text(user.displayName, style: Theme.of(context).textTheme.titleLarge),
                                 const SizedBox(height: 2),
                                 Text(
-                                  l10n.profileMemberSince(displayDate(user.createdAt)),
+                                  l10n.profileMemberSince(displayDate(user.joinedAt)),
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                                 ),
                               ],
@@ -430,13 +428,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  data: (monthSnapshot) {
-                                    final monthStats = _monthSpendingStatsFromSnapshot(monthSnapshot);
-                                    final monthReceiptsPage = _monthReceiptPageFromSnapshot(monthSnapshot, visibleReceiptCount);
+                                  data: (rows) {
+                                    final monthStats = _monthSpendingStatsFromRows(rows);
+                                    final monthReceiptsPage = _monthReceiptPageFromRows(rows, visibleReceiptCount);
                                     final stores = monthStats.stores;
                                     final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
                                     final hasReceiptScans = monthStats.receiptsScanned > 0;
-                                    final shouldShowFirstScanButton = !hasReceiptScans && user.stats.receiptsScanned == 0;
+                                    final shouldShowFirstScanButton = !hasReceiptScans;
 
                                     return Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,7 +529,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                       movementDuration: const Duration(milliseconds: 180),
                                                       resizeDuration: const Duration(milliseconds: 180),
                                                       confirmDismiss: (_) =>
-                                                          _confirmDeleteReceipt(context: context, uid: user.userId, receipt: receipt),
+                                                          _confirmDeleteReceipt(context: context, uid: user.id, receipt: receipt),
                                                       background: Container(
                                                         alignment: Alignment.centerRight,
                                                         padding: const EdgeInsets.only(right: 18),
@@ -550,7 +548,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                                             itemLabel: l10n.profileReceiptItemCount(receipt.itemCount),
                                                             onTap: () => context.push('/receipt/${receipt.id}'),
                                                             onLongPress: () =>
-                                                                _showReceiptContextMenu(context, user.userId, receipt, pressPosition ?? Offset.zero),
+                                                                _showReceiptContextMenu(context, user.id, receipt, pressPosition ?? Offset.zero),
                                                           ),
                                                         ),
                                                       ),
@@ -628,6 +626,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
           ),
+        ),
         );
       },
     );
@@ -692,6 +691,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       setDialogState(() => deleting = true);
                                       try {
                                         await _receiptAnalyticsService.deleteReceiptAndResyncCommonProducts(uid: uid, receiptId: receipt.id);
+                                        ref.read(receiptRevisionProvider.notifier).increment();
                                         if (dialogContext.mounted) {
                                           Navigator.of(dialogContext).pop(true);
                                         }
