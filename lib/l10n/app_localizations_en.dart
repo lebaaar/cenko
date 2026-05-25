@@ -462,9 +462,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listEmpty => 'Empty list';
 
   @override
-  String get listAllDone => 'All done!';
-
-  @override
   String listRemainingCount(int count) {
     return '$count remaining';
   }
@@ -1019,9 +1016,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorNetwork => 'Network error. Check your connection';
-
-  @override
-  String get authErrorGeneric => 'Something went wrong. Please try again';
 
   @override
   String get authErrorAccountSetupFailed =>

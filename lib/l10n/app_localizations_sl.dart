@@ -269,7 +269,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get goodMorning => 'Dobro jutro';
 
   @override
-  String get goodAfternoon => 'Pozdravljeni';
+  String get goodAfternoon => 'Zdravo';
 
   @override
   String get goodEvening => 'Dober večer';
@@ -457,9 +457,6 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get listEmpty => 'Prazen seznam';
-
-  @override
-  String get listAllDone => 'Vse opravljeno!';
 
   @override
   String listRemainingCount(int count) {
@@ -1025,9 +1022,6 @@ class AppLocalizationsSl extends AppLocalizations {
   @override
   String get authErrorNetwork =>
       'Napaka omrežja. Preverite internetno povezavo';
-
-  @override
-  String get authErrorGeneric => 'Prišlo je do napake. Poskusite znova';
 
   @override
   String get authErrorAccountSetupFailed =>

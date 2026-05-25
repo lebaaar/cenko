@@ -255,7 +255,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               children: [
                 MainTopBar(title: l10n.navProfile),
-                Expanded(child: Center(child: Text(error.toString()))),
+                Expanded(child: Center(child: Text(l10n.errorGeneric))),
               ],
             ),
           ),
@@ -420,7 +420,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     error: (error, _) => Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 4),
                                       child: Text(
-                                        'Failed to load spendings: ${error.toString().replaceFirst('Exception: ', '')}',
+                                        l10n.errorFailedToLoadSpendings,
                                         style: Theme.of(context).textTheme.bodyMedium,
                                       ),
                                     ),

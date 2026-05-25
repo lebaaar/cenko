@@ -111,7 +111,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     ? Center(child: Text(AppLocalizations.of(context)!.listSignInPrompt))
                     : listAsync.when(
                         loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Failed to load list: ${e.toString().replaceFirst('Exception: ', '')}')),
+                        error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
                         data: (list) {
                           if (list == null) {
                             // loading spinner is shown for 2 seconds, then "List not found" if list is still null
@@ -223,9 +223,15 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.listEditItemTitle, style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      item == null ? AppLocalizations.of(context)!.addItem : AppLocalizations.of(context)!.listEditItemTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 4),
-                    Text(item == null ? AppLocalizations.of(context)!.listAddItemSubtitle : AppLocalizations.of(context)!.listEditItemSubtitle, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      item == null ? AppLocalizations.of(context)!.listAddItemSubtitle : AppLocalizations.of(context)!.listEditItemSubtitle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                     const SizedBox(height: 16),
                     if (_formError != null) ...[
                       Text(_formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -284,7 +290,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             ...categories.map(
                               (c) => DropdownMenuItem<int?>(
                                 value: c.id,
-                                child: Row(children: [Icon(c.iconData, size: 16), const SizedBox(width: 8), Text(categoryLocalizedName(l10n, c.slug))]),
+                                child: Row(
+                                  children: [Icon(c.iconData, size: 16), const SizedBox(width: 8), Text(categoryLocalizedName(l10n, c.slug))],
+                                ),
                               ),
                             ),
                           ],
@@ -315,6 +323,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
 
   Future<void> _saveItemForm({required String uid, required StateSetter setModalState, required BuildContext sheetContext}) async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setModalState(() {
       _saving = true;
@@ -337,7 +346,15 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
           categoryId: _selectedCategoryId,
         );
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, categoryId: _selectedCategoryId, isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true);
+        await repo.addItem(
+          listId: widget.listId,
+          addedBy: uid,
+          name: _nameCtrl.text,
+          quantity: quantity,
+          unit: unit,
+          categoryId: _selectedCategoryId,
+          isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true,
+        );
       }
 
       ref.invalidate(shoppingListItemsProvider(widget.listId));
@@ -346,7 +363,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     } catch (e) {
       if (mounted) {
         setModalState(() {
-          _formError = 'Failed to save item: ${e.toString().replaceFirst('Exception: ', '')}';
+          _formError = l10n.errorFailedToSaveItem;
           _saving = false;
         });
       }
@@ -384,7 +401,9 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                             child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(AppLocalizations.of(context)!.listDeleteItemTitle(item.name), style: Theme.of(context).textTheme.titleLarge)),
+                          Expanded(
+                            child: Text(AppLocalizations.of(context)!.listDeleteItemTitle(item.name), style: Theme.of(context).textTheme.titleLarge),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -473,6 +492,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 setDialogState(() => error = AppLocalizations.of(context)!.listNameRequired);
                 return;
               }
+              final renameError = AppLocalizations.of(context)!.errorFailedToRenameList;
               setDialogState(() {
                 saving = true;
                 error = null;
@@ -485,11 +505,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     ref.invalidate(userShoppingListsProvider(ref.read(authStateProvider).asData?.value?.user.id ?? ''));
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   })
-                  .catchError((e) {
+                  .catchError((_) {
                     if (mounted) {
                       setDialogState(() {
                         saving = false;
-                        error = 'Failed to rename list: ${e.toString().replaceFirst('Exception: ', '')}';
+                        error = renameError;
                       });
                     }
                   });
@@ -577,6 +597,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                 error = null;
               });
               final invitedMsg = AppLocalizations.of(context)!.invitationSentTo(email);
+              final inviteError = AppLocalizations.of(context)!.errorGeneric;
               ref
                   .read(sharedShoppingListRepositoryProvider)
                   .inviteByEmail(
@@ -590,11 +611,11 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                     SnackBarService.show(invitedMsg);
                   })
-                  .catchError((e) {
+                  .catchError((_) {
                     if (mounted) {
                       setDialogState(() {
                         inviting = false;
-                        error = e.toString().replaceFirst('Exception: ', '');
+                        error = inviteError;
                       });
                     }
                   });
@@ -780,9 +801,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     final isOwner = list.ownerId == uid;
     final actionLabel = isOwner ? l10n.delete : l10n.listLeaveListMenu;
     final titleText = isOwner ? l10n.listDeleteListTitle : l10n.listLeaveListTitle;
-    final description = isOwner
-        ? l10n.listDeleteListDescription(list.name)
-        : l10n.listLeaveListDescription(list.name);
+    final description = isOwner ? l10n.listDeleteListDescription(list.name) : l10n.listLeaveListDescription(list.name);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -908,7 +927,11 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           if (list != null) ...[
-            IconButton(icon: const Icon(Icons.person_add_rounded), onPressed: onInvite, tooltip: AppLocalizations.of(context)!.listInvitePeopleTooltip),
+            IconButton(
+              icon: const Icon(Icons.person_add_rounded),
+              onPressed: onInvite,
+              tooltip: AppLocalizations.of(context)!.listInvitePeopleTooltip,
+            ),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
@@ -925,7 +948,10 @@ class _TopBar extends StatelessWidget {
                 PopupMenuItem(value: 'rename', child: Text(AppLocalizations.of(context)!.listRenameListMenu)),
                 PopupMenuItem(
                   value: 'leave',
-                  child: Text(isOwner ? AppLocalizations.of(context)!.listDeleteListMenu : AppLocalizations.of(context)!.listLeaveListMenu, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Text(
+                    isOwner ? AppLocalizations.of(context)!.listDeleteListMenu : AppLocalizations.of(context)!.listLeaveListMenu,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 ),
               ],
             ),
@@ -1009,12 +1035,18 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
 
   String _itemSortLabel(_ItemSortOption option, AppLocalizations l10n) {
     switch (option) {
-      case _ItemSortOption.newestFirst: return l10n.itemSortNewestFirst;
-      case _ItemSortOption.oldestFirst: return l10n.itemSortOldestFirst;
-      case _ItemSortOption.alphabeticalAZ: return l10n.itemSortAlphaAZ;
-      case _ItemSortOption.alphabeticalZA: return l10n.itemSortAlphaZA;
-      case _ItemSortOption.unboughtFirst: return l10n.itemSortUnboughtFirst;
-      case _ItemSortOption.boughtFirst: return l10n.itemSortBoughtFirst;
+      case _ItemSortOption.newestFirst:
+        return l10n.itemSortNewestFirst;
+      case _ItemSortOption.oldestFirst:
+        return l10n.itemSortOldestFirst;
+      case _ItemSortOption.alphabeticalAZ:
+        return l10n.itemSortAlphaAZ;
+      case _ItemSortOption.alphabeticalZA:
+        return l10n.itemSortAlphaZA;
+      case _ItemSortOption.unboughtFirst:
+        return l10n.itemSortUnboughtFirst;
+      case _ItemSortOption.boughtFirst:
+        return l10n.itemSortBoughtFirst;
     }
   }
 
@@ -1024,7 +1056,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
     final categories = ref.watch(categoriesProvider).asData?.value ?? [];
     return widget.itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
+      error: (_, _) => Center(child: Text(l10n.errorFailedToLoadItems)),
       data: (items) {
         if (items.isEmpty) {
           return Center(
@@ -1180,7 +1212,14 @@ Category? _findCategory(List<Category> categories, int? id) {
 }
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({required this.item, required this.category, required this.bestDeal, required this.onToggleBought, required this.onEdit, this.onLongPress});
+  const _ShoppingItemTile({
+    required this.item,
+    required this.category,
+    required this.bestDeal,
+    required this.onToggleBought,
+    required this.onEdit,
+    this.onLongPress,
+  });
 
   final ShoppingListItem item;
   final Category? category;
@@ -1262,7 +1301,10 @@ class _ShoppingItemTile extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (_subtitleText(AppLocalizations.of(context)!) != null) ...[const SizedBox(height: 2), Text(_subtitleText(AppLocalizations.of(context)!)!, style: subtitleStyle)],
+                    if (_subtitleText(AppLocalizations.of(context)!) != null) ...[
+                      const SizedBox(height: 2),
+                      Text(_subtitleText(AppLocalizations.of(context)!)!, style: subtitleStyle),
+                    ],
                   ],
                 ),
               ),
@@ -1272,7 +1314,6 @@ class _ShoppingItemTile extends StatelessWidget {
       ),
     );
   }
-
 
   String? _quantityUnitText() {
     final hasQty = item.quantity > 1;
@@ -1312,7 +1353,10 @@ class _MemberRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isSelf ? '$name${AppLocalizations.of(context)!.listMemberYouSuffix}' : name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  isSelf ? '$name${AppLocalizations.of(context)!.listMemberYouSuffix}' : name,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 Text(
                   isOwner ? AppLocalizations.of(context)!.listMemberOwner : AppLocalizations.of(context)!.listMemberMember,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -1363,7 +1407,10 @@ class _PendingInvitationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(email, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                Text(AppLocalizations.of(context)!.listPending, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(
+                  AppLocalizations.of(context)!.listPending,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),

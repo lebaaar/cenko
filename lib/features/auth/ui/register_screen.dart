@@ -42,6 +42,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _googleSignIn() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _loading = true;
       _error = null;
@@ -52,10 +53,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) setState(() => _error = authErrorMessage(e.message));
     } on GoogleSignInException catch (e) {
       if (mounted && e.code != GoogleSignInExceptionCode.canceled) {
-        setState(() => _error = 'Google Sign-In failed: ${e.code.name}');
+        setState(() => _error = l10n.authErrorGoogleSignInFailed);
       }
-    } on Exception catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } on Exception {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

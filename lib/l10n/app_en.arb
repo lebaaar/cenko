@@ -312,9 +312,6 @@
   "listEmpty": "Empty list",
   "@listEmpty": { "description": "Empty list label" },
 
-  "listAllDone": "All done!",
-  "@listAllDone": { "description": "All items bought" },
-
   "listRemainingCount": "{count} remaining",
   "@listRemainingCount": {
     "description": "Remaining item count on list card",
@@ -722,8 +719,6 @@
   "@authErrorTooManyRequests": { "description": "Auth error: too many requests" },
   "authErrorNetwork": "Network error. Check your connection",
   "@authErrorNetwork": { "description": "Auth error: network failure" },
-  "authErrorGeneric": "Something went wrong. Please try again",
-  "@authErrorGeneric": { "description": "Auth error: fallback" },
   "authErrorAccountSetupFailed": "Account setup failed. Access denied",
   "@authErrorAccountSetupFailed": { "description": "Firestore permission denied on account setup" },
   "authErrorGoogleSignInFailed": "Google Sign-In failed",

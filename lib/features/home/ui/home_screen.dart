@@ -44,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
                 height: MediaQuery.of(context).size.height - 100,
                 child: const Center(child: CircularProgressIndicator()),
               ),
-              error: (error, _) => Center(child: Text(error.toString())),
+              error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
               data: (user) {
                 final name = user?.displayName.trim().isNotEmpty == true ? user!.displayName.trim() : 'there';
                 final secondaryBodyStyle = Theme.of(context).textTheme.bodyMedium;
@@ -182,9 +182,9 @@ class _DealsListState extends State<_DealsList> {
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => Padding(
+      error: (_, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('Failed to load deals: ${error.toString().replaceFirst('Exception: ', '')}', style: Theme.of(context).textTheme.bodySmall),
+        child: Text(AppLocalizations.of(context)!.errorFailedToLoadDeals, style: Theme.of(context).textTheme.bodySmall),
       ),
       data: (items) {
         if (items.isEmpty) {

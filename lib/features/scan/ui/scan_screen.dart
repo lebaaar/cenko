@@ -794,6 +794,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     if (_receiptCameraInitializing) {
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _receiptCameraInitializing = true;
@@ -831,7 +832,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     } catch (e) {
       if (mounted) {
         setState(() {
-          _receiptFlowMessage = 'Camera init failed: ${e.toString().replaceFirst('Exception: ', '')}';
+          _receiptFlowMessage = l10n.scanCameraNotReady;
           _receiptFlowState = _ReceiptFlowState.failure;
         });
       }
@@ -1000,6 +1001,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     if (_isShowingManualAddSheet) {
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
 
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) {
@@ -1093,9 +1095,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                                     return;
                                   }
                                   setSheetState(() {
-                                    formError = error is Exception
-                                        ? error.toString().replaceFirst('Exception: ', '')
-                                        : 'Failed to save item. Please try again';
+                                    formError = l10n.errorFailedToSaveItem;
                                     saving = false;
                                   });
                                 }
@@ -1375,6 +1375,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       await _extractReceiptJsonFromImage(file, autoStore: autoStore, imageBytes: imageBytes);
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _isProcessingReceipt = true;
@@ -1432,7 +1433,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       if (!mounted) return;
 
       setState(() {
-        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
+        _receiptFlowMessage = l10n.scanFailedToSaveReceipt;
         _receiptFlowState = _ReceiptFlowState.failure;
       });
     } finally {
@@ -1444,6 +1445,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
   }
 
   Future<void> _extractReceiptJsonFromImage(XFile file, {bool autoStore = false, Uint8List? imageBytes}) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isProcessingReceipt = true;
       _receiptFlowMessage = null;
@@ -1500,7 +1502,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       if (!mounted) return;
 
       setState(() {
-        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
+        _receiptFlowMessage = l10n.scanFailedToSaveReceipt;
         _receiptFlowState = _ReceiptFlowState.failure;
       });
     } finally {
@@ -1847,6 +1849,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     if (_receiptFlowState == _ReceiptFlowState.processing) {
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
 
     final payload = _pendingReceiptPayload;
     if (payload == null) {
@@ -1875,7 +1878,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
 
       setState(() {
         _receiptFlowState = _ReceiptFlowState.failure;
-        _receiptFlowMessage = e.toString().replaceFirst('Exception: ', '');
+        _receiptFlowMessage = l10n.scanFailedToSaveReceipt;
       });
     } finally {
       _stopProcessingHints();

@@ -123,9 +123,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
-        body: Center(child: Text(e.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
       data: (deal) {
         if (deal == null) {

@@ -53,9 +53,9 @@ class ReceiptDetailScreen extends ConsumerWidget {
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(leading: BackButton(onPressed: () => context.pop())),
-        body: Center(child: Text(e.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
       data: (row) {
         if (row == null) {
@@ -192,7 +192,7 @@ class _ItemsCard extends ConsumerWidget {
           padding: EdgeInsets.symmetric(vertical: 20),
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}', style: Theme.of(context).textTheme.bodyMedium),
+        error: (_, _) => Text(AppLocalizations.of(context)!.errorFailedToLoadItems, style: Theme.of(context).textTheme.bodyMedium),
         data: (items) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,6 +334,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _saving = true;
@@ -367,7 +368,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _formError = 'Failed to save: ${e.toString().replaceFirst('Exception: ', '')}';
+          _formError = l10n.errorFailedToSaveItem;
         });
       }
     }

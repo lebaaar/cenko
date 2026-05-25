@@ -423,7 +423,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
       body: SafeArea(
         child: dealsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Failed to load deals: ${error.toString().replaceFirst('Exception: ', '')}')),
+          error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorFailedToLoadDeals)),
           data: (deals) {
             final priceSliderMax = _priceSliderMaxForDeals(deals);
             final effectivePriceRange = _clampPriceRange(_priceRange, priceSliderMax);

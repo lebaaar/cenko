@@ -42,7 +42,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                 title: AppLocalizations.of(context)!.shoppingListsTitle,
                 trailing: uid == null
                     ? null
-                    : IconButton(icon: const Icon(Icons.add_rounded), onPressed: () => _showCreateListDialog(context, uid), tooltip: AppLocalizations.of(context)!.shoppingListNewTooltip),
+                    : IconButton(
+                        icon: const Icon(Icons.add_rounded),
+                        onPressed: () => _showCreateListDialog(context, uid),
+                        tooltip: AppLocalizations.of(context)!.shoppingListNewTooltip,
+                      ),
               ),
             ),
             Expanded(
@@ -83,7 +87,12 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               final router = GoRouter.of(context);
               ref
                   .read(sharedShoppingListRepositoryProvider)
-                  .createList(ownerUid: uid, ownerName: currentUser?.displayName ?? 'Unknown', name: name, isFreePlan: currentUser?.isFreePlan == true)
+                  .createList(
+                    ownerUid: uid,
+                    ownerName: currentUser?.displayName ?? 'Unknown',
+                    name: name,
+                    isFreePlan: currentUser?.isFreePlan == true,
+                  )
                   .then((listId) {
                     ref.invalidate(userShoppingListsProvider(uid));
                     if (dialogContext.mounted) {
@@ -93,11 +102,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                       router.push('/list/$listId');
                     }
                   })
-                  .catchError((e) {
+                  .catchError((_) {
                     if (mounted) {
                       setDialogState(() {
                         creating = false;
-                        error = e.toString().replaceFirst('Exception: ', '');
+                        error = l10n.errorGeneric;
                       });
                     }
                   });
@@ -222,7 +231,7 @@ class _BodyState extends ConsumerState<_Body> {
       children: [
         listsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Failed to load shopping lists: ${e.toString().replaceFirst('Exception: ', '')}')),
+          error: (_, _) => Center(child: Text(AppLocalizations.of(context)!.errorFailedToLoadLists)),
           data: (lists) {
             final sortedLists = _sortLists(lists);
 
@@ -348,11 +357,7 @@ class _ListCard extends ConsumerWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
-                    isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded,
-                    size: 14,
-                    color: cs.onSurfaceVariant,
-                  ),
+                  Icon(isPrivate ? Icons.lock_outline_rounded : Icons.people_rounded, size: 14, color: cs.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -364,13 +369,11 @@ class _ListCard extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
               if (items != null) ...[
                 const SizedBox(height: 10),
                 if (total == 0)
-                  Text(
-                    l10n.listEmpty,
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  )
+                  Text(l10n.listEmpty, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant))
                 else ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -382,34 +385,12 @@ class _ListCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (allDone)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle_rounded, size: 13, color: cs.primary),
-                            const SizedBox(width: 4),
-                            Text(l10n.listAllDone, style: tt.bodySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
-                          ],
-                        )
-                      else
-                        Text(
-                          l10n.listRemainingCount(remaining),
-                          style: tt.bodySmall?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w500),
-                        ),
-                      if (bought > 0) ...[
-                        const SizedBox(width: 8),
-                        Text('·', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                        const SizedBox(width: 8),
-                        Icon(Icons.check_rounded, size: 12, color: cs.onSurfaceVariant),
-                        const SizedBox(width: 3),
-                        Text(
-                          l10n.listBoughtCount(bought),
-                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    '$bought/$total',
+                    style: tt.bodySmall?.copyWith(
+                      color: allDone ? cs.primary : cs.onSurfaceVariant,
+                      fontWeight: allDone ? FontWeight.w600 : FontWeight.w500,
+                    ),
                   ),
                 ],
               ],

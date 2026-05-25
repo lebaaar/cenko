@@ -147,7 +147,6 @@
   "listPrivate": "Zasebni seznam",
   "listEmpty": "Prazen seznam",
 
-  "listAllDone": "Vse opravljeno!",
   "listRemainingCount": "{count} preostalo",
   "listBoughtCount": "{count} kupljeno",
 
@@ -329,7 +328,6 @@
   "authErrorInvalidEmail": "Neveljaven e-naslov",
   "authErrorTooManyRequests": "Preveč poskusov. Poskusite kasneje",
   "authErrorNetwork": "Napaka omrežja. Preverite internetno povezavo",
-  "authErrorGeneric": "Prišlo je do napake. Poskusite znova",
   "authErrorAccountSetupFailed": "Nastavitev računa ni uspela. Dostop zavrnjen",
   "authErrorGoogleSignInFailed": "Prijava z Googlom ni uspela",
   "authEnterYourEmail": "Vnesite e-naslov",

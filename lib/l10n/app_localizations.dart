@@ -914,12 +914,6 @@ abstract class AppLocalizations {
   /// **'Empty list'**
   String get listEmpty;
 
-  /// All items bought
-  ///
-  /// In en, this message translates to:
-  /// **'All done!'**
-  String get listAllDone;
-
   /// Remaining item count on list card
   ///
   /// In en, this message translates to:
@@ -1951,12 +1945,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Network error. Check your connection'**
   String get authErrorNetwork;
-
-  /// Auth error: fallback
-  ///
-  /// In en, this message translates to:
-  /// **'Something went wrong. Please try again'**
-  String get authErrorGeneric;
 
   /// Firestore permission denied on account setup
   ///

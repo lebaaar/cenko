@@ -42,36 +42,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _saveDisplayName(String uid, String value) async {
+    final l10n = AppLocalizations.of(context)!;
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
     try {
       await _repo.updateDisplayName(uid, trimmed);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
   Future<void> _saveEmail(String uid, String value) async {
+    final l10n = AppLocalizations.of(context)!;
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
     try {
       await _repo.updateEmail(uid, trimmed);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
   Future<void> _savePreferences(String uid) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await _repo.updateSettings(uid, theme: _theme, lang: _language, notificationsEnabled: _notificationsEnabled);
       ref.invalidate(currentUserProvider);
       if (mounted) setState(() => _error = null);
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _error = l10n.errorGeneric);
     }
   }
 
@@ -135,21 +138,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 BulletPoint(l10n.deleteAccountStep1),
                 BulletPoint.widget(
                   child: Text.rich(
-                    TextSpan(children: [
-                      TextSpan(text: l10n.deleteAccountStep2Pre),
-                      const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
-                      TextSpan(text: l10n.deleteAccountStep2Post),
-                    ]),
+                    TextSpan(
+                      children: [
+                        TextSpan(text: l10n.deleteAccountStep2Pre),
+                        const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                        TextSpan(text: l10n.deleteAccountStep2Post),
+                      ],
+                    ),
                     style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
                 ),
                 BulletPoint(l10n.deleteAccountStep3),
                 BulletPoint.widget(
                   child: Text.rich(
-                    TextSpan(children: [
-                      TextSpan(text: l10n.deleteAccountStep4Pre),
-                      const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
-                    ]),
+                    TextSpan(
+                      children: [
+                        TextSpan(text: l10n.deleteAccountStep4Pre),
+                        const WidgetSpan(child: Icon(Icons.more_vert, size: 16), alignment: PlaceholderAlignment.middle),
+                      ],
+                    ),
                     style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
                 ),
@@ -166,15 +173,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _deleteLoading = false);
-      final message = e.toString().replaceFirst('Exception: ', '');
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.deleteAccountFailedTitle),
-          content: Text(message),
+          content: Text(l10n.errorGeneric),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -204,9 +210,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = l10n.errorGeneric);
     } finally {
       if (mounted) setState(() => _resetPasswordLoading = false);
     }
@@ -221,9 +227,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         appBar: AppBar(title: const Text('Settings')),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Settings')),
-        body: Center(child: Text(error.toString())),
+        body: Center(child: Text(AppLocalizations.of(context)!.errorGeneric)),
       ),
       data: (user) {
         final hasPasswordProvider = user?.authProvider == 'email';
