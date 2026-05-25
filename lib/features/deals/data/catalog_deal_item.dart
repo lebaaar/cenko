@@ -92,9 +92,16 @@ class CatalogDealItem {
   }
 
   static String _normalizedStoreName(String value) {
-    final normalized = value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (normalized == 'tus_drogrija') return 'tus_drogerija';
-    return normalized;
+    return switch (value.trim().toLowerCase()) {
+      'spar' => 'spar',
+      'tuš' || 'tus' => 'tus',
+      'tuš drogerija' || 'tus drogerija' || 'tus_drogerija' || 'tus_drogrija' => 'tus_drogerija',
+      'mercator' => 'mercator',
+      'hofer' => 'hofer',
+      'lidl' => 'lidl',
+      'eurospin' => 'eurospin',
+      final s => s,
+    };
   }
 
   static int? _derivedDiscountPercent({required int originalPrice, required int salePrice}) {

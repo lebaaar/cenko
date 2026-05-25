@@ -9,12 +9,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
 
-import firebase_admin
+import psycopg2
+import psycopg2.extras
 from dotenv import load_dotenv
-from firebase_admin import credentials, firestore
 
-FIRESTORE_BATCH_LIMIT = 500
-TIMESTAMP_FIELDS = frozenset({"scraped_at", "valid_from", "valid_until"})
 DISCOUNT_SCRIPT_PATHS = [
     Path("stores/lidl/discounted_items.py"),
     Path("stores/mercator/discounted_items.py"),
@@ -22,98 +20,99 @@ DISCOUNT_SCRIPT_PATHS = [
     Path("stores/spar/discounted_items.py"),
 ]
 
+# Maps scraper STORE_NAME -> DB store_id (matches seeded store table)
+STORE_ID_MAP: dict[str, int] = {
+    "spar": 1,
+    "tus": 2,
+    "tus_drogerija": 3,
+    "mercator": 4,
+    "hofer": 5,
+    "lidl": 6,
+    "eurospin": 7,
+}
+
 
 def _load_env() -> None:
     env_path = Path(__file__).with_name(".env")
     load_dotenv(env_path)
 
 
-def _resolve_key_path(path_value: str) -> Path:
-    key_path = Path(path_value).expanduser()
-    if key_path.is_absolute():
-        return key_path
-
-    cwd_candidate = (Path.cwd() / key_path).resolve()
-    if cwd_candidate.is_file():
-        return cwd_candidate
-
-    return (Path(__file__).resolve().parent / key_path).resolve()
-
-
-def get_firestore_client(service_account_path: str | None = None) -> firestore.Client:
+def get_db_connection(database_url: str | None = None) -> psycopg2.extensions.connection:
     _load_env()
-
-    key_path_value = (service_account_path or os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY"))
-
-    if not key_path_value:
-        raise ValueError("Missing Firebase credentials path. Set FIREBASE_SERVICE_ACCOUNT_KEY or provide it as an argument.")
-
-    key_path = _resolve_key_path(key_path_value)
-    if not key_path.is_file():
-        raise FileNotFoundError(f"Firebase service account JSON not found at: {key_path}")
-
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(key_path)
-        firebase_admin.initialize_app(cred)
-
-    return firestore.client()
+    url = database_url or os.getenv("DATABASE_URL")
+    if not url:
+        raise ValueError(
+            "Missing DATABASE_URL. "
+            "Set it as an env var or pass it directly. "
+            "Find it in Supabase -> Project Settings -> Database -> Connection string (URI)."
+        )
+    return psycopg2.connect(url)
 
 
 def upsert_products(
-    db: firestore.Client,
+    conn: psycopg2.extensions.connection,
     products: Iterable[dict],
-    collection_name: str = "products",
 ) -> int:
-    written = 0
-    batch = db.batch()
-    ops_in_batch = 0
+    """Delete stale rows for the scraped stores, then bulk-insert fresh data."""
+    products_list = list(products)
+    if not products_list:
+        return 0
 
-    for product in products:
-        product_id = product.get("product_id")
-        if not product_id:
-            raise ValueError("Each product must contain a non-empty `product_id`.")
+    store_ids = {_resolve_store_id(p["store_name"]) for p in products_list}
 
-        product_payload = _coerce_firestore_types(product)
-        doc_ref = db.collection(collection_name).document(str(product_id))
-        batch.set(doc_ref, product_payload, merge=True)
-        ops_in_batch += 1
+    rows = []
+    for product in products_list:
+        store_id = _resolve_store_id(product["store_name"])
+        rows.append((
+            store_id,
+            str(product.get("product_name") or ""),
+            int(product.get("sale_price") or 0),
+            int(product.get("original_price") or 0),
+            int(round(float(product.get("discount_pct") or 0))),
+            product.get("image_url"),
+            _parse_ts(product.get("valid_from")),
+            _parse_ts(product.get("valid_until")),
+            _parse_ts(product.get("scraped_at")),
+        ))
 
-        if ops_in_batch >= FIRESTORE_BATCH_LIMIT:
-            batch.commit()
-            written += ops_in_batch
-            batch = db.batch()
-            ops_in_batch = 0
-
-    if ops_in_batch > 0:
-        batch.commit()
-        written += ops_in_batch
-
-    return written
-
-
-def _coerce_firestore_types(product: dict[str, Any]) -> dict[str, Any]:
-    payload = dict(product)
-    for field in TIMESTAMP_FIELDS:
-        payload[field] = _parse_iso_datetime(payload.get(field))
-    return payload
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM product WHERE store_id = ANY(%s)", (list(store_ids),))
+            psycopg2.extras.execute_values(
+                cur,
+                """
+                INSERT INTO product
+                  (store_id, name, sale_price, original_price,
+                   discount_pct, image_url, valid_from, valid_to, scraped_at)
+                VALUES %s
+                """,
+                rows,
+            )
+    return len(rows)
 
 
-def _parse_iso_datetime(value: Any) -> Any:
-    if not isinstance(value, str):
-        return value
+def _resolve_store_id(store_name: str) -> int:
+    key = (store_name or "").strip().lower()
+    store_id = STORE_ID_MAP.get(key)
+    if store_id is None:
+        raise ValueError(
+            f"Unknown store_name {store_name!r}. "
+            f"Known stores: {list(STORE_ID_MAP)}"
+        )
+    return store_id
 
-    text = value.strip()
-    if not text:
-        return value
 
+def _parse_ts(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip().replace("Z", "+00:00")
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(text)
     except ValueError:
-        return value
-
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def _log_event(event: str, **fields: Any) -> None:
@@ -132,11 +131,7 @@ def load_discounted_products(
         script_path = (root / relative_script_path).resolve()
         store_name = str(relative_script_path.parent.name)
         started_at = time.monotonic()
-        _log_event(
-            "store_scrape_started",
-            store=store_name,
-            script=str(script_path),
-        )
+        _log_event("store_scrape_started", store=store_name, script=str(script_path))
         try:
             result = subprocess.run(
                 [sys.executable, str(script_path)],
@@ -159,7 +154,9 @@ def load_discounted_products(
 
         parsed = json.loads(result.stdout)
         if not isinstance(parsed, list):
-            raise ValueError(f"Expected a list of products from {script_path}, got: {type(parsed).__name__}")
+            raise ValueError(
+                f"Expected a list of products from {script_path}, got: {type(parsed).__name__}"
+            )
 
         store_products = [item for item in parsed if isinstance(item, dict)]
         _log_event(
@@ -180,31 +177,27 @@ def dedupe_products_per_store(products: Iterable[dict[str, Any]]) -> list[dict[s
         store_name = str(product.get("store_name") or "").strip()
         product_id = str(product.get("product_id") or "").strip()
         if not store_name or not product_id:
-            raise ValueError("Each product must include non-empty `store_name` and `product_id`.")
-
+            raise ValueError(
+                "Each product must include non-empty `store_name` and `product_id`."
+            )
         unique[(store_name, product_id)] = product
-
     return list(unique.values())
 
 
-def sync_discounted_products(
-    service_account_path: str | None = None,
-    collection_name: str = "products",
-) -> int:
-    db = get_firestore_client(service_account_path=service_account_path)
-    discounted_products = load_discounted_products()
-    unique_discounted_products = dedupe_products_per_store(discounted_products)
-    return upsert_products(db=db, products=unique_discounted_products, collection_name=collection_name)
+def sync_discounted_products(database_url: str | None = None) -> int:
+    conn = get_db_connection(database_url=database_url)
+    try:
+        discounted_products = load_discounted_products()
+        unique_products = dedupe_products_per_store(discounted_products)
+        return upsert_products(conn=conn, products=unique_products)
+    finally:
+        conn.close()
 
 
 def main() -> None:
-    service_account_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY") or "serviceAccountKey.json"
-    collection_name = os.getenv("FIRESTORE_COLLECTION", "products")
-    written = sync_discounted_products(
-        service_account_path=service_account_path,
-        collection_name=collection_name,
-    )
-    print(f"Upserted {written} discounted products into Firestore collection '{collection_name}'.")
+    database_url = os.getenv("DATABASE_URL")
+    written = sync_discounted_products(database_url=database_url)
+    print(f"Upserted {written} discounted products into Supabase.")
 
 
 if __name__ == "__main__":
