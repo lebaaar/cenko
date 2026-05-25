@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// Error when no lists exist
   ///
   /// In en, this message translates to:
-  /// **'No shopping lists found. Create one first.'**
+  /// **'No shopping lists found. Create one first'**
   String get noShoppingListsCreate;
 
   /// Google sign-in button
@@ -521,7 +521,7 @@ abstract class AppLocalizations {
   /// Error when terms not agreed
   ///
   /// In en, this message translates to:
-  /// **'You must agree to the terms and conditions before creating an account.'**
+  /// **'You must agree to the terms and conditions before creating an account'**
   String get mustAgreeToTerms;
 
   /// Password min length validation
@@ -557,7 +557,7 @@ abstract class AppLocalizations {
   /// Forgot password instructions
   ///
   /// In en, this message translates to:
-  /// **'Enter your email and we\'ll send you a link to reset your password.'**
+  /// **'Enter your email and we\'ll send you a link to reset your password'**
   String get forgotPasswordBody;
 
   /// Send reset link button
@@ -953,7 +953,7 @@ abstract class AppLocalizations {
   /// Empty lists state
   ///
   /// In en, this message translates to:
-  /// **'No shopping lists yet.\nTap + to create one.'**
+  /// **'No shopping lists yet.\nTap + to create one'**
   String get shoppingListEmptyState;
 
   /// Your lists section header
@@ -1571,7 +1571,7 @@ abstract class AppLocalizations {
   /// About screen description
   ///
   /// In en, this message translates to:
-  /// **'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most.'**
+  /// **'Cenko brings all deals from major Slovenian stores into one place so you always get the best price. Share shopping lists with family or friends and scan receipts to automatically track your spending. Based on your purchase habits, you also get personalized deal recommendations tailored to what you buy most'**
   String get aboutDescription;
 
   /// Support section title
@@ -1733,7 +1733,7 @@ abstract class AppLocalizations {
   /// Failed to send snackbar
   ///
   /// In en, this message translates to:
-  /// **'Failed to send message. Please try again.'**
+  /// **'Failed to send message. Please try again'**
   String get contactFailedToSend;
 
   /// Barcode tab label
@@ -1889,7 +1889,7 @@ abstract class AppLocalizations {
   /// Snackbar when receipt photo is taken
   ///
   /// In en, this message translates to:
-  /// **'Receipt captured.'**
+  /// **'Receipt captured'**
   String get scanReceiptCapturedParsing;
 
   /// Snackbar when no barcode found in gallery image
@@ -2201,7 +2201,7 @@ abstract class AppLocalizations {
   /// Legal page questions section body
   ///
   /// In en, this message translates to:
-  /// **'If you want to ask about this page or how data is handled, send a message through support.'**
+  /// **'If you want to ask about this page or how data is handled, send a message through support'**
   String get legalQuestionsBody;
 
   /// Legal page contact us button

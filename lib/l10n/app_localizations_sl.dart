@@ -74,7 +74,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get noShoppingListsCreate =>
-      'Ni nakupovalnih seznamov. Za nadaljevanje, ustvarite nov seznam.';
+      'Ni nakupovalnih seznamov. Za nadaljevanje, ustvarite nov seznam';
 
   @override
   String get continueWithGoogle => 'Nadaljuj z Googlom';
@@ -165,7 +165,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get deleteAccountContent =>
-      'To bo trajno izbrisalo vaš račun in vse povezane podatke. Tega dejanja ni mogoče razveljaviti.';
+      'To bo trajno izbrisalo vaš račun in vse povezane podatke. Tega dejanja ni mogoče razveljaviti';
 
   @override
   String get deleteAccountCannotTitle => 'Računa ni mogoče izbrisati';
@@ -227,7 +227,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get mustAgreeToTerms =>
-      'Pred ustvarjanjem računa se morate strinjati s pogoji uporabe in politiko zasebnosti.';
+      'Pred ustvarjanjem računa se morate strinjati s pogoji uporabe in politiko zasebnosti';
 
   @override
   String get passwordMin6Chars => 'Vsaj 6 znakov';
@@ -246,7 +246,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get forgotPasswordBody =>
-      'Vnesite svojo e-pošto in poslali vam bomo povezavo za ponastavitev gesla.';
+      'Vnesite svojo e-pošto in poslali vam bomo povezavo za ponastavitev gesla';
 
   @override
   String get sendResetLink => 'Pošlji povezavo za ponastavitev';
@@ -260,7 +260,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get resetEmailSentPost =>
-      '. Sledite povezavi v e-pošti za nastavitev novega gesla.';
+      '. Sledite povezavi v e-pošti za nastavitev novega gesla';
 
   @override
   String get backToSignIn => 'Nazaj na prijavo';
@@ -269,7 +269,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get goodMorning => 'Dobro jutro';
 
   @override
-  String get goodAfternoon => 'Zdravo';
+  String get goodAfternoon => 'Živjo';
 
   @override
   String get goodEvening => 'Dober večer';
@@ -387,7 +387,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String profileMemberSince(String date) {
-    return 'Pridružil $date';
+    return 'Član od $date';
   }
 
   @override
@@ -483,7 +483,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get shoppingListEmptyState =>
-      'Ni nakupovalnih seznamov.\nPritisnite + za ustvaritev.';
+      'Ni nakupovalnih seznamov.\nPritisnite + za ustvaritev';
 
   @override
   String get shoppingListYourLists => 'Vaši seznami';
@@ -825,7 +825,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get aboutDescription =>
-      'Cenko omogoča pregled vseh akcij v slovenskih trgovinah na enem mestu, kar vam omogoča, da vedno dobite najboljšo ceno. Delite nakupovalne sezname z družino ali prijatelji in skenirajte račune za samodejno sledenje potrošnji. Na podlagi vaših nakupovalnih navad dobite tudi personalizirana priporočila akcij.';
+      'Cenko omogoča pregled vseh akcij v slovenskih trgovinah na enem mestu, kar vam omogoča, da vedno dobite najboljšo ceno. Delite nakupovalne sezname z družino ali prijatelji in skenirajte račune za samodejno sledenje potrošnji. Na podlagi vaših nakupovalnih navad dobite tudi personalizirana priporočila akcij';
 
   @override
   String get aboutSupport => 'Podpora';
@@ -834,7 +834,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get aboutContact => 'Kontakt';
 
   @override
-  String get aboutContactSubtitle => 'Imate vprašanje? Stopite v stik.';
+  String get aboutContactSubtitle => 'Imate vprašanje? Stopite v stik';
 
   @override
   String get aboutFeedback => 'Povratne informacije';
@@ -908,7 +908,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get contactFailedToSend =>
-      'Pošiljanje sporočila ni uspelo. Prosimo, poskusite znova.';
+      'Pošiljanje sporočila ni uspelo. Prosimo, poskusite znova';
 
   @override
   String get scanBarcodeTab => 'Črtna koda';
@@ -991,7 +991,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get scanAlmostDone => 'Skoraj končano';
 
   @override
-  String get scanReceiptCapturedParsing => 'Račun zajet.';
+  String get scanReceiptCapturedParsing => 'Račun zajet';
 
   @override
   String get scanNoBarcodeInImage =>
@@ -1169,7 +1169,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get legalQuestionsBody =>
-      'Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore.';
+      'Če imate vprašanja o tej strani ali ravnanju s podatki, nam pišite prek podpore';
 
   @override
   String get legalContactUs => 'Kontaktirajte nas';
