@@ -147,7 +147,7 @@ class SharedShoppingListRepository {
         .from('shopping_list_item')
         .update({
           'name': trimmedName,
-          'quantity': ?quantity,
+          'quantity': quantity,
           'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
           'category_id': categoryId,
           'edited_at': DateTime.now().toUtc().toIso8601String(),

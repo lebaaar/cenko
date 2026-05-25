@@ -399,6 +399,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen> {
 
     try {
       await ref.read(sharedShoppingListRepositoryProvider).addItem(listId: listId, addedBy: uid, name: deal.title);
+      ref.invalidate(shoppingListItemsProvider(listId));
+      if (mounted) SnackBarService.show(AppLocalizations.of(context)!.addedToShoppingList);
     } catch (_) {
       if (!mounted) return;
       SnackBarService.show(AppLocalizations.of(context)!.failedToAddToList);
