@@ -1,4 +1,5 @@
 import 'package:cenko/core/constants/constants.dart';
+import 'package:cenko/features/shopping_list/data/category.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
@@ -82,6 +83,13 @@ class SharedShoppingListRepository {
     return rows.first['shopping_list_id'].toString();
   }
 
+  // ── Categories ───────────────────────────────────────────────────────────
+
+  Future<List<Category>> getCategories() async {
+    final rows = await _client.from('category').select().order('id', ascending: true);
+    return (rows as List).map((r) => Category.fromMap(r as Map<String, dynamic>)).toList();
+  }
+
   // ── Items ────────────────────────────────────────────────────────────────
 
   Future<List<ShoppingListItem>> getItems(String listId) async {
@@ -95,7 +103,7 @@ class SharedShoppingListRepository {
     required String name,
     int quantity = 1,
     String? unit,
-    String? category,
+    int? categoryId,
     bool isFreePlan = false,
   }) async {
     final trimmedName = name.trim();
@@ -109,7 +117,6 @@ class SharedShoppingListRepository {
     }
 
     final trimmedUnit = unit?.trim();
-    final trimmedCategory = category?.trim();
 
     await _client.from('shopping_list_item').insert({
       'name': trimmedName,
@@ -117,7 +124,7 @@ class SharedShoppingListRepository {
       'added_by_user_id': addedBy,
       'quantity': quantity,
       if (trimmedUnit != null && trimmedUnit.isNotEmpty) 'unit': trimmedUnit,
-      if (trimmedCategory != null && trimmedCategory.isNotEmpty) 'category': trimmedCategory,
+      'category_id': ?categoryId,
     });
 
     await _client.from('shopping_list').update({'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', int.parse(listId));
@@ -129,7 +136,7 @@ class SharedShoppingListRepository {
     required String name,
     int? quantity,
     String? unit,
-    String? category,
+    int? categoryId,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) return;
@@ -142,7 +149,7 @@ class SharedShoppingListRepository {
           'name': trimmedName,
           'quantity': ?quantity,
           'unit': (trimmedUnit == null || trimmedUnit.isEmpty) ? null : trimmedUnit,
-          'category': category,
+          'category_id': categoryId,
           'edited_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', int.parse(itemId));

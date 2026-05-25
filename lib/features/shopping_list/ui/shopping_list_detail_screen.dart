@@ -3,6 +3,7 @@ import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/core/utils/store_util.dart';
 import 'package:cenko/features/deals/data/catalog_deal_item.dart';
+import 'package:cenko/features/shopping_list/data/category.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_item.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_provider.dart';
@@ -39,7 +40,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
   bool _saving = false;
   String? _formError;
   String? _editingItemId;
-  String? _selectedCategory;
+  int? _selectedCategoryId;
 
   @override
   void dispose() {
@@ -201,7 +202,7 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
     _nameCtrl.text = item?.name ?? '';
     _quantityCtrl.text = item != null && item.quantity > 1 ? item.quantity.toString() : '';
     _unitCtrl.text = item?.unit ?? '';
-    _selectedCategory = item?.category;
+    _selectedCategoryId = item?.categoryId;
     _formError = null;
     _formKey.currentState?.reset();
 
@@ -271,19 +272,25 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
                       ],
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      initialValue: _selectedCategory,
-                      decoration: InputDecoration(labelText: AppLocalizations.of(context)!.listCategory),
-                      items: [
-                        DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.of(context)!.listNoCategory)),
-                        ..._categoryIcons.keys.map(
-                          (c) => DropdownMenuItem<String?>(
-                            value: c,
-                            child: Row(children: [Icon(_categoryIcons[c], size: 16), const SizedBox(width: 8), Text(c)]),
-                          ),
-                        ),
-                      ],
-                      onChanged: (value) => setModalState(() => _selectedCategory = value),
+                    Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context)!;
+                        final categories = ref.watch(categoriesProvider).asData?.value ?? [];
+                        return DropdownButtonFormField<int?>(
+                          initialValue: _selectedCategoryId,
+                          decoration: InputDecoration(labelText: l10n.listCategory),
+                          items: [
+                            DropdownMenuItem<int?>(value: null, child: Text(l10n.listNoCategory)),
+                            ...categories.map(
+                              (c) => DropdownMenuItem<int?>(
+                                value: c.id,
+                                child: Row(children: [Icon(c.iconData, size: 16), const SizedBox(width: 8), Text(categoryLocalizedName(l10n, c.slug))]),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) => setModalState(() => _selectedCategoryId = value),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -327,10 +334,10 @@ class _SharedShoppingListScreenState extends ConsumerState<SharedShoppingListScr
           name: _nameCtrl.text,
           quantity: quantity,
           unit: unit,
-          category: _selectedCategory,
+          categoryId: _selectedCategoryId,
         );
       } else {
-        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, category: _selectedCategory, isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true);
+        await repo.addItem(listId: widget.listId, addedBy: uid, name: _nameCtrl.text, quantity: quantity, unit: unit, categoryId: _selectedCategoryId, isFreePlan: ref.read(currentUserProvider).asData?.value?.isFreePlan == true);
       }
 
       ref.invalidate(shoppingListItemsProvider(widget.listId));
@@ -1013,6 +1020,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final categories = ref.watch(categoriesProvider).asData?.value ?? [];
     return widget.itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load items: ${e.toString().replaceFirst('Exception: ', '')}')),
@@ -1093,6 +1101,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
                         onPointerDown: (event) => pressPosition = event.position,
                         child: _ShoppingItemTile(
                           item: item,
+                          category: _findCategory(categories, item.categoryId),
                           bestDeal: bestDealById[item.id],
                           onToggleBought: widget.updatingBought ? null : (v) => widget.onToggleBought(item.id, v),
                           onEdit: () => widget.onEdit(item),
@@ -1161,33 +1170,19 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
   }
 }
 
-const Map<String, IconData> _categoryIcons = {
-  'Fruits & Vegetables': Icons.eco_rounded,
-  'Meat': Icons.lunch_dining_rounded,
-  'Fish & Seafood': Icons.phishing_rounded,
-  'Dairy Products': Icons.local_drink_rounded,
-  'Eggs': Icons.egg_alt_rounded,
-  'Bakery': Icons.bakery_dining_rounded,
-  'Pantry Staples': Icons.rice_bowl_rounded,
-  'Cans & Jars': Icons.inventory_2_rounded,
-  'Seasonings, Sauces & Condiments': Icons.soup_kitchen_rounded,
-  'Frozen Foods': Icons.ac_unit_rounded,
-  'Snacks & Sweets': Icons.cookie_rounded,
-  'Drinks': Icons.water_drop_rounded,
-  'Coffee & Tea': Icons.coffee_rounded,
-  'Baby Products': Icons.child_friendly_rounded,
-  'Pet Supplies': Icons.pets_rounded,
-  'Personal Care': Icons.spa_rounded,
-  'Household Supplies': Icons.home_rounded,
-  'Cleaning Supplies': Icons.clean_hands_rounded,
-  'Home & Garden': Icons.yard_rounded,
-  'Other': Icons.category_rounded,
-};
+Category? _findCategory(List<Category> categories, int? id) {
+  if (id == null) return null;
+  for (final c in categories) {
+    if (c.id == id) return c;
+  }
+  return null;
+}
 
 class _ShoppingItemTile extends StatelessWidget {
-  const _ShoppingItemTile({required this.item, required this.bestDeal, required this.onToggleBought, required this.onEdit, this.onLongPress});
+  const _ShoppingItemTile({required this.item, required this.category, required this.bestDeal, required this.onToggleBought, required this.onEdit, this.onLongPress});
 
   final ShoppingListItem item;
+  final Category? category;
   final CatalogDealItem? bestDeal;
   final ValueChanged<bool>? onToggleBought;
   final VoidCallback onEdit;
@@ -1255,14 +1250,14 @@ class _ShoppingItemTile extends StatelessWidget {
                       ),
                     ),
                     if (_quantityUnitText() != null) ...[const SizedBox(height: 2), Text(_quantityUnitText()!, style: subtitleStyle)],
-                    if (item.category != null) ...[
+                    if (category != null) ...[
                       const SizedBox(height: 2),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_categoryIcons[item.category] ?? Icons.category_rounded, size: 12, color: subtitleStyle?.color),
+                          Icon(category!.iconData, size: 12, color: subtitleStyle?.color),
                           const SizedBox(width: 4),
-                          Text(item.category!, style: subtitleStyle),
+                          Text(categoryLocalizedName(AppLocalizations.of(context)!, category!.slug), style: subtitleStyle),
                         ],
                       ),
                     ],

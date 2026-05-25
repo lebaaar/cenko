@@ -57,6 +57,35 @@ create table shopping_list_member (
 create index on shopping_list_member(shopping_list_id);
 create index on shopping_list_member(user_id);
 
+-- category
+create table category (
+  id    serial primary key,
+  slug  text         not null unique,
+  icon  varchar(500)          -- flutter icon name, e.g. 'eco_rounded'
+);
+
+insert into category (slug, icon) values
+  ('fruits_and_vegetables',            'eco_rounded'),
+  ('meat',                             'lunch_dining_rounded'),
+  ('fish_and_seafood',                 'phishing_rounded'),
+  ('dairy_products',                   'local_drink_rounded'),
+  ('eggs',                             'egg_alt_rounded'),
+  ('bakery',                           'bakery_dining_rounded'),
+  ('pantry_staples',                   'rice_bowl_rounded'),
+  ('cans_and_jars',                    'inventory_2_rounded'),
+  ('seasonings_sauces_and_condiments', 'soup_kitchen_rounded'),
+  ('frozen_foods',                     'ac_unit_rounded'),
+  ('snacks_and_sweets',                'cookie_rounded'),
+  ('drinks',                           'water_drop_rounded'),
+  ('coffee_and_tea',                   'coffee_rounded'),
+  ('baby_products',                    'child_friendly_rounded'),
+  ('pet_supplies',                     'pets_rounded'),
+  ('personal_care',                    'spa_rounded'),
+  ('household_supplies',               'home_rounded'),
+  ('cleaning_supplies',                'clean_hands_rounded'),
+  ('home_and_garden',                  'yard_rounded'),
+  ('other',                            'category_rounded');
+
 -- shopping_list_item
 create table shopping_list_item (
   id                serial primary key,
@@ -68,7 +97,7 @@ create table shopping_list_item (
   bought_at         timestamptz,
   quantity          int,
   unit              varchar(100),
-  category          varchar(100),
+  category_id       int  references category(id) on delete set null,
   added_at          timestamptz not null default now(),
   edited_at         timestamptz not null default now()
 );

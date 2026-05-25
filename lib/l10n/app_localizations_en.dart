@@ -581,6 +581,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listNoCategory => 'No category';
 
   @override
+  String get categoryFruitsAndVegetables => 'Fruits & Vegetables';
+
+  @override
+  String get categoryMeat => 'Meat';
+
+  @override
+  String get categoryFishAndSeafood => 'Fish & Seafood';
+
+  @override
+  String get categoryDairyProducts => 'Dairy Products';
+
+  @override
+  String get categoryEggs => 'Eggs';
+
+  @override
+  String get categoryBakery => 'Bakery';
+
+  @override
+  String get categoryPantryStaples => 'Pantry Staples';
+
+  @override
+  String get categoryCansAndJars => 'Cans & Jars';
+
+  @override
+  String get categorySeasoningsSaucesAndCondiments =>
+      'Seasonings, Sauces & Condiments';
+
+  @override
+  String get categoryFrozenFoods => 'Frozen Foods';
+
+  @override
+  String get categorySnacksAndSweets => 'Snacks & Sweets';
+
+  @override
+  String get categoryDrinks => 'Drinks';
+
+  @override
+  String get categoryCoffeeAndTea => 'Coffee & Tea';
+
+  @override
+  String get categoryBabyProducts => 'Baby Products';
+
+  @override
+  String get categoryPetSupplies => 'Pet Supplies';
+
+  @override
+  String get categoryPersonalCare => 'Personal Care';
+
+  @override
+  String get categoryHouseholdSupplies => 'Household Supplies';
+
+  @override
+  String get categoryCleaningSupplies => 'Cleaning Supplies';
+
+  @override
+  String get categoryHomeAndGarden => 'Home & Garden';
+
+  @override
+  String get categoryOther => 'Other';
+
+  @override
   String get listRenameTitle => 'Rename list';
 
   @override

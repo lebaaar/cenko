@@ -1,3 +1,4 @@
+import 'package:cenko/features/shopping_list/data/category.dart';
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list.dart';
 import 'package:cenko/features/shopping_list/data/shopping_list_invitation.dart';
@@ -7,6 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final sharedShoppingListRepositoryProvider = Provider<SharedShoppingListRepository>((ref) {
   return SharedShoppingListRepository();
+});
+
+/// Global category list. Fetched once and cached — categories are static data.
+final categoriesProvider = FutureProvider<List<Category>>((ref) {
+  return ref.read(sharedShoppingListRepositoryProvider).getCategories();
 });
 
 final userShoppingListsProvider = FutureProvider.autoDispose.family<List<ShoppingList>, String>((ref, uid) {

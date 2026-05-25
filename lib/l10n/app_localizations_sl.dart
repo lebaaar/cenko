@@ -579,6 +579,67 @@ class AppLocalizationsSl extends AppLocalizations {
   String get listNoCategory => 'Brez kategorije';
 
   @override
+  String get categoryFruitsAndVegetables => 'Sadje in zelenjava';
+
+  @override
+  String get categoryMeat => 'Meso';
+
+  @override
+  String get categoryFishAndSeafood => 'Ribe in morski sadeži';
+
+  @override
+  String get categoryDairyProducts => 'Mlečni izdelki';
+
+  @override
+  String get categoryEggs => 'Jajca';
+
+  @override
+  String get categoryBakery => 'Pekarniški izdelki';
+
+  @override
+  String get categoryPantryStaples => 'Osnove shrambe';
+
+  @override
+  String get categoryCansAndJars => 'Konzerve in kozarci';
+
+  @override
+  String get categorySeasoningsSaucesAndCondiments =>
+      'Začimbe, omake in kondimenti';
+
+  @override
+  String get categoryFrozenFoods => 'Zamrznjena hrana';
+
+  @override
+  String get categorySnacksAndSweets => 'Prigrizki in sladkarije';
+
+  @override
+  String get categoryDrinks => 'Pijača';
+
+  @override
+  String get categoryCoffeeAndTea => 'Kava in čaj';
+
+  @override
+  String get categoryBabyProducts => 'Otroški izdelki';
+
+  @override
+  String get categoryPetSupplies => 'Potrebščine za hišne živali';
+
+  @override
+  String get categoryPersonalCare => 'Osebna nega';
+
+  @override
+  String get categoryHouseholdSupplies => 'Gospodinjski pripomočki';
+
+  @override
+  String get categoryCleaningSupplies => 'Čistilna sredstva';
+
+  @override
+  String get categoryHomeAndGarden => 'Dom in vrt';
+
+  @override
+  String get categoryOther => 'Ostalo';
+
+  @override
   String get listRenameTitle => 'Preimenuj seznam';
 
   @override

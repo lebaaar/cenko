@@ -1136,6 +1136,126 @@ abstract class AppLocalizations {
   /// **'No category'**
   String get listNoCategory;
 
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Fruits & Vegetables'**
+  String get categoryFruitsAndVegetables;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Meat'**
+  String get categoryMeat;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Fish & Seafood'**
+  String get categoryFishAndSeafood;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Dairy Products'**
+  String get categoryDairyProducts;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Eggs'**
+  String get categoryEggs;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Bakery'**
+  String get categoryBakery;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Pantry Staples'**
+  String get categoryPantryStaples;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Cans & Jars'**
+  String get categoryCansAndJars;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonings, Sauces & Condiments'**
+  String get categorySeasoningsSaucesAndCondiments;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen Foods'**
+  String get categoryFrozenFoods;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Snacks & Sweets'**
+  String get categorySnacksAndSweets;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Drinks'**
+  String get categoryDrinks;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee & Tea'**
+  String get categoryCoffeeAndTea;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Baby Products'**
+  String get categoryBabyProducts;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Pet Supplies'**
+  String get categoryPetSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Care'**
+  String get categoryPersonalCare;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Household Supplies'**
+  String get categoryHouseholdSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning Supplies'**
+  String get categoryCleaningSupplies;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Home & Garden'**
+  String get categoryHomeAndGarden;
+
+  /// Category name
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get categoryOther;
+
   /// Rename list dialog title
   ///
   /// In en, this message translates to:

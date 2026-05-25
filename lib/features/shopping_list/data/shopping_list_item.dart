@@ -4,7 +4,7 @@ class ShoppingListItem {
     required this.name,
     required this.quantity,
     this.unit,
-    this.category,
+    this.categoryId,
     required this.isBought,
     required this.addedBy,
     required this.addedAt,
@@ -15,7 +15,7 @@ class ShoppingListItem {
   final String name;
   final int quantity;
   final String? unit;
-  final String? category;
+  final int? categoryId;
   final bool isBought;
   final String addedBy; // added_by_user_id
   final DateTime addedAt;
@@ -24,14 +24,13 @@ class ShoppingListItem {
   factory ShoppingListItem.fromMap(Map<String, dynamic> m) {
     final name = (m['name'] as String?)?.trim();
     final unit = (m['unit'] as String?)?.trim();
-    final category = (m['category'] as String?)?.trim();
 
     return ShoppingListItem(
       id: m['id'].toString(),
       name: (name == null || name.isEmpty) ? 'Unnamed item' : name,
       quantity: m['quantity'] as int? ?? 1,
       unit: (unit == null || unit.isEmpty) ? null : unit,
-      category: (category == null || category.isEmpty) ? null : category,
+      categoryId: m['category_id'] as int?,
       isBought: m['is_bought'] as bool? ?? false,
       addedBy: m['added_by_user_id'] as String? ?? '',
       addedAt: m['added_at'] != null

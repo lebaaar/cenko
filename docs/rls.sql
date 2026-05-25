@@ -40,6 +40,7 @@ alter table plan                     enable row level security;
 alter table "user"                   enable row level security;
 alter table store                    enable row level security;
 alter table product                  enable row level security;
+alter table category                 enable row level security;
 alter table shopping_list            enable row level security;
 alter table shopping_list_member     enable row level security;
 alter table shopping_list_item       enable row level security;
@@ -51,6 +52,11 @@ alter table receipt_item             enable row level security;
 -- Read-only, all authenticated users
 create policy "plan: authenticated read"
   on plan for select to authenticated using (true);
+
+-- category
+-- Read-only, all authenticated users; names are translated in the app by slug
+create policy "category: authenticated read"
+  on category for select to authenticated using (true);
 
 -- "user"
 -- All authenticated users can read all profiles (needed for invitation lookups
