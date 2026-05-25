@@ -2023,7 +2023,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
         .from('receipt')
         .insert({
           'user_id': uid,
-          'store_id': ?storeId,
+          'store_id': storeId,
           'total': totalPrice,
           'receipt_date': parsedDate.toIso8601String().substring(0, 10),
           'raw_ocr': rawOcr,

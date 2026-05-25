@@ -4,6 +4,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 function json(body: unknown, status = 200): Response {
@@ -47,7 +48,7 @@ Deno.serve(async (req: Request) => {
 
     //  2. Block if any owned list has other members
     const blockedLists = (ownedLists ?? []).filter((list: any) =>
-      (list.shopping_list_member as Array<{ user_id: string }>)
+      (list.shopping_list_member as Array<{ user_id: string }> ?? [])
         .some((m) => m.user_id !== uid)
     )
     if (blockedLists.length > 0) {

@@ -10,8 +10,10 @@ final sharedShoppingListRepositoryProvider = Provider<SharedShoppingListReposito
   return SharedShoppingListRepository();
 });
 
-/// Global category list. Fetched once and cached — categories are static data.
-final categoriesProvider = FutureProvider<List<Category>>((ref) {
+/// Category list. autoDispose so a failed fetch is retried when the widget re-subscribes
+/// (e.g. after the user navigates away and back on reconnect).
+final categoriesProvider = FutureProvider.autoDispose<List<Category>>((ref) {
+  ref.watch(internetStatusProvider); // re-fetch on network reconnect
   return ref.read(sharedShoppingListRepositoryProvider).getCategories();
 });
 

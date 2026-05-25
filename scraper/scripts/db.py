@@ -28,16 +28,6 @@ STORE_SCRIPT_MAP: dict[str, Path] = {
     "spar": Path("stores/spar/discounted_items.py"),
 }
 
-# Maps scraper STORE_NAME -> DB store_id (matches seeded store table)
-STORE_ID_MAP: dict[str, int] = {
-    "spar": 1,
-    "tus": 2,
-    "tus_drogerija": 3,
-    "mercator": 4,
-    "hofer": 5,
-    "lidl": 6,
-    "eurospin": 7,
-}
 
 
 def _load_env() -> None:
@@ -57,6 +47,13 @@ def get_db_connection(database_url: str | None = None) -> psycopg2.extensions.co
     return psycopg2.connect(url)
 
 
+def _fetch_store_id_map(conn: psycopg2.extensions.connection) -> dict[str, int]:
+    """Return {store.name -> store.id} for all rows in the store table."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, name FROM store")
+        return {name: id_ for id_, name in cur.fetchall()}
+
+
 def upsert_products(
     conn: psycopg2.extensions.connection,
     products: Iterable[dict],
@@ -66,11 +63,13 @@ def upsert_products(
     if not products_list:
         return 0
 
-    store_ids = {_resolve_store_id(p["store_name"]) for p in products_list}
+    store_id_map = _fetch_store_id_map(conn)
+
+    store_ids = {_resolve_store_id(p["store_name"], store_id_map) for p in products_list}
 
     rows = []
     for product in products_list:
-        store_id = _resolve_store_id(product["store_name"])
+        store_id = _resolve_store_id(product["store_name"], store_id_map)
         rows.append((
             store_id,
             str(product.get("product_name") or ""),
@@ -99,13 +98,13 @@ def upsert_products(
     return len(rows)
 
 
-def _resolve_store_id(store_name: str) -> int:
+def _resolve_store_id(store_name: str, store_id_map: dict[str, int]) -> int:
     key = (store_name or "").strip().lower()
-    store_id = STORE_ID_MAP.get(key)
+    store_id = store_id_map.get(key)
     if store_id is None:
         raise ValueError(
             f"Unknown store_name {store_name!r}. "
-            f"Known stores: {list(STORE_ID_MAP)}"
+            f"Stores in DB: {list(store_id_map)}"
         )
     return store_id
 

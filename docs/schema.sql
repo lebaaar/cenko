@@ -35,6 +35,19 @@ create table store (
   supported boolean not null default true
 );
 
+-- Seed stores with explicit IDs so scraper FK references stay stable across environments.
+insert into store (id, name, supported) values
+  (1, 'spar',         true),
+  (2, 'tus',          true),
+  (3, 'tus_drogerija',true),
+  (4, 'mercator',     true),
+  (5, 'hofer',        true),
+  (6, 'lidl',         true),
+  (7, 'eurospin',     true)
+on conflict (id) do nothing;
+-- Keep serial in sync after explicit-ID inserts
+select setval(pg_get_serial_sequence('store', 'id'), max(id)) from store;
+
 -- shopping_list
 create table shopping_list (
   id                  serial primary key,
