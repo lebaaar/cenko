@@ -1167,7 +1167,7 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
     for (final item in items) {
       final terms = <String>{};
       final name = item.name.trim();
-      if (name.isNotEmpty) terms.add(name);
+      if (name.length >= 5) terms.add(name);
       if (terms.isEmpty) continue;
 
       final matched = widget.dealMatcher.matchDeals(shoppingListTexts: terms, deals: widget.deals!, minScore: 0.48);
