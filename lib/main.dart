@@ -19,9 +19,9 @@ class _DeviceBlockedApp extends StatelessWidget {
   final String reason;
 
   String get _message => switch (reason) {
-    'emulator' => 'This app cannot run on an emulator or simulator.',
-    'rooted' => 'This app cannot run on a rooted or jailbroken device.',
-    _ => 'This device does not meet the security requirements to run this app.',
+    'emulator' => 'This app cannot run on an emulators',
+    'rooted' => 'This app cannot run on a rooted or jailbroken device',
+    _ => 'This device does not meet the security requirements to run this app',
   };
 
   @override
