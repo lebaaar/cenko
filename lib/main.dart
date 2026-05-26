@@ -2,6 +2,7 @@ import 'package:cenko/app.dart';
 import 'package:cenko/firebase_options.dart';
 import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
+import 'package:cenko/shared/services/device_security_service.dart';
 import 'package:cenko/shared/services/exception_reporting_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,6 +13,50 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class _DeviceBlockedApp extends StatelessWidget {
+  const _DeviceBlockedApp({required this.reason});
+  final String reason;
+
+  String get _message => switch (reason) {
+    'emulator' => 'This app cannot run on an emulator or simulator.',
+    'rooted' => 'This app cannot run on a rooted or jailbroken device.',
+    _ => 'This device does not meet the security requirements to run this app.',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF145750),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.security, size: 64, color: Colors.white),
+                const SizedBox(height: 24),
+                const Text(
+                  'Security Check Failed',
+                  style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _message,
+                  style: const TextStyle(color: Colors.white70, fontSize: 15),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 void _setSystemUIOverlayStyle(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
@@ -38,6 +83,15 @@ void main() async {
 
   // disable landscape mode
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // Block release builds on emulators and rooted/jailbroken devices.
+  if (!kDebugMode) {
+    final insecureReason = await DeviceSecurityService.checkDevice();
+    if (insecureReason != null) {
+      runApp(_DeviceBlockedApp(reason: insecureReason));
+      return;
+    }
+  }
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
