@@ -272,7 +272,8 @@ class _BodyState extends ConsumerState<_Body> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(l10n.shoppingListYourLists),
-                        PopupMenuButton<SortOption>(
+                        if (lists.length > 1)
+                          PopupMenuButton<SortOption>(
                           onSelected: (option) => setState(() => _sortOption = option),
                           itemBuilder: (context) => SortOption.values
                               .map(

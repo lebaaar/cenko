@@ -1082,7 +1082,8 @@ class _ItemsListState extends ConsumerState<_ItemsList> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(l10n.listItems),
-                PopupMenuButton<_ItemSortOption>(
+                if (items.length > 1)
+                  PopupMenuButton<_ItemSortOption>(
                   onSelected: (option) => setState(() => _sortOption = option),
                   itemBuilder: (context) => _ItemSortOption.values
                       .map(

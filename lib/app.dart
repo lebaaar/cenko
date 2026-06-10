@@ -1,19 +1,14 @@
-import 'dart:async';
-
 import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/router.dart';
 import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
-import 'package:cenko/shared/providers/internet_status_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
-import 'package:cenko/shared/widgets/offline_banner.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 class CenkoApp extends ConsumerStatefulWidget {
   const CenkoApp({super.key});
@@ -22,39 +17,13 @@ class CenkoApp extends ConsumerStatefulWidget {
   ConsumerState<CenkoApp> createState() => _CenkoAppState();
 }
 
-class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver {
+class _CenkoAppState extends ConsumerState<CenkoApp> {
   bool? _lastOverlayDark;
-  bool _suppressOffline = false;
-  Timer? _suppressTimer;
 
   // Cached from last successful currentUserProvider data
   // Prevents locale/theme flicker when the provider errors (eg. network drops and the Supabase fetch fails).
   Locale? _cachedLocale;
   ThemeMode? _cachedThemeMode;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _suppressTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      setState(() => _suppressOffline = true);
-      _suppressTimer?.cancel();
-      _suppressTimer = Timer(const Duration(milliseconds: 7500), () {
-        if (mounted) setState(() => _suppressOffline = false);
-      });
-    }
-  }
 
   ThemeMode _themeModeFromSettings(String? mode) {
     switch (mode) {
@@ -105,8 +74,6 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
 
     _updateSystemUIOverlayIfNeeded(brightness);
 
-    final suppressOffline = _suppressOffline;
-
     return MaterialApp.router(
       title: kAppName,
       scaffoldMessengerKey: SnackBarService.scaffoldMessengerKey,
@@ -118,29 +85,6 @@ class _CenkoAppState extends ConsumerState<CenkoApp> with WidgetsBindingObserver
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: kDebugMode,
-      builder: (context, child) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final isOffline =
-                !suppressOffline && ref.watch(internetStatusProvider).maybeWhen(data: (v) => v == InternetStatus.disconnected, orElse: () => false);
-            Widget childWidget = child ?? const SizedBox.shrink();
-            if (isOffline) {
-              final mq = MediaQuery.of(context);
-              childWidget = MediaQuery(
-                data: mq.copyWith(padding: mq.padding.copyWith(top: 0)),
-                child: childWidget,
-              );
-            }
-            return Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                OfflineBanner(suppressOffline: suppressOffline),
-                Expanded(child: childWidget),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 
