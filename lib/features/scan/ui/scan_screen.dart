@@ -617,7 +617,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildFlashButton(),
-            const SizedBox(width: 12),
             _ControlButton(icon: Icons.photo_library_rounded, onTap: _pickFromGallery),
             const SizedBox(width: 12),
             _ControlButton(icon: Icons.cameraswitch_rounded, onTap: _switchActiveCamera),
@@ -713,16 +712,35 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     );
   }
 
+  // Front cameras have no torch, so the flash control is hidden for them.
   Widget _buildFlashButton() {
     if (_mode == _ScanMode.receipt) {
-      return _ControlButton(icon: _receiptTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, onTap: _toggleReceiptTorch);
+      if (_receiptCamera?.description.lensDirection == CameraLensDirection.front) {
+        return const SizedBox.shrink();
+      }
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ControlButton(icon: _receiptTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, onTap: _toggleReceiptTorch),
+          const SizedBox(width: 12),
+        ],
+      );
     }
 
     return ValueListenableBuilder<MobileScannerState>(
       valueListenable: _controller,
       builder: (context, state, _) {
+        if (state.cameraDirection == CameraFacing.front) {
+          return const SizedBox.shrink();
+        }
         final isOn = state.torchState == TorchState.on;
-        return _ControlButton(icon: isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, onTap: _controller.toggleTorch);
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ControlButton(icon: isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, onTap: _controller.toggleTorch),
+            const SizedBox(width: 12),
+          ],
+        );
       },
     );
   }
