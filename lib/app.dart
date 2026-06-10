@@ -2,6 +2,7 @@ import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/constants/constants.dart';
 import 'package:cenko/l10n/app_localizations.dart';
 import 'package:cenko/router.dart';
+import 'package:cenko/shared/providers/app_settings_provider.dart';
 import 'package:cenko/shared/providers/auth_locale_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/services/snack_bar_service.dart';
@@ -19,6 +20,13 @@ class CenkoApp extends ConsumerStatefulWidget {
 
 class _CenkoAppState extends ConsumerState<CenkoApp> {
   bool? _lastOverlayDark;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch app-wide settings (kill switches) on app load
+    ref.read(appSettingsProvider);
+  }
 
   // Cached from last successful currentUserProvider data
   // Prevents locale/theme flicker when the provider errors (eg. network drops and the Supabase fetch fails).

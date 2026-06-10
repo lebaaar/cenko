@@ -154,4 +154,9 @@ Table product [note: "scraper fills this table"] {
   }
 }
 Ref: product.store_id  > store.id
+
+Table app_settings [note: "app-wide feature flags / kill switches, eg. receipt_scanning_enabled; read-only for clients"] {
+  setting text [primary key]
+  value text [not null]
+}
 ```

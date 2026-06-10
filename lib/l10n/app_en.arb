@@ -627,6 +627,8 @@
   "@scanBarcodeTab": { "description": "Barcode tab label" },
   "scanReceiptTab": "Receipt",
   "@scanReceiptTab": { "description": "Receipt tab label" },
+  "scanReceiptScanningDisabled": "Receipt scanning is currently disabled",
+  "@scanReceiptScanningDisabled": { "description": "Toast shown when the receipt scanning kill switch is active" },
   "scanBarcodeInstruction": "Scan a barcode to add item to your shopping list",
   "@scanBarcodeInstruction": { "description": "Barcode scan instruction" },
   "scanReceiptInstruction": "Scan a receipt to track your spendings",

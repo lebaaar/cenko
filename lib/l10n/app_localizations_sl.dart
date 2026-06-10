@@ -395,7 +395,7 @@ class AppLocalizationsSl extends AppLocalizations {
   String get profileScanFirstReceiptBtn => 'Skeniraj prvi račun';
 
   @override
-  String get profileNoReceiptsThisMonth => 'Ta mesec ni skeniranih računov';
+  String get profileNoReceiptsThisMonth => 'Za ta mesec ni skeniranih računov';
 
   @override
   String get profileSpendingsByStore => 'Poraba po trgovinah';
@@ -894,6 +894,10 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get scanReceiptTab => 'Račun';
+
+  @override
+  String get scanReceiptScanningDisabled =>
+      'Skeniranje računov je trenutno onemogočeno';
 
   @override
   String get scanBarcodeInstruction =>

@@ -1,4 +1,5 @@
 import 'package:cenko/l10n/app_localizations.dart';
+import 'package:cenko/shared/providers/app_settings_provider.dart';
 import 'package:cenko/shared/providers/intro_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +16,8 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with SingleTickerProviderStateMixin {
   static const _slideDuration = Duration(seconds: 5);
-  static const _totalSlides = 5;
+  // Slide count depends on the receipt scanning kill switch, so it cannot be a constant.
+  int get _totalSlides => _buildSlides(AppLocalizations.of(context)!).length;
 
   late AnimationController _progressController;
   int _currentIndex = 0;
@@ -70,8 +72,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Single
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Rebuild when the kill switch value arrives; _buildSlides itself is also called
+    // outside build (via _totalSlides), so it uses ref.read instead of watch.
+    ref.watch(receiptScanningEnabledProvider);
     final slides = _buildSlides(l10n);
-    final slide = slides[_currentIndex];
+    final slide = slides[_currentIndex.clamp(0, slides.length - 1)];
     final isLast = _currentIndex == _totalSlides - 1;
 
     return Scaffold(
@@ -204,11 +209,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Single
         title: l10n.onboardingSlide2Title,
         body: l10n.onboardingSlide2Body,
       ),
-      _OnboardingSlide(
-        icon: const Icon(Icons.receipt_long_rounded, size: 64, color: Colors.white),
-        title: l10n.onboardingSlide3Title,
-        body: l10n.onboardingSlide3Body,
-      ),
+      if (ref.read(receiptScanningEnabledProvider))
+        _OnboardingSlide(
+          icon: const Icon(Icons.receipt_long_rounded, size: 64, color: Colors.white),
+          title: l10n.onboardingSlide3Title,
+          body: l10n.onboardingSlide3Body,
+        ),
       _OnboardingSlide(
         icon: const Icon(Icons.checklist_rounded, size: 64, color: Colors.white),
         title: l10n.onboardingSlide4Title,

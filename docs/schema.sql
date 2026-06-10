@@ -160,6 +160,17 @@ create table receipt_item (
 
 create index on receipt_item(receipt_id);
 
+-- app_settings
+-- App-wide feature flags / kill switches, read by the app on open.
+-- Writes happen only via Supabase Studio / service role (no client write policy).
+create table app_settings (
+  setting  text primary key,
+  value    text not null
+);
+
+insert into app_settings (setting, value) values
+  ('receipt_scanning_enabled', 'true');
+
 -- product
 -- Filled by the scraper; never written by the app.
 create table product (

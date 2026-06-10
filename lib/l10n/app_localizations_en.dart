@@ -895,6 +895,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanReceiptTab => 'Receipt';
 
   @override
+  String get scanReceiptScanningDisabled =>
+      'Receipt scanning is currently disabled';
+
+  @override
   String get scanBarcodeInstruction =>
       'Scan a barcode to add item to your shopping list';
 

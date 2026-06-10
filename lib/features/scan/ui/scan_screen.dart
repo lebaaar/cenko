@@ -17,6 +17,7 @@ import 'package:cenko/features/scan/data/receipt_ocr/receipt_text_recognizer_stu
     as receipt_ocr;
 import 'package:cenko/features/shopping_list/data/shared_shopping_list_repository.dart';
 import 'package:cenko/l10n/app_localizations.dart';
+import 'package:cenko/shared/providers/app_settings_provider.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
 import 'package:cenko/shared/repository/catalog_deals_repository.dart';
 import 'package:cenko/shared/services/deal_text_matcher_service.dart';
@@ -133,7 +134,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode == 'barcode' ? _ScanMode.barcode : _ScanMode.receipt;
+    final receiptScanningEnabled = ref.read(receiptScanningEnabledProvider);
+    _mode = !receiptScanningEnabled || widget.initialMode == 'barcode' ? _ScanMode.barcode : _ScanMode.receipt;
+    if (!receiptScanningEnabled && widget.initialMode == 'receipt') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          SnackBarService.show(AppLocalizations.of(context)!.scanReceiptScanningDisabled);
+        }
+      });
+    }
     _scanBarController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
     _setScanBarAnimationActive(_mode == _ScanMode.barcode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,6 +162,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    // Kill switch can arrive after the screen opened in receipt mode; downgrade to barcode.
+    if (!ref.watch(receiptScanningEnabledProvider) && _mode == _ScanMode.receipt) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _mode == _ScanMode.receipt) {
+          _onModeSelected(_ScanMode.barcode);
+          SnackBarService.show(AppLocalizations.of(context)!.scanReceiptScanningDisabled);
+        }
+      });
+    }
     return Shortcuts(
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
@@ -461,6 +479,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
 
   Widget _buildModeHeader(BuildContext context) {
     final isBarcode = _mode == _ScanMode.barcode;
+    final receiptScanningEnabled = ref.watch(receiptScanningEnabledProvider);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -494,6 +513,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                       _ModeTab(
                         label: AppLocalizations.of(context)!.scanReceiptTab,
                         selected: !isBarcode,
+                        enabled: receiptScanningEnabled,
                         onTap: () => _onModeSelected(_ScanMode.receipt),
                       ),
                     ],
@@ -757,6 +777,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
   }
 
   Future<void> _onModeSelected(_ScanMode mode) async {
+    if (mode == _ScanMode.receipt && !ref.read(receiptScanningEnabledProvider)) {
+      SnackBarService.show(AppLocalizations.of(context)!.scanReceiptScanningDisabled);
+      return;
+    }
     if (_mode == mode || _isSwitchingScannerMode) {
       return;
     }
@@ -2240,26 +2264,35 @@ enum _ReceiptFlowState { idle, readyToSubmit, processing, failure, success }
 enum _BarcodeFlowState { idle, processing, failure, success }
 
 class _ModeTab extends StatelessWidget {
-  const _ModeTab({required this.label, required this.selected, required this.onTap});
+  const _ModeTab({required this.label, required this.selected, required this.onTap, this.enabled = true});
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      // Tap stays active when disabled so the kill switch toast can be shown.
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(horizontal: 2),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-        decoration: BoxDecoration(color: selected ? Colors.white : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(color: selected && enabled ? Colors.white : Colors.transparent, borderRadius: BorderRadius.circular(16)),
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(color: selected ? Colors.black87 : Colors.white, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+          style: TextStyle(
+            color: !enabled
+                ? Colors.white.withValues(alpha: 0.35)
+                : selected
+                ? Colors.black87
+                : Colors.white,
+            fontWeight: selected && enabled ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
       ),
     );

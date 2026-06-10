@@ -13,6 +13,7 @@ Most of the documentation is in the [docs](/docs) folder. Here are some importan
 - All constants such as links, contacts...  should be defined in [constants.dart](lib/core/constants/constants.dart).
 - Reads can be expensive, so if you need to read something from the database, try to read it once and store it in memory. For example, if you need to read the user's name, read it once and store it in a provider. Then you can use that provider to get the user's name whenever you need it.
 - Every time you add a dependecy to `pubspec.yaml`, make sure depencies stay organized and sorted alphabetically.
+- Always use [SnackBarService](lib/shared/services/snack_bar_service.dart) (`SnackBarService.show(...)`) for snackbars/toasts. Never call `ScaffoldMessenger` directly or use any other toast mechanism.
 
 ## Don't
 - Never use hardcoded colors, always use colors from the theme. If you need to add a new color, add it to the theme and use it from there. Colors are defined in [app_theme.dart](lib/app_theme.dart).

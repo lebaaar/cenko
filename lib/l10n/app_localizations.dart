@@ -1718,6 +1718,12 @@ abstract class AppLocalizations {
   /// **'Receipt'**
   String get scanReceiptTab;
 
+  /// Toast shown when the receipt scanning kill switch is active
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt scanning is currently disabled'**
+  String get scanReceiptScanningDisabled;
+
   /// Barcode scan instruction
   ///
   /// In en, this message translates to:

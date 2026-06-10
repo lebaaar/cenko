@@ -4,6 +4,7 @@ import 'package:cenko/app_theme.dart';
 import 'package:cenko/core/utils/date_util.dart';
 import 'package:cenko/core/utils/price_util.dart';
 import 'package:cenko/l10n/app_localizations.dart';
+import 'package:cenko/shared/providers/app_settings_provider.dart';
 import 'package:cenko/shared/providers/auth_provider.dart';
 import 'package:cenko/shared/providers/current_user_provider.dart';
 import 'package:cenko/shared/providers/receipt_revision_provider.dart';
@@ -297,6 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
+        final receiptScanningEnabled = ref.watch(receiptScanningEnabledProvider);
         final monthReceiptsSnapshotAsync = ref.watch(_monthReceiptsProvider(_MonthReceiptQuery(uid: user.id, month: _selectedMonth, limit: 100)));
         final visibleReceiptCount = _visibleReceiptCountForMonth(_selectedMonth);
 
@@ -429,7 +431,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       final stores = monthStats.stores;
                                       final maxSpend = stores.fold<int>(0, (max, s) => s.spentCents > max ? s.spentCents : max);
                                       final hasReceiptScans = monthStats.receiptsScanned > 0;
-                                      final shouldShowFirstScanButton = !hasReceiptScans;
+                                      final shouldShowFirstScanButton = !hasReceiptScans && receiptScanningEnabled;
 
                                       return Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,

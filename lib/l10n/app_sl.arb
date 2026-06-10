@@ -128,7 +128,7 @@
   "profileReceiptsScanned": "Skeniranih računov: {count}",
   "profileScanFirstReceiptPrompt": "Skenirajte prvi račun za sledenje porabi",
   "profileScanFirstReceiptBtn": "Skeniraj prvi račun",
-  "profileNoReceiptsThisMonth": "Ta mesec ni skeniranih računov",
+  "profileNoReceiptsThisMonth": "Za ta mesec ni skeniranih računov",
   "profileSpendingsByStore": "Poraba po trgovinah",
   "profileRecentReceipts": "Nedavni računi",
   "profileAbout": "O aplikaciji",
@@ -288,6 +288,7 @@
 
   "scanBarcodeTab": "Črtna koda",
   "scanReceiptTab": "Račun",
+  "scanReceiptScanningDisabled": "Skeniranje računov je trenutno onemogočeno",
   "scanBarcodeInstruction": "Skenirajte črtno kodo da dodate artikel na nakupovalni seznam",
   "scanReceiptInstruction": "Skenirajte račun za sledenje porabi",
   "scanReceiptExtracted": "Račun prebran",

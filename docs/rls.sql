@@ -47,6 +47,13 @@ alter table shopping_list_item       enable row level security;
 alter table shopping_list_invitation enable row level security;
 alter table receipt                  enable row level security;
 alter table receipt_item             enable row level security;
+alter table app_settings             enable row level security;
+
+-- app_settings
+-- Read-only feature flags. Anon read too, so kill switches apply before sign-in
+-- (eg. onboarding). No insert/update/delete policies — writes only via Studio/service role.
+create policy "app_settings: public read"
+  on app_settings for select to anon, authenticated using (true);
 
 -- plan
 -- Read-only, all authenticated users
